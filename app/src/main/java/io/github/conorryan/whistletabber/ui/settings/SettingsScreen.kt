@@ -66,10 +66,10 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
         ) {
             TabSettingsContent(
                 settings = settings,
-                onWhistle = vm::setWhistle,
-                onCNatural = vm::setCNatural,
-                onFold = vm::setFoldOutOfRange,
-                onMode = vm::setMode,
+                onWhistle = vm.settingsEditor::setWhistle,
+                onCNatural = vm.settingsEditor::setCNatural,
+                onFold = vm.settingsEditor::setFoldOutOfRange,
+                onMode = vm.settingsEditor::setMode,
             )
 
             HorizontalDivider()

@@ -3,19 +3,15 @@ package io.github.conorryan.whistletabber.ui.tune
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.github.conorryan.whistletabber.data.settings.TabSettingsStore
 import io.github.conorryan.whistletabber.data.tunes.AbcFiles
 import io.github.conorryan.whistletabber.data.tunes.RecentlyDeleted
 import io.github.conorryan.whistletabber.data.tunes.Tune
 import io.github.conorryan.whistletabber.data.tunes.TuneRepository
-import io.github.conorryan.whistletabber.music.AbcBook
-import io.github.conorryan.whistletabber.music.CNatural
-import io.github.conorryan.whistletabber.music.KeyChange
 import io.github.conorryan.whistletabber.music.TabSettings
-import io.github.conorryan.whistletabber.music.TransposeMode
 import io.github.conorryan.whistletabber.music.WhistleKey
 import io.github.conorryan.whistletabber.render.TunePage
 import io.github.conorryan.whistletabber.render.TuneRenderer
+import io.github.conorryan.whistletabber.ui.settings.TabSettingsEditor
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,18 +22,12 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/**
- * A key change being previewed. [abc] is null until the page has rewritten
- * the text.
- */
-data class KeyPreview(val tonic: String, val keyName: String, val steps: Int, val abc: String? = null)
-
 data class TuneUiState(
     val tune: Tune? = null,
     /** The tune is gone (deleted, or a stale id). */
     val missing: Boolean = false,
     val settings: TabSettings = TabSettings(),
-    val preview: KeyPreview? = null,
+    val preview: KeyChangePreview.Preview? = null,
 ) {
     /** The whistle the tune is written for: its directive, else its key's suggestion, else D. */
     val tuneWhistle: WhistleKey get() = tune?.whistle ?: WhistleKey.DEFAULT
@@ -51,15 +41,16 @@ sealed interface TuneEffect {
 }
 
 /**
- * Drives one stored tune. The tune, its settings and its key-change preview
- * live here; the render cycle belongs to the [TuneRenderer] this ViewModel
- * owns. The screen attaches its WebView with [bindPage] and reads
- * [renderState] for the playback bar.
+ * Drives one stored tune. The tune and its settings live here; the render
+ * cycle belongs to the [TuneRenderer] this ViewModel owns, and the key-change
+ * preview to its [KeyChangePreview]. The screen attaches its WebView with
+ * [bindPage] and reads [renderState] for the playback bar.
  */
 class TuneViewModel(
     private val id: Long,
     private val repository: TuneRepository,
-    private val store: TabSettingsStore,
+    /** Writes from the tune screen's settings sheet; also the settings it shows. */
+    val settingsEditor: TabSettingsEditor,
     private val files: AbcFiles,
     private val recentlyDeleted: RecentlyDeleted,
 ) : ViewModel() {
@@ -77,12 +68,12 @@ class TuneViewModel(
     private val _effects = Channel<TuneEffect>(Channel.BUFFERED)
     val effects: Flow<TuneEffect> = _effects.receiveAsFlow()
 
-    private val preview = MutableStateFlow<KeyPreview?>(null)
+    private val keyChange = KeyChangePreview(viewModelScope)
     private var deleting = false
 
     init {
         viewModelScope.launch {
-            combine(repository.observe(id), store.settings, preview, ::Triple).collect { (tune, settings, preview) ->
+            combine(repository.observe(id), settingsEditor.settings, keyChange.preview, ::Triple).collect { (tune, settings, preview) ->
                 if (tune == null) {
                     if (!deleting) _state.update { it.copy(missing = true) }
                     return@collect
@@ -113,50 +104,32 @@ class TuneViewModel(
 
     fun setStarred(starred: Boolean) = viewModelScope.launch { repository.setStarred(id, starred) }
 
-    fun setMyWhistle(whistle: WhistleKey) = viewModelScope.launch { store.setWhistle(whistle) }
-    fun setCNatural(cNatural: CNatural) = viewModelScope.launch { store.setCNatural(cNatural) }
-    fun setFoldOutOfRange(fold: Boolean) = viewModelScope.launch { store.setFoldOutOfRange(fold) }
-    fun setMode(mode: TransposeMode) = viewModelScope.launch { store.setMode(mode) }
-
     /** Previews the tune rewritten with [tonic] as its key note; the page does the rewriting. */
     fun previewKey(tonic: String) {
         val tune = _state.value.tune ?: return
-        val steps = KeyChange.steps(tune.key, tonic) ?: return
-        if (steps == 0) {
-            preview.value = null
-            return
-        }
-        preview.value = KeyPreview(tonic, KeyChange.keyName(tune.key, tonic), steps)
-        viewModelScope.launch {
-            val abc = renderer.transpose(tune.abc, steps)
-            preview.update { p ->
-                if (p != null && p.steps == steps && p.abc == null && abc != null) p.copy(abc = abc) else p
-            }
-        }
+        keyChange.start(tune, tonic, renderer::transpose)
     }
 
-    fun cancelPreview() {
-        preview.value = null
-    }
+    fun cancelPreview() = keyChange.cancel()
 
     /** Saves the previewed key as a new tune titled e.g. "Banish Misfortune (G)" and opens it. */
     fun savePreviewAsCopy() {
         val tune = _state.value.tune ?: return
-        val p = preview.value ?: return
-        val abc = p.abc ?: return
+        val preview = keyChange.preview.value ?: return
+        val abc = keyChange.copyAbc(tune, preview) ?: return
         viewModelScope.launch {
-            val newId = repository.save(AbcBook.withTitle(abc, KeyChange.copyTitle(tune.title, p.keyName)))
-            preview.value = null
+            val newId = repository.save(abc)
+            keyChange.cancel()
             _effects.send(TuneEffect.OpenTune(newId))
         }
     }
 
     /** Replaces this tune's ABC with the previewed key. */
     fun replaceWithPreview() {
-        val abc = preview.value?.abc ?: return
+        val abc = keyChange.preview.value?.abc ?: return
         viewModelScope.launch {
             repository.save(abc, id)
-            preview.value = null
+            keyChange.cancel()
         }
     }
 

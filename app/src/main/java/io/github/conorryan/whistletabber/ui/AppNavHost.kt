@@ -57,7 +57,7 @@ fun AppNavHost(graph: AppGraph) {
             val vm: TuneViewModel = viewModel(
                 factory = viewModelFactory {
                     initializer {
-                        TuneViewModel(id, graph.tuneRepository, graph.tabSettingsStore, graph.abcFiles, graph.recentlyDeleted)
+                        TuneViewModel(id, graph.tuneRepository, graph.tabSettingsEditor, graph.abcFiles, graph.recentlyDeleted)
                     }
                 },
             )
@@ -93,7 +93,7 @@ fun AppNavHost(graph: AppGraph) {
         composable<SettingsRoute> {
             val vm: SettingsViewModel = viewModel(
                 factory = viewModelFactory {
-                    initializer { SettingsViewModel(graph.tabSettingsStore, graph.starterTunes, graph.appScope) }
+                    initializer { SettingsViewModel(graph.tabSettingsEditor, graph.starterTunes, graph.appScope) }
                 },
             )
             SettingsScreen(vm = vm, onBack = { nav.popBackStack() })

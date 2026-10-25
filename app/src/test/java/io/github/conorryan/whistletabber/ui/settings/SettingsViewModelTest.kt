@@ -47,19 +47,21 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun `setters persist to the store`() = runTest {
-        val vm = SettingsViewModel(graph.store, graph.starterTunes, backgroundScope)
-        vm.setWhistle(WhistleKey.LOW_D)
-        vm.setCNatural(CNatural.OXX_XOX)
-        vm.setFoldOutOfRange(false)
-        vm.setMode(TransposeMode.SAME_FINGERINGS)
+    fun `writes persist to the store`() = runTest {
+        val editor = TabSettingsEditor(graph.store, backgroundScope)
+        val vm = SettingsViewModel(editor, graph.starterTunes, backgroundScope)
+        assertEquals(editor, vm.settingsEditor)
+        editor.setWhistle(WhistleKey.LOW_D)
+        editor.setCNatural(CNatural.OXX_XOX)
+        editor.setFoldOutOfRange(false)
+        editor.setMode(TransposeMode.SAME_FINGERINGS)
         val expected = TabSettings(WhistleKey.LOW_D, CNatural.OXX_XOX, false, TransposeMode.SAME_FINGERINGS)
         assertEquals(expected, graph.store.settings.first { it == expected })
     }
 
     @Test
     fun `adding the starter set twice skips the second time`() = runTest {
-        val vm = SettingsViewModel(graph.store, graph.starterTunes, backgroundScope)
+        val vm = SettingsViewModel(TabSettingsEditor(graph.store, backgroundScope), graph.starterTunes, backgroundScope)
         vm.starterAdded.test {
             vm.addStarterSet()
             assertEquals(ImportResult(50, 0, emptyList()), awaitItem())

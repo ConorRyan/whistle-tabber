@@ -14,3 +14,9 @@ are named here; add a term when code names a new concept.
   render's diagrams come from.
 - **Written-for whistle**: the whistle a tune is written for: its
   `%whistle_tab_key` directive, else its key's suggestion, else D.
+- **Tab-settings editor** (`TabSettingsEditor`): the one owner for
+  tab-settings writes from the UI; both settings surfaces (the settings
+  screen and the tune screen's sheet) are backed by one.
+- **Key-change preview** (`KeyChangePreview`): previewing a tune rewritten
+  into another key: the tonic, its name, the steps, and the rewritten ABC
+  once the page has answered.

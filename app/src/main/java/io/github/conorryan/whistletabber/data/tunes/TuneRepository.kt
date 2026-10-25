@@ -21,7 +21,10 @@ data class Tune(
     val source: String,
     val createdAt: Long,
     val updatedAt: Long,
-)
+) {
+    /** The whistle named by the tune's own directive, if any; [whistle] is that, else its key's suggestion. */
+    val explicitWhistle: WhistleKey? get() = AbcBook.whistleOf(abc)
+}
 
 data class ImportResult(
     val added: Int,

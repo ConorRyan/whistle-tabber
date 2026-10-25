@@ -199,10 +199,10 @@ fun TuneScreen(
                 HorizontalDivider()
                 TabSettingsContent(
                     settings = state.settings,
-                    onWhistle = vm::setMyWhistle,
-                    onCNatural = vm::setCNatural,
-                    onFold = vm::setFoldOutOfRange,
-                    onMode = vm::setMode,
+                    onWhistle = vm.settingsEditor::setWhistle,
+                    onCNatural = vm.settingsEditor::setCNatural,
+                    onFold = vm.settingsEditor::setFoldOutOfRange,
+                    onMode = vm.settingsEditor::setMode,
                 )
             }
         }
@@ -220,8 +220,8 @@ fun TuneScreen(
 /** The tune's own whistle: an explicit directive, or "from the key". */
 @Composable
 private fun WrittenForSection(tune: Tune, onSelect: (WhistleKey?) -> Unit) {
-    val explicit = AbcBook.whistleOf(tune.abc)
-    val suggested = AbcBook.suggestWhistle(tune.key) ?: WhistleKey.DEFAULT
+    val explicit = tune.explicitWhistle
+    val suggested = tune.whistle ?: WhistleKey.DEFAULT
     Text(stringResource(R.string.written_for), style = MaterialTheme.typography.titleMedium)
     FilterChip(
         selected = explicit == null,
@@ -261,7 +261,7 @@ private fun KeyDialog(tune: Tune, onPick: (String) -> Unit, onDismiss: () -> Uni
 }
 
 @Composable
-private fun PreviewBar(preview: KeyPreview, onCopy: () -> Unit, onReplace: () -> Unit, onCancel: () -> Unit) {
+private fun PreviewBar(preview: KeyChangePreview.Preview, onCopy: () -> Unit, onReplace: () -> Unit, onCancel: () -> Unit) {
     Surface(color = MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.fillMaxWidth().testTag("preview")) {
         Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             Text(stringResource(R.string.preview_in, preview.keyName), style = MaterialTheme.typography.titleSmall)

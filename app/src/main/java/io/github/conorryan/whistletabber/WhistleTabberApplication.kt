@@ -8,6 +8,7 @@ import io.github.conorryan.whistletabber.data.tunes.AppDatabase
 import io.github.conorryan.whistletabber.data.tunes.RecentlyDeleted
 import io.github.conorryan.whistletabber.data.tunes.StarterTunes
 import io.github.conorryan.whistletabber.data.tunes.TuneRepository
+import io.github.conorryan.whistletabber.ui.settings.TabSettingsEditor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -25,6 +26,9 @@ class AppGraph(
 
     /** Application-lived scope for work that must outlive a screen, like an import. */
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    /** One owner for tab-settings writes from the UI (both settings surfaces). */
+    val tabSettingsEditor = TabSettingsEditor(tabSettingsStore, appScope)
 
     companion object {
         fun create(context: Context): AppGraph = AppGraph(
