@@ -1,31 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- A tin whistle: orange head, white tube, navy window and six holes. Source: assets/icon/. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
     <group
-        android:scaleX="0.8"
-        android:scaleY="0.8"
+        android:rotation="-45"
         android:pivotX="54"
         android:pivotY="54">
-        <path
-            android:fillColor="#FFFFFF"
-            android:pathData="M38,30 H70 A6,6 0 0 1 76,36 V72 A6,6 0 0 1 70,78 H38 A6,6 0 0 1 32,72 V36 A6,6 0 0 1 38,30 Z" />
-        <path
-            android:fillColor="#F6863C"
-            android:pathData="M32,43 V36 A6,6 0 0 1 38,30 H70 A6,6 0 0 1 76,36 V43 Z" />
-        <path
-            android:fillColor="#F6863C"
-            android:pathData="M41,26.25 A2.25,2.25 0 0 1 45.5,26.25 V32.75 A2.25,2.25 0 0 1 41,32.75 Z" />
-        <path
-            android:fillColor="#F6863C"
-            android:pathData="M62.5,26.25 A2.25,2.25 0 0 1 67,26.25 V32.75 A2.25,2.25 0 0 1 62.5,32.75 Z" />
-        <path
-            android:fillColor="#181565"
-            android:pathData="M40,50.5 H42.6 V57.5 H44.7 V50.5 H47.3 V57.5 H49.4 V50.5 H52 V60.5 L47.3,63 V74.5 H44.7 V63 L40,60.5 Z" />
-        <path
-            android:fillColor="#181565"
-            android:pathData="M63,49.5 A5,7 0 0 1 64.3,63.26 V74.5 H61.7 V63.26 A5,7 0 0 1 63,49.5 Z" />
+        <group
+            android:scaleX="0.8"
+            android:scaleY="0.8"
+            android:pivotX="54"
+            android:pivotY="54">
+            <path
+                android:fillColor="#F6863C"
+                android:pathData="M48,36 V18 A3,3 0 0 1 51,15 H57 A3,3 0 0 1 60,18 V36 Z" />
+            <path
+                android:fillColor="#FFFFFF"
+                android:pathData="M49,34 H59 A2,2 0 0 1 61,36 V91 A2,2 0 0 1 59,93 H49 A2,2 0 0 1 47,91 V36 A2,2 0 0 1 49,34 Z" />
+            <path
+                android:fillColor="#181565"
+                android:pathData="M50.5,37 H57.5 V41 H50.5 Z" />
+            <path
+                android:fillColor="#181565"
+                android:pathData="M51.2,48 A2.8,2.8 0 1 0 56.8,48 A2.8,2.8 0 1 0 51.2,48 Z M51.2,55 A2.8,2.8 0 1 0 56.8,55 A2.8,2.8 0 1 0 51.2,55 Z M51.2,62 A2.8,2.8 0 1 0 56.8,62 A2.8,2.8 0 1 0 51.2,62 Z M51.2,71 A2.8,2.8 0 1 0 56.8,71 A2.8,2.8 0 1 0 51.2,71 Z M51.2,78 A2.8,2.8 0 1 0 56.8,78 A2.8,2.8 0 1 0 51.2,78 Z M51.2,85 A2.8,2.8 0 1 0 56.8,85 A2.8,2.8 0 1 0 51.2,85 Z" />
+        </group>
     </group>
 </vector>
