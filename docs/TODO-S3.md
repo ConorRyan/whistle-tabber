@@ -72,9 +72,9 @@ Rules from AGENTS.md still apply:
 - [ ] Add every new string in English and French.
 
 ## 5. Rewriting a tune into another key
-- [ ] Bridge: a `transposeText(steps)` command, and a `transposedText(abc)` event in reply (or do it in node-tested core code if the spike in step 0 allows). Add both to `BridgeProtocolSyncTest`.
+- [x] Bridge: a `transposeText(steps)` command, and a `transposedText(abc)` event in reply (or do it in node-tested core code if the spike in step 0 allows). Add both to `BridgeProtocolSyncTest`.
 - [ ] UI: pick a target key, preview it, then save as a new version or as a copy.
-- [ ] Tests: D→G and G→D keep the same note count with every pitch shifted by the step count; accidentals and the `K:` line are rewritten; codec tests for the new messages.
+- [x] Tests: D→G and G→D keep the same note count with every pitch shifted by the step count; accidentals and the `K:` line are rewritten; codec tests for the new messages.
 
 ## 6. Files (SAF)
 - [ ] Import: `OpenDocument` (multiple, `text/*` plus `*/*` for `.abc` files with odd MIME types). Read as UTF-8, falling back to Latin-1 for old O'Neill's-style files. Show a summary snackbar.

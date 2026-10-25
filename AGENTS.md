@@ -76,11 +76,14 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     the chosen whistle; SAME_FINGERINGS keeps the tune whistle's fingerings
     and changes playback pitch (`midiTranspose`).
   - `WhistleSynth`: deterministic whistle tone samples as WAV.
-- `music/AbcBook`: plain-text ABC operations. `split` (like abcjs's
-  `bookParser`: a tune ends at a blank line; file-header `%%` directives and
-  fields are copied in after each tune's `X:`), `headers`, `join` (renumbers
-  `X:`), `suggestWhistle(K:)`, and Eskin's `%whistle_tab_key` directive
-  (`whistleOf`/`withWhistle`; our extension `%whistle_tab_key d low`).
+  - `AbcBook`: plain-text ABC operations. `split` (like abcjs's
+    `bookParser`: a tune ends at a blank line; file-header `%%` directives
+    and fields are copied in after each tune's `X:`), `headers`, `join`
+    (renumbers `X:`), `withTitle`, `suggestWhistle(K:)`, and Eskin's
+    `%whistle_tab_key` directive (`whistleOf`/`withWhistle`; our extension
+    `%whistle_tab_key d low`).
+  - `KeyChange`: target tonics, steps (−6..+5) and names for rewriting a
+    tune into another key.
 - `data/settings/` — `TabSettingsStore` (DataStore, injected; enums stored by
   name, unknown names fall back to defaults); `SettingsDataStores` owns the
   process-wide instance. `AppGraph` in `WhistleTabberApplication.kt` is the
@@ -100,7 +103,10 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     first voice's written notes with MIDI pitch from abcjs's own audio
     sequence (`setUpAudio`), keyed by `startChar`.
   - `whistle-core.js` also owns diagram geometry (`diagramShapes`,
-    `DIAGRAM_HEIGHT`), node-tested.
+    `DIAGRAM_HEIGHT`), node-tested, and `transposeAbc(ABCJS, abc, steps)`:
+    abcjs `strTranspose`, which needs the *array* from `parseOnly` (given a
+    single tune it silently changes nothing). The page answers the stateless
+    `transposeText {abc, steps}` command with `transposedText`.
   - `whistle-page.js`: DOM, playback and bridge. Renders with abcjs `wrap`
     at 1.2× the screen width (scaled down to fit). Draws each diagram inside
     its staff line's `<g>` under the line's lowest element, then pushes later
