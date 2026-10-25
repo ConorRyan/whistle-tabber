@@ -102,6 +102,7 @@ class DemoTuneViewModel(
         is BridgeEvent.AudioLoaded -> if (event.errors.isEmpty()) null else "Sound errors: ${event.errors.size}"
         is BridgeEvent.Playing -> "Bar ${event.measure?.plus(1) ?: "?"}"
         BridgeEvent.Finished -> "Finished"
+        is BridgeEvent.TransposedText -> null
         is BridgeEvent.Error -> "Error: ${event.message}"
     }
 }

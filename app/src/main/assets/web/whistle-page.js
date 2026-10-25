@@ -291,6 +291,12 @@
         return Promise.resolve();
     }
 
+    /** Rewrites ABC text into another key; the page's own render is untouched. */
+    function transposeText(cmd) {
+        var abc = WhistleCore.transposeAbc(ABCJS, cmd.abc, cmd.steps);
+        post({ type: "transposedText", abc: abc, steps: cmd.steps });
+    }
+
     function handle(cmd) {
         var result;
         switch (cmd.type) {
@@ -301,6 +307,7 @@
             case "stop": result = stopSynth(); break;
             case "seek": result = seek(cmd.fraction); break;
             case "tempo": result = setTempo(cmd.percent); break;
+            case "transposeText": result = transposeText(cmd); break;
             default: throw new Error("Unknown command " + cmd.type);
         }
         Promise.resolve(result).catch(reportError);

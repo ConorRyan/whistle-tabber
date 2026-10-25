@@ -87,6 +87,22 @@
         return byChar;
     }
 
+    /**
+     * The ABC text rewritten [steps] semitones up (negative: down): notes,
+     * accidentals, K: and chord symbols, by abcjs's strTranspose. Everything
+     * else is left as written.
+     *
+     * strTranspose wants the array parseOnly returns; given a single tune it
+     * silently returns the text unchanged, hence this wrapper.
+     *
+     * @param abcjs the ABCJS module (a parameter so node tests can pass it in)
+     */
+    function transposeAbc(abcjs, abc, steps) {
+        steps = Math.trunc(Number(steps)) || 0;
+        if (steps === 0) return abc;
+        return abcjs.strTranspose(abc, abcjs.parseOnly(abc), steps);
+    }
+
     /** Parse warnings as plain strings (abcjs returns HTML-ish text). */
     function warningsOf(tune) {
         return (tune.warnings || []).map(function (w) {
@@ -144,6 +160,7 @@
 
     return {
         extractNotes: extractNotes,
+        transposeAbc: transposeAbc,
         warningsOf: warningsOf,
         diagramShapes: diagramShapes,
         DIAGRAM_HEIGHT: DIAGRAM_HEIGHT,

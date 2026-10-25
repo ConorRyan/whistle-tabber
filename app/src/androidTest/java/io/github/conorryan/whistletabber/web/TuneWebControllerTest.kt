@@ -113,6 +113,23 @@ class TuneWebControllerTest {
     }
 
     @Test
+    fun transposeTextRewritesTheKeyAndEveryPitch() = runBlocking {
+        val original = listen { awaitEvent<BridgeEvent.Rendered>() }
+        send(BridgeCommand.Render(abc))
+        val before = original.await().notes.map { it.midi }
+
+        val transposed = listen { awaitEvent<BridgeEvent.TransposedText>() }
+        send(BridgeCommand.TransposeText(abc, -5)) // G to D
+        val event = transposed.await()
+        assertEquals(-5, event.steps)
+        assertTrue(Regex("""^K:\s*D\s*$""", RegexOption.MULTILINE).containsMatchIn(event.abc))
+
+        val rendered = listen { awaitEvent<BridgeEvent.Rendered>() }
+        send(BridgeCommand.Render(event.abc))
+        assertEquals(before.map { it?.minus(5) }, rendered.await().notes.map { it.midi })
+    }
+
+    @Test
     fun abcWithQuotesAndBackslashesSurvivesTheBridge() = runBlocking {
         val rendered = listen { awaitEvent<BridgeEvent.Rendered>() }
         send(BridgeCommand.Render("X:1\nT:Tom's \"Reel\"\nM:4/4\nL:1/4\nK:D\nDE \\\nFG|\n"))

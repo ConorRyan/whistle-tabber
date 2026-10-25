@@ -21,6 +21,15 @@ class BridgeCodecTest {
         assertEquals("seek", typeOf(BridgeCodec.encode(BridgeCommand.Seek(0.5))))
         assertEquals("tempo", typeOf(BridgeCodec.encode(BridgeCommand.Tempo(80))))
         assertEquals("diagrams", typeOf(BridgeCodec.encode(BridgeCommand.Diagrams(emptyList()))))
+        assertEquals("transposeText", typeOf(BridgeCodec.encode(BridgeCommand.TransposeText("X:1", 5))))
+    }
+
+    @Test
+    fun `transposeText carries the text and the steps`() {
+        assertEquals(
+            """{"type":"transposeText","abc":"X:1\nK:D","steps":-2}""",
+            BridgeCodec.encode(BridgeCommand.TransposeText("X:1\nK:D", -2)),
+        )
     }
 
     @Test
@@ -65,6 +74,10 @@ class BridgeCodecTest {
         assertEquals(BridgeEvent.Ready("abcjs-basic v6.7.2"), BridgeCodec.decode("""{"type":"ready","abcjsVersion":"abcjs-basic v6.7.2"}"""))
         assertEquals(BridgeEvent.Finished, BridgeCodec.decode("""{"type":"finished"}"""))
         assertEquals(BridgeEvent.Error("boom"), BridgeCodec.decode("""{"type":"error","message":"boom"}"""))
+        assertEquals(
+            BridgeEvent.TransposedText("X:1\nK:G", 5),
+            BridgeCodec.decode("""{"type":"transposedText","abc":"X:1\nK:G","steps":5}"""),
+        )
         assertEquals(BridgeEvent.Playing(12, 3), BridgeCodec.decode("""{"type":"playing","startChar":12,"measure":3}"""))
         assertEquals(BridgeEvent.AudioLoaded(9, listOf("whistle:D5 bad")), BridgeCodec.decode("""{"type":"audioLoaded","loaded":9,"errors":["whistle:D5 bad"]}"""))
     }

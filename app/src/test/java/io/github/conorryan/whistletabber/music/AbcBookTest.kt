@@ -148,6 +148,14 @@ class AbcBookTest {
     }
 
     @Test
+    fun `withTitle replaces the first title only`() {
+        assertEquals("X:1\nT:New\nT:Alt\nK:D", AbcBook.withTitle("X:1\nT: Old\nT:Alt\nK:D", "New"))
+        assertEquals("X:1\r\nT:New\r\nK:D", AbcBook.withTitle("X:1\r\nT:Old\r\nK:D", "New"))
+        assertEquals("X:1\nT:New\nK:D", AbcBook.withTitle("X:1\nK:D", "New"))
+        assertEquals("T:New\nK:D", AbcBook.withTitle("K:D", "New"))
+    }
+
+    @Test
     fun `join renumbers X and separates with blank lines`() {
         val joined = AbcBook.join(listOf("X:5\nT:A\nK:D\nD|\n\n", "T:B\nK:G\nG|", "%%scale 0.8\nX:5\nT:C\nK:A\nA|"))
         assertEquals(

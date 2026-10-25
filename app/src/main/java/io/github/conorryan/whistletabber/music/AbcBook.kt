@@ -147,6 +147,19 @@ object AbcBook {
         return lines.joinToString(eol)
     }
 
+    /** [abc] with its first `T:` line's value set to [title] (a `T:` line is added after `X:` if there is none). */
+    fun withTitle(abc: String, title: String): String {
+        val eol = if ("\r\n" in abc) "\r\n" else "\n"
+        val lines = abc.split(eol).toMutableList()
+        val existing = lines.indexOfFirst { it.startsWith("T:") }
+        if (existing >= 0) {
+            lines[existing] = "T:$title"
+        } else {
+            lines.add(lines.indexOfFirst { TUNE_START.containsMatchIn(it) } + 1, "T:$title")
+        }
+        return lines.joinToString(eol)
+    }
+
     /** A tune book with `X:` renumbered from 1, tunes separated by blank lines. */
     fun join(tunes: List<String>): String = tunes.mapIndexed { i, tune ->
         val lines = tune.removePrefix(BOM.toString()).trimEnd().lines()

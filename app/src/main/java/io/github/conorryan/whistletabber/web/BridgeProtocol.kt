@@ -45,6 +45,11 @@ sealed interface BridgeCommand {
     @Serializable
     @SerialName("tempo")
     data class Tempo(val percent: Int) : BridgeCommand
+
+    /** Rewrite [abc] [steps] semitones up (down if negative); answered by [BridgeEvent.TransposedText]. */
+    @Serializable
+    @SerialName("transposeText")
+    data class TransposeText(val abc: String, val steps: Int) : BridgeCommand
 }
 
 @Serializable
@@ -68,6 +73,10 @@ sealed interface BridgeEvent {
     @Serializable
     @SerialName("finished")
     data object Finished : BridgeEvent
+
+    @Serializable
+    @SerialName("transposedText")
+    data class TransposedText(val abc: String, val steps: Int) : BridgeEvent
 
     @Serializable
     @SerialName("error")
