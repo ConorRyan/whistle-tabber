@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import io.github.conorryan.whistletabber.music.FingeringEngine
 import io.github.conorryan.whistletabber.music.TabSettings
 import io.github.conorryan.whistletabber.music.TransposeMode
@@ -67,7 +68,9 @@ class DiagramLayoutTest {
         compose.runOnUiThread { controller.destroy() }
     }
 
-    private fun asset(name: String) = compose.activity.assets.open(name).bufferedReader().use { it.readText() }
+    /** Fixtures live in the test APK's assets (app/src/androidTest/assets/). */
+    private fun asset(name: String) =
+        InstrumentationRegistry.getInstrumentation().context.assets.open(name).bufferedReader().use { it.readText() }
 
     private fun <T> CoroutineScope.listen(block: suspend CoroutineScope.() -> T): Deferred<T> =
         async(start = CoroutineStart.UNDISPATCHED, block = block)

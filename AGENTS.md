@@ -114,12 +114,28 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     `staffsep` only counts note pitches). `B:`/`Z:`/`N:` credits go to HTML
     `#credits` below the SVG. `layoutReport()` exists for instrumented tests.
   - `index.html`: strict CSP, local scripts only.
-- `ui/` — `theme/`; `components/FingeringDiagram` (Compose diagram matching
-  the page's). `spike/DemoTuneScreen` + `DemoTuneViewModel` +
-  `TabSettingsSheet` form the demo, to be replaced by the library and tune
-  screens. The ViewModel owns the flow: settings → `Render(midiTranspose)`
-  when the playback transpose changes, otherwise `Diagrams` only; each
-  `rendered` event → `Diagrams` computed by `FingeringEngine`.
+- `ui/` — `theme/`; `components/` (`FingeringDiagram`, matching the page's
+  diagrams; `whistleLabel`). `AppNavHost` holds type-safe `@Serializable`
+  routes: `LibraryRoute` (start), `TuneRoute(id)`, `EditorRoute(id?)`,
+  `SettingsRoute`. Each screen has a ViewModel built from `AppGraph` and a
+  stateless `…Content` composable where Compose tests need one.
+  - `library/`: search, rhythm and Starred chips, the starter-set offer on an
+    empty library, SAF import/export (`data/tunes/AbcFiles`: UTF-8, else
+    Latin-1). Undo for a delete made on the tune screen arrives through
+    `RecentlyDeleted`.
+  - `tune/TuneViewModel`: owns the render rules. The tune's own whistle
+    (`%whistle_tab_key`, else its key's suggestion) is the *written-for*
+    whistle; `TabSettings.whistle` is *my* whistle. Settings or text →
+    `Render(midiTranspose)` when the text or playback transpose changes,
+    otherwise `Diagrams` only; each `rendered` event → `Diagrams` computed by
+    `FingeringEngine`. Key change: `transposeText` → preview render → save as
+    a copy (default) or replace.
+  - `editor/`: draft in `SavedStateHandle`, preview `Render` debounced 400 ms
+    into its own `TuneWebController`, save blocked without `T:`/`K:`.
+  - `settings/`: `TabSettingsContent` (shared with the tune screen's sheet),
+    starter set, licences.
+  Each screen with a WebView owns one `TuneWebController` and destroys it on
+  dispose.
 
 Data flow for diagrams: page `rendered(notes)` → ViewModel →
 `FingeringEngine.forNotes` → `DiagramSpec` list → `diagrams` command → page

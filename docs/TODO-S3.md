@@ -42,49 +42,49 @@ Rules from AGENTS.md still apply:
 ## 3. Starter set
 - [x] (No polkas exist in the 1850 book; one slide. Marches stand in for polkas.) Pick about 50 tunes from O'Neill's 1850: a mix of reels, jigs, slip jigs, hornpipes, polkas, slides and airs, mostly in D, G, Em, Am and Bm, and playable on a D whistle with folding off where possible. List them in `scripts/starter-tunes.txt`.
 - [x] Add `scripts/build-starter-set.sh`. It fetches the listed files from trillian.mit.edu, keeps each tune's `Z:`/`B:` credit lines, and writes `app/src/main/assets/tunes/oneills.abc`. Commit both the script and its output; the build does not run it.
-- [ ] Offer the set on first run with an empty library ("Add 50 traditional tunes?"). Also offer it later from Settings.
+- [x] Offer the set on first run with an empty library ("Add 50 traditional tunes?"). Also offer it later from Settings.
 - [x] Update THIRD_PARTY_NOTICES with the asset path (GPL-2+).
 - [x] Tests: a JVM test that the asset parses into the expected number of tunes, every one with a title and `K:`, and no abcjs warnings. A node test that runs every tune in the asset through `parseOnly` and `extractNotes`.
 
 ## 4. Screens and navigation
-- [ ] Navigation Compose with three destinations: Library (start), Tune/{id}, Editor/{id|new}, plus Settings.
-- [ ] **Library**:
-  - [ ] Search field and rhythm filter chips.
-  - [ ] List rows show title, rhythm, key and whistle; tunes can be starred.
-  - [ ] An empty state that offers the starter set.
-  - [ ] Menu: import `.abc`, export the whole library, new tune.
-- [ ] **Tune screen** (replaces `DemoTuneScreen`):
-  - [ ] WebView with diagrams and playback, using the per-tune whistle. Tab settings move into `TuneViewModel`, which takes over from `DemoTuneViewModel` together with its tests.
-  - [ ] Actions: edit, export this tune, change whistle, rewrite into another key (see step 5), delete with undo.
-  - [ ] Keep one `TuneWebController` per screen and destroy it on dispose.
-- [ ] **Editor**:
-  - [ ] Monospace ABC text field, with the draft kept in `SavedStateHandle`.
-  - [ ] Debounced (~400 ms) live preview in a WebView below the text.
-  - [ ] abcjs parse warnings listed inline.
-  - [ ] Saving is blocked when there is no `T:` or `K:`.
-  - [ ] New tunes start from a template.
-- [ ] **Settings**:
-  - [ ] Default whistle and C natural, moved out of the tune sheet.
-  - [ ] Fold toggle and transpose mode.
-  - [ ] Add the starter set.
-  - [ ] About and licences.
-- [ ] Delete `ui/spike/` once its pieces have moved. Keep `TabSettingsSheet` as a per-tune whistle picker if it still fits.
-- [ ] Add every new string in English and French.
+- [x] Navigation Compose with three destinations: Library (start), Tune/{id}, Editor/{id|new}, plus Settings.
+- [x] **Library**:
+  - [x] Search field and rhythm filter chips.
+  - [x] List rows show title, rhythm, key and whistle; tunes can be starred.
+  - [x] An empty state that offers the starter set.
+  - [x] Menu: import `.abc`, export the whole library, new tune.
+- [x] **Tune screen** (replaces `DemoTuneScreen`):
+  - [x] WebView with diagrams and playback, using the per-tune whistle. Tab settings move into `TuneViewModel`, which takes over from `DemoTuneViewModel` together with its tests.
+  - [x] Actions: edit, export this tune, change whistle, rewrite into another key (see step 5), delete with undo.
+  - [x] Keep one `TuneWebController` per screen and destroy it on dispose.
+- [x] **Editor**:
+  - [x] Monospace ABC text field, with the draft kept in `SavedStateHandle`.
+  - [x] Debounced (~400 ms) live preview in a WebView below the text.
+  - [x] abcjs parse warnings listed inline.
+  - [x] Saving is blocked when there is no `T:` or `K:`.
+  - [x] New tunes start from a template.
+- [x] **Settings**:
+  - [x] Default whistle and C natural, moved out of the tune sheet.
+  - [x] Fold toggle and transpose mode.
+  - [x] Add the starter set.
+  - [x] About and licences.
+- [x] Delete `ui/spike/` once its pieces have moved. Keep `TabSettingsSheet` as a per-tune whistle picker if it still fits.
+- [x] Add every new string in English and French.
 
 ## 5. Rewriting a tune into another key
 - [x] Bridge: a `transposeText(steps)` command, and a `transposedText(abc)` event in reply (or do it in node-tested core code if the spike in step 0 allows). Add both to `BridgeProtocolSyncTest`.
-- [ ] UI: pick a target key, preview it, then save as a new version or as a copy.
+- [x] UI: pick a target key, preview it, then save as a new version or as a copy.
 - [x] Tests: D→G and G→D keep the same note count with every pitch shifted by the step count; accidentals and the `K:` line are rewritten; codec tests for the new messages.
 
 ## 6. Files (SAF)
-- [ ] Import: `OpenDocument` (multiple, `text/*` plus `*/*` for `.abc` files with odd MIME types). Read as UTF-8, falling back to Latin-1 for old O'Neill's-style files. Show a summary snackbar.
-- [ ] Export: `CreateDocument("text/plain")` named `whistle-tabber-YYYY-MM-DD.abc` for the library or `<title>.abc` for one tune. This is the v1 backup.
+- [x] Import: `OpenDocument` (multiple, `text/*` plus `*/*` for `.abc` files with odd MIME types). Read as UTF-8, falling back to Latin-1 for old O'Neill's-style files. Show a summary snackbar.
+- [x] Export: `CreateDocument("text/plain")` named `whistle-tabber-YYYY-MM-DD.abc` for the library or `<title>.abc` for one tune. This is the v1 backup.
 - [ ] Optional, if time allows: the Android share sheet for one tune.
-- [ ] Tests: Robolectric tests of import and export with fake content URIs, the encoding fallback, and a 10k-line file.
+- [x] Tests: Robolectric tests of import and export with fake content URIs, the encoding fallback, and a 10k-line file.
 
 ## 7. Tests and verification
-- [ ] ViewModels with Turbine: `LibraryViewModel` (search, filter, first-run offer), `TuneViewModel` (per-tune whistle, re-render rules carried over from `DemoTuneViewModel`), `EditorViewModel` (debounce, validation, save, restoring the draft).
-- [ ] Compose UI tests (Robolectric): the library list and its empty state, and editor validation messages.
+- [x] ViewModels with Turbine: `LibraryViewModel` (search, filter, first-run offer), `TuneViewModel` (per-tune whistle, re-render rules carried over from `DemoTuneViewModel`), `EditorViewModel` (debounce, validation, save, restoring the draft).
+- [x] Compose UI tests (Robolectric): the library list and its empty state, and editor validation messages.
 - [ ] Emulator end-to-end: first run → add starter set → search "reel" → open a tune → diagrams drawn → play → edit a note → the preview updates → save → export → re-import gives the same count.
 - [ ] Re-check the layout on the emulator with a few starter tunes: a long air, a polka, and a tune in E minor.
 - [ ] Run `./gradlew :app:testDebugUnitTest`, `(cd web-tests && node --test)`, `ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest`, and a minified `assembleRelease` smoke test on the emulator.

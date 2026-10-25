@@ -4,8 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.material3.Surface
-import io.github.conorryan.whistletabber.ui.spike.DemoTuneScreen
+import io.github.conorryan.whistletabber.ui.AppNavHost
 import io.github.conorryan.whistletabber.ui.theme.WhistleTabberTheme
 
 class MainActivity : ComponentActivity() {
@@ -15,9 +14,7 @@ class MainActivity : ComponentActivity() {
         val graph = (application as WhistleTabberApplication).graph
         setContent {
             WhistleTabberTheme {
-                Surface {
-                    DemoTuneScreen(graph)
-                }
+                AppNavHost(graph)
             }
         }
     }

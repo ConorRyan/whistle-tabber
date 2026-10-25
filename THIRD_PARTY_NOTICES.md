@@ -17,7 +17,7 @@ release tarball's sha256.
 
 | Data | Location | License |
 |---|---|---|
-| O'Neill's Music of Ireland (1850) ABC transcriptions, [O'Neill's Project](https://trillian.mit.edu/~jc/music/book/ONeills/_1850/) | `app/src/main/assets/tunes/` (the starter set `oneills.abc` and `ballyhooley.abc`), `web-tests/fixtures/` | GNU GPL version 2 or later |
+| O'Neill's Music of Ireland (1850) ABC transcriptions, [O'Neill's Project](https://trillian.mit.edu/~jc/music/book/ONeills/_1850/) | `app/src/main/assets/tunes/oneills.abc` (the starter set); test fixtures in `app/src/androidTest/assets/tunes/` and `web-tests/fixtures/` | GNU GPL version 2 or later |
 
 The transcriptions are © 1997–2000 the contributors to the O'Neill's Project.
 Each tune keeps its transcriber credit in its `Z:` field.

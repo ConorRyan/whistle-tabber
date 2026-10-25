@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -41,7 +42,7 @@ class TuneWebControllerTest {
     fun setUp() {
         compose.runOnUiThread {
             controller = TuneWebController(compose.activity)
-            abc = compose.activity.assets.open("tunes/ballyhooley.abc").bufferedReader().use { it.readText() }
+            abc = InstrumentationRegistry.getInstrumentation().context.assets.open("tunes/ballyhooley.abc").bufferedReader().use { it.readText() }
         }
         compose.setContent { TuneWebViewHost(controller, Modifier.fillMaxSize()) }
     }

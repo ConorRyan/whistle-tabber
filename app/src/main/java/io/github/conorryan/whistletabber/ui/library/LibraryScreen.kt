@@ -1,0 +1,314 @@
+package io.github.conorryan.whistletabber.ui.library
+
+import android.content.res.Resources
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.StarOutline
+import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.conorryan.whistletabber.R
+import io.github.conorryan.whistletabber.data.tunes.ExportNames
+import io.github.conorryan.whistletabber.data.tunes.ImportResult
+import io.github.conorryan.whistletabber.data.tunes.Tune
+import io.github.conorryan.whistletabber.ui.components.whistleLabelRes
+import java.time.LocalDate
+import java.util.Locale
+
+/** MIME types offered when picking `.abc` files; many file managers report them as octet-stream. */
+val ABC_MIME_TYPES = arrayOf("text/*", "application/octet-stream", "*/*")
+
+@Composable
+fun LibraryScreen(
+    vm: LibraryViewModel,
+    onOpenTune: (Long) -> Unit,
+    onNewTune: () -> Unit,
+    onSettings: () -> Unit,
+) {
+    val state by vm.state.collectAsStateWithLifecycle()
+    val snackbar = remember { SnackbarHostState() }
+    val context = LocalContext.current
+
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        vm.importFiles(uris)
+    }
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
+        if (uri != null) vm.exportAll(uri)
+    }
+
+    LaunchedEffect(vm) {
+        vm.messages.collect { message ->
+            val res = context.resources
+            when (message) {
+                is LibraryMessage.Imported -> snackbar.showSnackbar(importSummary(res, message.result, message.unreadable))
+                is LibraryMessage.Exported -> snackbar.showSnackbar(res.getQuantityString(R.plurals.exported, message.count, message.count))
+                LibraryMessage.ExportFailed -> snackbar.showSnackbar(res.getString(R.string.export_failed))
+                is LibraryMessage.Deleted -> {
+                    val result = snackbar.showSnackbar(
+                        res.getString(R.string.deleted, message.tune.title),
+                        actionLabel = res.getString(R.string.undo),
+                        duration = SnackbarDuration.Long,
+                    )
+                    if (result == SnackbarResult.ActionPerformed) vm.undoDelete(message.tune) else vm.forgetDeleted(message.tune)
+                }
+            }
+        }
+    }
+
+    LibraryContent(
+        state = state,
+        snackbar = snackbar,
+        onQuery = vm::setQuery,
+        onRhythm = vm::toggleRhythm,
+        onStarredOnly = vm::toggleStarredOnly,
+        onClearFilters = vm::clearFilters,
+        onStar = vm::setStarred,
+        onOpenTune = onOpenTune,
+        onNewTune = onNewTune,
+        onSettings = onSettings,
+        onAddStarterSet = vm::addStarterSet,
+        onImport = { importLauncher.launch(ABC_MIME_TYPES) },
+        onExport = { exportLauncher.launch(ExportNames.library(LocalDate.now())) },
+    )
+}
+
+/** Stateless library UI, separate from [LibraryScreen] so Compose tests can drive it. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LibraryContent(
+    state: LibraryUiState,
+    snackbar: SnackbarHostState = remember { SnackbarHostState() },
+    onQuery: (String) -> Unit = {},
+    onRhythm: (String) -> Unit = {},
+    onStarredOnly: () -> Unit = {},
+    onClearFilters: () -> Unit = {},
+    onStar: (Tune, Boolean) -> Unit = { _, _ -> },
+    onOpenTune: (Long) -> Unit = {},
+    onNewTune: () -> Unit = {},
+    onSettings: () -> Unit = {},
+    onAddStarterSet: () -> Unit = {},
+    onImport: () -> Unit = {},
+    onExport: () -> Unit = {},
+) {
+    var menuOpen by remember { mutableStateOf(false) }
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.library_title)) },
+                actions = {
+                    IconButton(onClick = onSettings, modifier = Modifier.testTag("settings")) {
+                        Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.action_settings))
+                    }
+                    Box {
+                        IconButton(onClick = { menuOpen = true }, modifier = Modifier.testTag("menu")) {
+                            Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.more))
+                        }
+                        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.action_import)) },
+                                onClick = { menuOpen = false; onImport() },
+                                modifier = Modifier.testTag("menuImport"),
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.action_export_all)) },
+                                onClick = { menuOpen = false; onExport() },
+                                enabled = !state.libraryEmpty,
+                                modifier = Modifier.testTag("menuExport"),
+                            )
+                        }
+                    }
+                },
+            )
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = onNewTune, modifier = Modifier.testTag("newTune")) {
+                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.action_new_tune))
+            }
+        },
+        snackbarHost = { SnackbarHost(snackbar) },
+    ) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth().testTag("busy"))
+            when {
+                !state.loaded -> Unit
+                state.libraryEmpty -> EmptyLibrary(state.busy, onAddStarterSet, onImport)
+                else -> {
+                    Filters(state, onQuery, onRhythm, onStarredOnly)
+                    if (state.tunes.isEmpty()) {
+                        NoMatches(onClearFilters)
+                    } else {
+                        LazyColumn(Modifier.fillMaxSize().testTag("tuneList"), contentPadding = PaddingValues(bottom = 88.dp)) {
+                            items(state.tunes, key = { it.id }) { tune ->
+                                TuneRow(tune, onClick = { onOpenTune(tune.id) }, onStar = { onStar(tune, !tune.starred) })
+                                HorizontalDivider()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun Filters(
+    state: LibraryUiState,
+    onQuery: (String) -> Unit,
+    onRhythm: (String) -> Unit,
+    onStarredOnly: () -> Unit,
+) {
+    OutlinedTextField(
+        value = state.filters.query,
+        onValueChange = onQuery,
+        placeholder = { Text(stringResource(R.string.search_hint)) },
+        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+        trailingIcon = {
+            if (state.filters.query.isNotEmpty()) {
+                IconButton(onClick = { onQuery("") }) {
+                    Icon(Icons.Filled.Clear, contentDescription = stringResource(R.string.clear_filters))
+                }
+            }
+        },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).testTag("search"),
+    )
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        item {
+            FilterChip(
+                selected = state.filters.starredOnly,
+                onClick = onStarredOnly,
+                label = { Text(stringResource(R.string.filter_starred)) },
+                leadingIcon = { Icon(Icons.Filled.Star, contentDescription = null) },
+                modifier = Modifier.testTag("chip-starred"),
+            )
+        }
+        items(state.rhythms) { rhythm ->
+            FilterChip(
+                selected = state.filters.rhythm == rhythm,
+                onClick = { onRhythm(rhythm) },
+                label = { Text(rhythm.capitalized()) },
+                modifier = Modifier.testTag("chip-$rhythm"),
+            )
+        }
+    }
+}
+
+@Composable
+private fun TuneRow(tune: Tune, onClick: () -> Unit, onStar: () -> Unit) {
+    val details = listOfNotNull(
+        tune.rhythm?.capitalized(),
+        tune.key,
+        tune.whistle?.let { stringResource(R.string.tune_whistle, stringResource(whistleLabelRes(it))) },
+    ).joinToString(" · ")
+    ListItem(
+        headlineContent = { Text(tune.title) },
+        supportingContent = if (details.isNotEmpty()) { { Text(details) } } else null,
+        trailingContent = {
+            IconButton(onClick = onStar, modifier = Modifier.testTag("star-${tune.id}")) {
+                Icon(
+                    if (tune.starred) Icons.Filled.Star else Icons.Outlined.StarOutline,
+                    contentDescription = stringResource(if (tune.starred) R.string.unstar else R.string.star),
+                    tint = if (tune.starred) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        modifier = Modifier.clickable(onClick = onClick).testTag("tune-${tune.id}"),
+    )
+}
+
+@Composable
+private fun EmptyLibrary(busy: Boolean, onAddStarterSet: () -> Unit, onImport: () -> Unit) {
+    Column(
+        Modifier.fillMaxSize().padding(32.dp).testTag("emptyLibrary"),
+        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(stringResource(R.string.empty_title), style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+        Text(stringResource(R.string.empty_body), style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
+        Button(onClick = onAddStarterSet, enabled = !busy, modifier = Modifier.testTag("addStarterSet")) {
+            Text(stringResource(R.string.add_starter_set))
+        }
+        OutlinedButton(onClick = onImport, enabled = !busy) {
+            Text(stringResource(R.string.action_import))
+        }
+    }
+}
+
+@Composable
+private fun NoMatches(onClearFilters: () -> Unit) {
+    Column(
+        Modifier.fillMaxWidth().padding(32.dp).testTag("noMatches"),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(stringResource(R.string.no_matches), style = MaterialTheme.typography.bodyLarge)
+        TextButton(onClick = onClearFilters) { Text(stringResource(R.string.clear_filters)) }
+    }
+}
+
+private fun String.capitalized(): String = replaceFirstChar { it.titlecase(Locale.getDefault()) }
+
+/** "3 tunes added, 1 duplicate skipped", or "No tunes found". */
+fun importSummary(res: Resources, result: ImportResult, unreadable: Int = 0): String {
+    val parts = buildList {
+        if (result.added > 0) add(res.getQuantityString(R.plurals.import_added, result.added, result.added))
+        if (result.skipped > 0) add(res.getQuantityString(R.plurals.import_skipped, result.skipped, result.skipped))
+        if (result.errors.isNotEmpty()) add(res.getQuantityString(R.plurals.import_errors, result.errors.size, result.errors.size))
+        if (unreadable > 0) add(res.getQuantityString(R.plurals.import_unreadable, unreadable, unreadable))
+    }
+    return if (parts.isEmpty()) res.getString(R.string.import_nothing) else parts.joinToString(", ")
+}
