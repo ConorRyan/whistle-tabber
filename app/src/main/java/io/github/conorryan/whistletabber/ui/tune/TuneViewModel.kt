@@ -10,15 +10,12 @@ import io.github.conorryan.whistletabber.data.tunes.Tune
 import io.github.conorryan.whistletabber.data.tunes.TuneRepository
 import io.github.conorryan.whistletabber.music.AbcBook
 import io.github.conorryan.whistletabber.music.CNatural
-import io.github.conorryan.whistletabber.music.FingeringEngine
 import io.github.conorryan.whistletabber.music.KeyChange
 import io.github.conorryan.whistletabber.music.TabSettings
 import io.github.conorryan.whistletabber.music.TransposeMode
 import io.github.conorryan.whistletabber.music.WhistleKey
-import io.github.conorryan.whistletabber.web.BridgeCommand
-import io.github.conorryan.whistletabber.web.BridgeEvent
-import io.github.conorryan.whistletabber.web.DiagramSpec
-import io.github.conorryan.whistletabber.web.NoteEvent
+import io.github.conorryan.whistletabber.render.TunePage
+import io.github.conorryan.whistletabber.render.TuneRenderer
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,13 +37,7 @@ data class TuneUiState(
     /** The tune is gone (deleted, or a stale id). */
     val missing: Boolean = false,
     val settings: TabSettings = TabSettings(),
-    val warnings: List<String> = emptyList(),
-    val playing: Boolean = false,
-    /** Zero-based bar being played, if any. */
-    val bar: Int? = null,
-    val tempo: Int = 100,
     val preview: KeyPreview? = null,
-    val error: String? = null,
 ) {
     /** The whistle the tune is written for: its directive, else its key's suggestion, else D. */
     val tuneWhistle: WhistleKey get() = tune?.whistle ?: WhistleKey.DEFAULT
@@ -60,12 +51,10 @@ sealed interface TuneEffect {
 }
 
 /**
- * Drives one stored tune in the WebView. Renders with the playback transpose
- * the settings imply and turns each `rendered` event into fingering diagrams.
- * A settings change only re-sends diagrams, unless the text or the playback
- * transpose changed, which needs a fresh render (and synth).
- *
- * The screen forwards [commands] to the WebView and page events to [onEvent].
+ * Drives one stored tune. The tune, its settings and its key-change preview
+ * live here; the render cycle belongs to the [TuneRenderer] this ViewModel
+ * owns. The screen attaches its WebView with [bindPage] and reads
+ * [renderState] for the playback bar.
  */
 class TuneViewModel(
     private val id: Long,
@@ -75,18 +64,20 @@ class TuneViewModel(
     private val recentlyDeleted: RecentlyDeleted,
 ) : ViewModel() {
 
+    private val renderer = TuneRenderer(viewModelScope)
+
+    /** Page state for the playback bar: warnings, playing, bar, tempo, error. */
+    val renderState: StateFlow<TuneRenderer.RendererState> = renderer.state
+
+    fun bindPage(page: TunePage) = renderer.attach(page)
+
     private val _state = MutableStateFlow(TuneUiState())
     val state: StateFlow<TuneUiState> = _state.asStateFlow()
-
-    private val _commands = Channel<BridgeCommand>(Channel.UNLIMITED)
-    val commands: Flow<BridgeCommand> = _commands.receiveAsFlow()
 
     private val _effects = Channel<TuneEffect>(Channel.BUFFERED)
     val effects: Flow<TuneEffect> = _effects.receiveAsFlow()
 
     private val preview = MutableStateFlow<KeyPreview?>(null)
-    private var notes: List<NoteEvent>? = null
-    private var rendered: BridgeCommand.Render? = null
     private var deleting = false
 
     init {
@@ -97,55 +88,25 @@ class TuneViewModel(
                     return@collect
                 }
                 _state.update { it.copy(tune = tune, settings = settings, preview = preview, missing = false) }
-                val abc = preview?.abc ?: tune.abc
-                val render = BridgeCommand.Render(abc, midiTranspose = settings.midiTranspose(_state.value.tuneWhistle))
-                if (render != rendered) {
-                    rendered = render
-                    notes = null
-                    _state.update { it.copy(playing = false, bar = null) }
-                    _commands.send(render)
-                } else {
-                    sendDiagrams()
-                }
+                val whistle = _state.value.tuneWhistle
+                renderer.show(
+                    TuneRenderer.RenderRequest(
+                        abc = preview?.abc ?: tune.abc,
+                        midiTranspose = settings.midiTranspose(whistle),
+                        fingering = TuneRenderer.FingeringInputs(settings, whistle),
+                    ),
+                )
             }
         }
     }
 
-    fun onEvent(event: BridgeEvent) {
-        when (event) {
-            is BridgeEvent.Rendered -> {
-                notes = event.notes
-                _state.update { it.copy(warnings = event.warnings) }
-                sendDiagrams()
-            }
-            is BridgeEvent.Playing -> _state.update { it.copy(playing = true, bar = event.measure) }
-            BridgeEvent.Finished -> _state.update { it.copy(playing = false, bar = null) }
-            is BridgeEvent.TransposedText -> preview.update { p ->
-                if (p != null && p.steps == event.steps && p.abc == null) p.copy(abc = event.abc) else p
-            }
-            is BridgeEvent.Error -> _state.update { it.copy(error = event.message) }
-            is BridgeEvent.Ready, is BridgeEvent.AudioLoaded -> Unit
-        }
-    }
+    fun togglePlay() = renderer.togglePlay()
 
-    fun togglePlay() {
-        if (_state.value.playing) {
-            send(BridgeCommand.Pause)
-            _state.update { it.copy(playing = false) }
-        } else {
-            send(BridgeCommand.Play)
-            _state.update { it.copy(playing = true) }
-        }
-    }
+    fun restart() = renderer.restart()
 
-    fun restart() = send(BridgeCommand.Seek(0.0))
+    fun setTempo(percent: Int) = renderer.setTempo(percent)
 
-    fun setTempo(percent: Int) {
-        _state.update { it.copy(tempo = percent) }
-        send(BridgeCommand.Tempo(percent))
-    }
-
-    fun dismissError() = _state.update { it.copy(error = null) }
+    fun dismissError() = renderer.dismissError()
 
     /** Writes (or with null, removes) the tune's own whistle directive. */
     fun setTuneWhistle(whistle: WhistleKey?) = viewModelScope.launch { repository.setWhistle(id, whistle) }
@@ -166,7 +127,12 @@ class TuneViewModel(
             return
         }
         preview.value = KeyPreview(tonic, KeyChange.keyName(tune.key, tonic), steps)
-        send(BridgeCommand.TransposeText(tune.abc, steps))
+        viewModelScope.launch {
+            val abc = renderer.transpose(tune.abc, steps)
+            preview.update { p ->
+                if (p != null && p.steps == steps && p.abc == null && abc != null) p.copy(abc = abc) else p
+            }
+        }
     }
 
     fun cancelPreview() {
@@ -211,16 +177,5 @@ class TuneViewModel(
             }.isSuccess
             _effects.send(if (ok) TuneEffect.Exported else TuneEffect.ExportFailed)
         }
-    }
-
-    private fun send(command: BridgeCommand) {
-        _commands.trySend(command)
-    }
-
-    private fun sendDiagrams() {
-        val current = notes ?: return
-        val s = _state.value
-        val fingerings = FingeringEngine.forNotes(current, s.settings, s.tuneWhistle)
-        send(BridgeCommand.Diagrams(fingerings.map(DiagramSpec::from)))
     }
 }

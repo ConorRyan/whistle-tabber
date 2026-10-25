@@ -69,6 +69,7 @@ import io.github.conorryan.whistletabber.music.WhistleKey
 import io.github.conorryan.whistletabber.ui.components.whistleLabel
 import io.github.conorryan.whistletabber.ui.settings.TabSettingsContent
 import io.github.conorryan.whistletabber.ui.settings.WhistleChips
+import io.github.conorryan.whistletabber.render.TuneRenderer
 import io.github.conorryan.whistletabber.web.TuneWebController
 import io.github.conorryan.whistletabber.web.TuneWebViewHost
 import kotlin.math.roundToInt
@@ -83,6 +84,7 @@ fun TuneScreen(
 ) {
     val context = LocalContext.current
     val state by vm.state.collectAsStateWithLifecycle()
+    val renderState by vm.renderState.collectAsStateWithLifecycle()
     val controller = remember { TuneWebController(context) }
     val snackbar = remember { SnackbarHostState() }
     var menuOpen by remember { mutableStateOf(false) }
@@ -94,13 +96,8 @@ fun TuneScreen(
     }
 
     DisposableEffect(controller) {
+        vm.bindPage(controller)
         onDispose { controller.destroy() }
-    }
-    LaunchedEffect(controller) {
-        vm.commands.collect(controller::send)
-    }
-    LaunchedEffect(controller) {
-        controller.events.collect(vm::onEvent)
     }
     LaunchedEffect(vm) {
         vm.effects.collect { effect ->
@@ -183,7 +180,7 @@ fun TuneScreen(
             }
             TuneWebViewHost(controller, Modifier.fillMaxWidth().weight(1f).testTag("tuneWebView"))
             PlaybackBar(
-                state = state,
+                state = renderState,
                 onTogglePlay = vm::togglePlay,
                 onRestart = vm::restart,
                 onTempo = vm::setTempo,
@@ -283,7 +280,7 @@ private fun PreviewBar(preview: KeyPreview, onCopy: () -> Unit, onReplace: () ->
 
 @Composable
 private fun PlaybackBar(
-    state: TuneUiState,
+    state: TuneRenderer.RendererState,
     onTogglePlay: () -> Unit,
     onRestart: () -> Unit,
     onTempo: (Int) -> Unit,

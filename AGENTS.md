@@ -58,11 +58,21 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
   - `BridgeProtocol.kt`: `BridgeCommand`/`BridgeEvent`/`NoteEvent` + `BridgeCodec`
     (JSON, `"type"` discriminator). It mirrors `assets/web/whistle-page.js`;
     `BridgeProtocolSyncTest` reads the JS source and fails if the two drift.
-  - `TuneWebController`: owns one WebView, queues commands until the page
-    posts `ready`, and exposes events as a `SharedFlow` (no replay: subscribe
-    before sending).
+  - `TuneWebController`: owns one WebView, implements the `render/TunePage`
+    port, and queues commands until the page posts `ready` (only the newest
+    `Render` is kept).
   - `TuneWebViewHost`: Compose wrapper.
   - `SoundPathHandler`: answers abcjs's soundfont URLs with synthesised samples.
+- `render/` — the render cycle, deep behind a small interface.
+  - `TunePage`: the port the page satisfies; `TuneWebController` is the real
+    adapter, tests use an in-memory fake.
+  - `TuneRenderer`: owns "the page shows this ABC with these fingerings":
+    render dedupe (same text and transpose only re-draws diagrams), the
+    notes → `FingeringEngine` → `DiagramSpec` pipeline, `transposeText`
+    request/reply matching (one outstanding request, stale steps dropped),
+    optional debounce (the editor), playback mirroring, warnings and errors.
+    Each ViewModel owns one; a screen `attach`es its controller, and a
+    re-attach re-shows the last request to the fresh page.
 - `music/` — pure Kotlin music logic.
   - `Fingering`/`Hole`: six holes, top first, octave 0–2 ("+", "++"), `hard`.
   - `FingeringEngine`: semitones above the whistle's written bottom note →
@@ -123,21 +133,21 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     empty library, SAF import/export (`data/tunes/AbcFiles`: UTF-8, else
     Latin-1). Undo for a delete made on the tune screen arrives through
     `RecentlyDeleted`.
-  - `tune/TuneViewModel`: owns the render rules. The tune's own whistle
+  - `tune/TuneViewModel`: the tune, its settings and its key-change preview;
+    the render cycle belongs to its `TuneRenderer`. The tune's own whistle
     (`%whistle_tab_key`, else its key's suggestion) is the *written-for*
-    whistle; `TabSettings.whistle` is *my* whistle. Settings or text →
-    `Render(midiTranspose)` when the text or playback transpose changes,
-    otherwise `Diagrams` only; each `rendered` event → `Diagrams` computed by
-    `FingeringEngine`. Key change: `transposeText` → preview render → save as
+    whistle; `TabSettings.whistle` is *my* whistle. The ViewModel feeds
+    `show(abc, midiTranspose, fingerings)` on every change and lets the
+    renderer dedupe. Key change: `transpose` → preview render → save as
     a copy (default) or replace.
-  - `editor/`: draft in `SavedStateHandle`, preview `Render` debounced 400 ms
-    into its own `TuneWebController`, save blocked without `T:`/`K:`.
+  - `editor/`: draft in `SavedStateHandle`, preview rendered by its
+    `TuneRenderer` (debounced 400 ms), save blocked without `T:`/`K:`.
   - `settings/`: `TabSettingsContent` (shared with the tune screen's sheet),
     starter set, licences.
-  Each screen with a WebView owns one `TuneWebController` and destroys it on
-  dispose.
+  Each screen with a WebView owns one `TuneWebController`, attaches it to its
+  ViewModel's `TuneRenderer`, and destroys it on dispose.
 
-Data flow for diagrams: page `rendered(notes)` → ViewModel →
+Data flow for diagrams: page `rendered(notes)` → `TuneRenderer` →
 `FingeringEngine.forNotes` → `DiagramSpec` list → `diagrams` command → page
 draws. Notes are indexed identically on both sides (`extractNotes`).
 

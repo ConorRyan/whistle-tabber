@@ -12,6 +12,7 @@ import android.webkit.WebViewClient
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
+import io.github.conorryan.whistletabber.render.TunePage
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -40,19 +41,19 @@ fun buildAssetLoader(context: Context, sound: SoundPathHandler = SoundPathHandle
 class TuneWebController(
     context: Context,
     private val sound: SoundPathHandler = SoundPathHandler(),
-) {
+) : TunePage {
     private val _events = MutableSharedFlow<BridgeEvent>(
         extraBufferCapacity = 64,
         onBufferOverflow = BufferOverflow.DROP_OLDEST,
     )
-    val events: SharedFlow<BridgeEvent> = _events.asSharedFlow()
+    override val events: SharedFlow<BridgeEvent> = _events.asSharedFlow()
 
     private val pending = ArrayDeque<BridgeCommand>()
     private var ready = false
 
     val webView: WebView = createWebView(context)
 
-    fun send(command: BridgeCommand) {
+    override fun send(command: BridgeCommand) {
         if (!ready) {
             // A newer render replaces any queued one: only the latest tune matters.
             if (command is BridgeCommand.Render) pending.removeAll { it is BridgeCommand.Render }

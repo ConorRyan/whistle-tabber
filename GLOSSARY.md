@@ -1,0 +1,16 @@
+# Glossary
+
+Domain language for Whistle Tabber. Code, tests and docs name things as they
+are named here; add a term when code names a new concept.
+
+- **Page**: the WebView running abcjs (`whistle-page.js`) that renders one
+  tune and plays it. Reached through the `TunePage` port: `TuneWebController`
+  is the real adapter, an in-memory fake stands in for unit tests.
+- **Tune renderer** (`TuneRenderer`): the render cycle as one module: what
+  the page shows (ABC, playback transpose, fingerings), render dedupe, the
+  notes-to-diagrams step, transpose request/reply matching and playback
+  state. Owned by a screen's ViewModel; the page is attached to it.
+- **Fingering inputs**: the settings and the tune's written-for whistle a
+  render's diagrams come from.
+- **Written-for whistle**: the whistle a tune is written for: its
+  `%whistle_tab_key` directive, else its key's suggestion, else D.

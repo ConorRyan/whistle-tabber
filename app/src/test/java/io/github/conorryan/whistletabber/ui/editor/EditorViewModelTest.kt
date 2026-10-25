@@ -2,6 +2,7 @@ package io.github.conorryan.whistletabber.ui.editor
 
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
+import io.github.conorryan.whistletabber.render.FakeTunePage
 import io.github.conorryan.whistletabber.ui.TestGraph
 import io.github.conorryan.whistletabber.web.BridgeCommand
 import io.github.conorryan.whistletabber.web.BridgeEvent
@@ -54,11 +55,17 @@ class EditorViewModelTest {
     private fun vm(id: Long?, saved: SavedStateHandle = SavedStateHandle()) =
         EditorViewModel(id, saved, graph.repository)
 
+    /** A ViewModel with a fake page bound, as the screen would bind the WebView. */
+    private fun bound(id: Long?): Pair<EditorViewModel, FakeTunePage> {
+        val page = FakeTunePage()
+        return vm(id).also { it.bindPage(page) } to page
+    }
+
     @Test
     fun `the preview renders 400 ms after typing stops`() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-        val vm = vm(null)
-        vm.commands.test {
+        val (vm, page) = bound(null)
+        page.commands.test {
             runCurrent()
             advanceTimeBy(401)
             assertEquals(BridgeCommand.Render(EditorViewModel.TEMPLATE), awaitItem())
@@ -89,9 +96,9 @@ class EditorViewModelTest {
     @Test
     fun `warnings come from the preview render`() = runTest {
         Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
-        val vm = vm(null)
-        vm.onEvent(BridgeEvent.Rendered(emptyList(), listOf("Unknown decoration")))
-        assertEquals(listOf("Unknown decoration"), vm.state.value.warnings)
+        val (vm, page) = bound(null)
+        page.emit(BridgeEvent.Rendered(emptyList(), listOf("Unknown decoration")))
+        assertEquals(listOf("Unknown decoration"), vm.renderState.value.warnings)
     }
 
     @Test

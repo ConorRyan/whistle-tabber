@@ -42,7 +42,8 @@ class EditorContentTest {
         compose.setContent {
             WhistleTabberTheme {
                 EditorContent(
-                    EditorUiState(text = "X:1\nT:A\nK:D\n", warnings = listOf("Unknown decoration")),
+                    EditorUiState(text = "X:1\nT:A\nK:D\n"),
+                    warnings = listOf("Unknown decoration"),
                     isNew = false,
                     onSave = { saved = true },
                 )

@@ -46,16 +46,12 @@ import io.github.conorryan.whistletabber.web.TuneWebViewHost
 fun EditorScreen(vm: EditorViewModel, isNew: Boolean, onClose: () -> Unit, onSaved: (Long) -> Unit) {
     val context = LocalContext.current
     val state by vm.state.collectAsStateWithLifecycle()
+    val renderState by vm.renderState.collectAsStateWithLifecycle()
     val controller = remember { TuneWebController(context) }
 
     DisposableEffect(controller) {
+        vm.bindPage(controller)
         onDispose { controller.destroy() }
-    }
-    LaunchedEffect(controller) {
-        vm.commands.collect(controller::send)
-    }
-    LaunchedEffect(controller) {
-        controller.events.collect(vm::onEvent)
     }
     LaunchedEffect(vm) {
         vm.effects.collect { effect ->
@@ -67,6 +63,7 @@ fun EditorScreen(vm: EditorViewModel, isNew: Boolean, onClose: () -> Unit, onSav
 
     EditorContent(
         state = state,
+        warnings = renderState.warnings,
         isNew = isNew,
         onText = vm::setText,
         onSave = vm::save,
@@ -80,6 +77,7 @@ fun EditorScreen(vm: EditorViewModel, isNew: Boolean, onClose: () -> Unit, onSav
 @Composable
 fun EditorContent(
     state: EditorUiState,
+    warnings: List<String> = emptyList(),
     isNew: Boolean,
     onText: (String) -> Unit = {},
     onSave: () -> Unit = {},
@@ -138,7 +136,7 @@ fun EditorContent(
                         modifier = Modifier.testTag("problem-${problem.name}"),
                     )
                 }
-                for ((i, warning) in state.warnings.withIndex()) {
+                for ((i, warning) in warnings.withIndex()) {
                     Text(
                         warning,
                         color = MaterialTheme.colorScheme.tertiary,

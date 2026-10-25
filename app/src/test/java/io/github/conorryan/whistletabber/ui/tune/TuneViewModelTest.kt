@@ -6,6 +6,7 @@ import io.github.conorryan.whistletabber.music.AbcBook
 import io.github.conorryan.whistletabber.music.CNatural
 import io.github.conorryan.whistletabber.music.TransposeMode
 import io.github.conorryan.whistletabber.music.WhistleKey
+import io.github.conorryan.whistletabber.render.FakeTunePage
 import io.github.conorryan.whistletabber.ui.TestGraph
 import io.github.conorryan.whistletabber.web.BridgeCommand
 import io.github.conorryan.whistletabber.web.BridgeEvent
@@ -64,14 +65,19 @@ class TuneViewModelTest {
 
     private fun saved(text: String = abc): Long = runBlocking { graph.repository.save(text) }
 
-    private fun vm(id: Long) = TuneViewModel(id, graph.repository, graph.store, graph.files, graph.recentlyDeleted)
+    /** A ViewModel with a fake page bound, as the screen would bind the WebView. */
+    private fun bound(id: Long): Pair<TuneViewModel, FakeTunePage> {
+        val page = FakeTunePage()
+        return TuneViewModel(id, graph.repository, graph.store, graph.files, graph.recentlyDeleted)
+            .also { it.bindPage(page) } to page
+    }
 
     @Test
     fun `renders at soprano pitch, then sends diagrams for the rendered notes`() = runTest {
-        val vm = vm(saved())
-        vm.commands.test {
+        val (vm, page) = bound(saved())
+        page.commands.test {
             assertEquals(BridgeCommand.Render(abc, midiTranspose = 12), awaitItem())
-            vm.onEvent(BridgeEvent.Rendered(notes, emptyList()))
+            page.emit(BridgeEvent.Rendered(notes, emptyList()))
             val diagrams = (awaitItem() as BridgeCommand.Diagrams).diagrams
             assertEquals(listOf("CCCOOO", "CCOOOO", "OCCOOO"), diagrams.take(3).map { it!!.holes })
             assertNull(diagrams[3])
@@ -81,10 +87,10 @@ class TuneViewModelTest {
 
     @Test
     fun `changing C natural re-sends diagrams without re-rendering`() = runTest {
-        val vm = vm(saved())
-        vm.commands.test {
+        val (vm, page) = bound(saved())
+        page.commands.test {
             awaitItem() // render
-            vm.onEvent(BridgeEvent.Rendered(notes, emptyList()))
+            page.emit(BridgeEvent.Rendered(notes, emptyList()))
             awaitItem() // first diagrams
             vm.setCNatural(CNatural.HALF_TOP)
             val diagrams = (awaitItem() as BridgeCommand.Diagrams).diagrams
@@ -95,10 +101,10 @@ class TuneViewModelTest {
 
     @Test
     fun `same-pitches change of my whistle keeps playback but changes fingerings`() = runTest {
-        val vm = vm(saved())
-        vm.commands.test {
+        val (vm, page) = bound(saved())
+        page.commands.test {
             awaitItem()
-            vm.onEvent(BridgeEvent.Rendered(notes, emptyList()))
+            page.emit(BridgeEvent.Rendered(notes, emptyList()))
             awaitItem()
             vm.setMyWhistle(WhistleKey.C) // C soprano: same +12 transpose
             val diagrams = (awaitItem() as BridgeCommand.Diagrams).diagrams
@@ -109,16 +115,16 @@ class TuneViewModelTest {
 
     @Test
     fun `a change of playback transpose re-renders, and diagrams follow the new render`() = runTest {
-        val vm = vm(saved())
-        vm.commands.test {
+        val (vm, page) = bound(saved())
+        page.commands.test {
             awaitItem()
-            vm.onEvent(BridgeEvent.Rendered(notes, emptyList()))
+            page.emit(BridgeEvent.Rendered(notes, emptyList()))
             awaitItem()
             vm.setMode(TransposeMode.SAME_FINGERINGS) // D whistle: still +12, diagrams only
             assertEquals(BridgeCommand.Diagrams::class, awaitItem()::class)
             vm.setMyWhistle(WhistleKey.C) // now plays a tone lower
             assertEquals(BridgeCommand.Render(abc, midiTranspose = 10), awaitItem())
-            vm.onEvent(BridgeEvent.Rendered(notes, emptyList()))
+            page.emit(BridgeEvent.Rendered(notes, emptyList()))
             val diagrams = (awaitItem() as BridgeCommand.Diagrams).diagrams
             assertEquals("CCCOOO", diagrams[0]!!.holes) // still D-whistle fingerings
         }
@@ -127,8 +133,8 @@ class TuneViewModelTest {
     @Test
     fun `low whistle renders without the octave shift`() = runTest {
         graph.store.setWhistle(WhistleKey.LOW_D)
-        val vm = vm(saved())
-        vm.commands.test {
+        val (_, page) = bound(saved())
+        page.commands.test {
             assertEquals(BridgeCommand.Render(abc, midiTranspose = 0), awaitItem())
         }
     }
@@ -137,11 +143,11 @@ class TuneViewModelTest {
     fun `the tune's own whistle sets the fingerings kept in same-fingerings mode`() = runTest {
         graph.store.setMode(TransposeMode.SAME_FINGERINGS)
         val text = AbcBook.withWhistle(abc, WhistleKey.C)
-        val vm = vm(saved(text))
-        vm.commands.test {
+        val (vm, page) = bound(saved(text))
+        page.commands.test {
             // C-whistle fingerings played on my D whistle sound a tone higher.
             assertEquals(BridgeCommand.Render(text, midiTranspose = 14), awaitItem())
-            vm.onEvent(BridgeEvent.Rendered(notes, emptyList()))
+            page.emit(BridgeEvent.Rendered(notes, emptyList()))
             assertEquals("CCOOOO", (awaitItem() as BridgeCommand.Diagrams).diagrams[0]!!.holes) // G on a C whistle
         }
         assertEquals(WhistleKey.C, vm.state.value.tuneWhistle)
@@ -151,8 +157,8 @@ class TuneViewModelTest {
     fun `setting the tune's whistle writes the directive and re-renders`() = runTest {
         graph.store.setMode(TransposeMode.SAME_FINGERINGS)
         val id = saved()
-        val vm = vm(id)
-        vm.commands.test {
+        val (vm, page) = bound(id)
+        page.commands.test {
             awaitItem()
             vm.setTuneWhistle(WhistleKey.C)
             val render = awaitItem() as BridgeCommand.Render
@@ -165,9 +171,9 @@ class TuneViewModelTest {
     @Test
     fun `key change previews, then saves a copy and opens it`() = runTest {
         val id = saved()
-        val vm = vm(id)
         turbineScope {
-            val commands = vm.commands.testIn(backgroundScope)
+            val (vm, page) = bound(id)
+            val commands = page.commands.testIn(backgroundScope)
             val effects = vm.effects.testIn(backgroundScope)
             commands.awaitItem() // render
             vm.previewKey("G")
@@ -175,7 +181,7 @@ class TuneViewModelTest {
             assertEquals(KeyPreview("G", "G", 5), vm.state.value.preview)
 
             val inG = "X:1\nT:Test Tune\nK:G\ncdf|\n"
-            vm.onEvent(BridgeEvent.TransposedText(inG, 5))
+            page.emit(BridgeEvent.TransposedText(inG, 5))
             assertEquals(BridgeCommand.Render(inG, midiTranspose = 12), commands.awaitItem())
 
             vm.savePreviewAsCopy()
@@ -191,12 +197,12 @@ class TuneViewModelTest {
 
     @Test
     fun `a rewritten text for other steps is ignored`() = runTest {
-        val vm = vm(saved())
-        vm.commands.test {
+        val (vm, page) = bound(saved())
+        page.commands.test {
             awaitItem()
             vm.previewKey("A") // D to A: down a fourth
             assertEquals(BridgeCommand.TransposeText(abc, -5), awaitItem())
-            vm.onEvent(BridgeEvent.TransposedText("X:1\nT:Test Tune\nK:A\n|\n", 7)) // a stale reply
+            page.emit(BridgeEvent.TransposedText("X:1\nT:Test Tune\nK:A\n|\n", 7)) // a stale reply
             expectNoEvents()
         }
         assertEquals(KeyPreview("A", "A", -5), vm.state.value.preview)
@@ -205,16 +211,16 @@ class TuneViewModelTest {
     @Test
     fun `replace saves the previewed text over the tune`() = runTest {
         val id = saved()
-        val vm = vm(id)
-        vm.commands.test {
+        val (vm, page) = bound(id)
+        page.commands.test {
             awaitItem()
             vm.previewKey("E")
             assertEquals(BridgeCommand.TransposeText(abc, 2), awaitItem())
             val inE = "X:1\nT:Test Tune\nK:E\nABd|\n"
-            vm.onEvent(BridgeEvent.TransposedText(inE, 2))
+            page.emit(BridgeEvent.TransposedText(inE, 2))
             assertEquals(BridgeCommand.Render(inE, midiTranspose = 12), awaitItem())
             vm.replaceWithPreview()
-            cancelAndIgnoreRemainingEvents()
+            expectNoEvents() // the same text is already on the page
         }
         assertEquals("E", graph.repository.observe(id).first { it?.key == "E" }!!.key)
         assertNull(vm.state.value.preview)
@@ -222,8 +228,8 @@ class TuneViewModelTest {
 
     @Test
     fun `picking the current key clears the preview`() = runTest {
-        val vm = vm(saved())
-        vm.commands.test {
+        val (vm, page) = bound(saved())
+        page.commands.test {
             awaitItem()
             vm.previewKey("D")
             expectNoEvents()
@@ -234,7 +240,7 @@ class TuneViewModelTest {
     @Test
     fun `delete closes the screen and leaves the tune for the library's undo`() = runTest {
         val id = saved()
-        val vm = vm(id)
+        val (vm, _) = bound(id)
         vm.effects.test {
             vm.delete()
             assertEquals(TuneEffect.Close, awaitItem())
@@ -246,14 +252,14 @@ class TuneViewModelTest {
 
     @Test
     fun `an unknown id is missing`() = runTest {
-        val vm = vm(999)
+        val (vm, _) = bound(999)
         assertNull(vm.state.first { it.missing }.tune)
     }
 
     @Test
     fun `playback controls forward commands`() = runTest {
-        val vm = vm(saved())
-        vm.commands.test {
+        val (vm, page) = bound(saved())
+        page.commands.test {
             awaitItem()
             vm.togglePlay()
             vm.togglePlay()
@@ -264,23 +270,23 @@ class TuneViewModelTest {
             assertEquals(BridgeCommand.Seek(0.0), awaitItem())
             assertEquals(BridgeCommand.Tempo(80), awaitItem())
         }
-        assertEquals(80, vm.state.value.tempo)
+        assertEquals(80, vm.renderState.value.tempo)
     }
 
     @Test
-    fun `state follows page events`() = runTest {
-        val vm = vm(saved())
-        vm.onEvent(BridgeEvent.Rendered(notes, listOf("w")))
-        assertEquals(listOf("w"), vm.state.value.warnings)
-        vm.onEvent(BridgeEvent.Playing(10, 2))
-        assertEquals(2, vm.state.value.bar)
-        assertTrue(vm.state.value.playing)
-        vm.onEvent(BridgeEvent.Finished)
-        assertNull(vm.state.value.bar)
-        assertEquals(false, vm.state.value.playing)
-        vm.onEvent(BridgeEvent.Error("boom"))
-        assertEquals("boom", vm.state.value.error)
+    fun `render state follows page events`() = runTest {
+        val (vm, page) = bound(saved())
+        page.emit(BridgeEvent.Rendered(notes, listOf("w")))
+        assertEquals(listOf("w"), vm.renderState.value.warnings)
+        page.emit(BridgeEvent.Playing(10, 2))
+        assertEquals(2, vm.renderState.value.bar)
+        assertTrue(vm.renderState.value.playing)
+        page.emit(BridgeEvent.Finished)
+        assertNull(vm.renderState.value.bar)
+        assertEquals(false, vm.renderState.value.playing)
+        page.emit(BridgeEvent.Error("boom"))
+        assertEquals("boom", vm.renderState.value.error)
         vm.dismissError()
-        assertNull(vm.state.value.error)
+        assertNull(vm.renderState.value.error)
     }
 }

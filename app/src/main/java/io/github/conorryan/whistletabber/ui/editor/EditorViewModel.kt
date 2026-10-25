@@ -5,18 +5,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.conorryan.whistletabber.data.tunes.TuneRepository
 import io.github.conorryan.whistletabber.music.AbcBook
-import io.github.conorryan.whistletabber.web.BridgeCommand
-import io.github.conorryan.whistletabber.web.BridgeEvent
-import kotlinx.coroutines.FlowPreview
+import io.github.conorryan.whistletabber.render.TunePage
+import io.github.conorryan.whistletabber.render.TuneRenderer
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -26,8 +21,6 @@ enum class EditorProblem { NO_TITLE, NO_KEY }
 data class EditorUiState(
     /** Null while an existing tune is loading. */
     val text: String? = null,
-    /** Parse warnings from the last preview render. */
-    val warnings: List<String> = emptyList(),
     /** Why the text can't be saved yet; empty when it can. */
     val problems: List<EditorProblem> = emptyList(),
     /** The text differs from what was loaded (or the template). */
@@ -44,23 +37,27 @@ sealed interface EditorEffect {
 }
 
 /**
- * Edits one tune's ABC ([id] null: a new tune from [TEMPLATE]). The draft lives
- * in [SavedStateHandle], so it survives process death; the preview re-renders
- * [debounceMs] after typing stops.
+ * Edits one tune's ABC ([id] null: a new tune from [TEMPLATE]). The draft
+ * lives in [SavedStateHandle], so it survives process death; the preview is
+ * rendered by the [TuneRenderer] this ViewModel owns, [debounceMs] after
+ * typing stops. The screen attaches its WebView with [bindPage].
  */
-@OptIn(FlowPreview::class)
 class EditorViewModel(
     private val id: Long?,
     private val savedState: SavedStateHandle,
     private val repository: TuneRepository,
-    private val debounceMs: Long = 400,
+    debounceMs: Long = 400,
 ) : ViewModel() {
+
+    private val renderer = TuneRenderer(viewModelScope, debounceMs)
+
+    /** Parse warnings from the last preview render. */
+    val renderState: StateFlow<TuneRenderer.RendererState> = renderer.state
+
+    fun bindPage(page: TunePage) = renderer.attach(page)
 
     private val _state = MutableStateFlow(EditorUiState())
     val state: StateFlow<EditorUiState> = _state.asStateFlow()
-
-    private val _commands = Channel<BridgeCommand>(Channel.UNLIMITED)
-    val commands: Flow<BridgeCommand> = _commands.receiveAsFlow()
 
     private val _effects = Channel<EditorEffect>(Channel.BUFFERED)
     val effects: Flow<EditorEffect> = _effects.receiveAsFlow()
@@ -76,20 +73,12 @@ class EditorViewModel(
             }
             setText(savedState.get<String>(KEY_DRAFT) ?: original!!)
         }
-        viewModelScope.launch {
-            state.map { it.text }.filterNotNull().distinctUntilChanged().debounce(debounceMs).collect { text ->
-                _commands.send(BridgeCommand.Render(text))
-            }
-        }
     }
 
     fun setText(text: String) {
         savedState[KEY_DRAFT] = text
         _state.update { it.copy(text = text, problems = problemsOf(text), dirty = text != original) }
-    }
-
-    fun onEvent(event: BridgeEvent) {
-        if (event is BridgeEvent.Rendered) _state.update { it.copy(warnings = event.warnings) }
+        renderer.show(TuneRenderer.RenderRequest(text))
     }
 
     fun save() {
