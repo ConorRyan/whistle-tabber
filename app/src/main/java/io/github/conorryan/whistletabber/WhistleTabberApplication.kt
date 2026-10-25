@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import io.github.conorryan.whistletabber.data.settings.TabSettingsStore
 import io.github.conorryan.whistletabber.data.tunes.AppDatabase
+import io.github.conorryan.whistletabber.data.tunes.StarterTunes
 import io.github.conorryan.whistletabber.data.tunes.TuneRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -13,8 +14,10 @@ import kotlinx.coroutines.SupervisorJob
 class AppGraph(
     val tabSettingsStore: TabSettingsStore,
     db: AppDatabase,
+    loadStarterSet: () -> String,
 ) {
     val tuneRepository = TuneRepository(db)
+    val starterTunes = StarterTunes(tuneRepository, loadStarterSet)
 
     /** Application-lived scope for work that must outlive a screen, like an import. */
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -23,6 +26,7 @@ class AppGraph(
         fun create(context: Context): AppGraph = AppGraph(
             tabSettingsStore = TabSettingsStore.create(context),
             db = AppDatabase.build(context),
+            loadStarterSet = { StarterTunes.readAsset(context) },
         )
     }
 }

@@ -40,11 +40,11 @@ Rules from AGENTS.md still apply:
 - [x] Tests: the DAO and repository with in-memory Room under Robolectric; import counts; derived fields update when the ABC is edited; export and re-import is lossless.
 
 ## 3. Starter set
-- [ ] Pick about 50 tunes from O'Neill's 1850: a mix of reels, jigs, slip jigs, hornpipes, polkas, slides and airs, mostly in D, G, Em, Am and Bm, and playable on a D whistle with folding off where possible. List them in `scripts/starter-tunes.txt`.
-- [ ] Add `scripts/build-starter-set.sh`. It fetches the listed files from trillian.mit.edu, keeps each tune's `Z:`/`B:` credit lines, and writes `app/src/main/assets/tunes/oneills.abc`. Commit both the script and its output; the build does not run it.
+- [x] (No polkas exist in the 1850 book; one slide. Marches stand in for polkas.) Pick about 50 tunes from O'Neill's 1850: a mix of reels, jigs, slip jigs, hornpipes, polkas, slides and airs, mostly in D, G, Em, Am and Bm, and playable on a D whistle with folding off where possible. List them in `scripts/starter-tunes.txt`.
+- [x] Add `scripts/build-starter-set.sh`. It fetches the listed files from trillian.mit.edu, keeps each tune's `Z:`/`B:` credit lines, and writes `app/src/main/assets/tunes/oneills.abc`. Commit both the script and its output; the build does not run it.
 - [ ] Offer the set on first run with an empty library ("Add 50 traditional tunes?"). Also offer it later from Settings.
-- [ ] Update THIRD_PARTY_NOTICES with the asset path (GPL-2+).
-- [ ] Tests: a JVM test that the asset parses into the expected number of tunes, every one with a title and `K:`, and no abcjs warnings. A node test that runs every tune in the asset through `parseOnly` and `extractNotes`.
+- [x] Update THIRD_PARTY_NOTICES with the asset path (GPL-2+).
+- [x] Tests: a JVM test that the asset parses into the expected number of tunes, every one with a title and `K:`, and no abcjs warnings. A node test that runs every tune in the asset through `parseOnly` and `extractNotes`.
 
 ## 4. Screens and navigation
 - [ ] Navigation Compose with three destinations: Library (start), Tune/{id}, Editor/{id|new}, plus Settings.
