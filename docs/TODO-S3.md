@@ -85,10 +85,10 @@ Rules from AGENTS.md still apply:
 ## 7. Tests and verification
 - [x] ViewModels with Turbine: `LibraryViewModel` (search, filter, first-run offer), `TuneViewModel` (per-tune whistle, re-render rules carried over from `DemoTuneViewModel`), `EditorViewModel` (debounce, validation, save, restoring the draft).
 - [x] Compose UI tests (Robolectric): the library list and its empty state, and editor validation messages.
-- [ ] Emulator end-to-end: first run → add starter set → search "reel" → open a tune → diagrams drawn → play → edit a note → the preview updates → save → export → re-import gives the same count.
-- [ ] Re-check the layout on the emulator with a few starter tunes: a long air, a polka, and a tune in E minor.
+- [x] Emulator end-to-end (2026-10-25): first run → add starter set → search (titles; the Reel rhythm chip filters) → open a tune → 127 diagrams drawn → play (Pause state reached) → edit in the editor (the preview shows the staff without diagrams, by design) → save → export ("Back Of The Haggard.abc.txt" in Downloads; SAF adds `.txt` for our text/plain) → re-import skips the duplicate: still 50 tunes in the Room db. No FATAL exceptions in logcat.
+- [x] Re-check the layout on the emulator with a few starter tunes (2026-10-25): the starter set has no polka, so a long air ("The Dark Woman of the Glen", 178 diagrams), an E-minor reel ("Drowsy Maggie", 112) and a hornpipe ("Back Of The Haggard", 127), each checked through `layoutReport()`: no diagram runs into the next staff line, none overlaps its own line, no horizontal collisions.
 - [x] Run `./gradlew :app:testDebugUnitTest` (175 tests) and `(cd web-tests && node --test)` (35 tests), both green.
-- [ ] Run `ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest` and a minified `assembleRelease` smoke test on the emulator.
+- [x] Run `ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest` (14 tests green) and a minified `assembleRelease` smoke test on the emulator (debug-signed for install): launch, starter-set import and tune list all work under R8, no crashes.
 - [x] Update AGENTS.md (architecture, invariants) and add an S3 entry to the ROADMAP log.
 - [ ] Commit and push to `main`.
 
