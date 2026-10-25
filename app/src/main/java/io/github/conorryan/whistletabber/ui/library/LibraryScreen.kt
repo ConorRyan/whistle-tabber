@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -32,7 +33,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -44,6 +44,7 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -55,6 +56,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -189,9 +191,8 @@ fun LibraryContent(
                         NoMatches(onClearFilters)
                     } else {
                         LazyColumn(Modifier.fillMaxSize().testTag("tuneList"), contentPadding = PaddingValues(bottom = 88.dp)) {
-                            items(state.tunes, key = { it.id }) { tune ->
+                            items(state.tunes, key = { it.id }, contentType = { "tune" }) { tune ->
                                 TuneRow(tune, onClick = { onOpenTune(tune.id) }, onStar = { onStar(tune, !tune.starred) })
-                                HorizontalDivider()
                             }
                         }
                     }
@@ -247,6 +248,13 @@ private fun Filters(
     }
 }
 
+/**
+ * A single line of the tune list. Deliberately plain: no Material3 `ListItem`,
+ * no shape or container work, one ripple, so composing a row while scrolling
+ * stays cheap (this list is the main screen; debug builds feel every
+ * composable). The divider belongs to the row so the list holds one item per
+ * tune.
+ */
 @Composable
 private fun TuneRow(tune: Tune, onClick: () -> Unit, onStar: () -> Unit) {
     val details = listOfNotNull(
@@ -254,20 +262,39 @@ private fun TuneRow(tune: Tune, onClick: () -> Unit, onStar: () -> Unit) {
         tune.key,
         tune.whistle?.let { stringResource(R.string.tune_whistle, stringResource(whistleLabelRes(it))) },
     ).joinToString(" · ")
-    ListItem(
-        headlineContent = { Text(tune.title) },
-        supportingContent = if (details.isNotEmpty()) { { Text(details) } } else null,
-        trailingContent = {
-            IconButton(onClick = onStar, modifier = Modifier.testTag("star-${tune.id}")) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .testTag("tune-${tune.id}"),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f).padding(start = 16.dp, top = 12.dp, bottom = 12.dp)) {
+                Text(tune.title, style = MaterialTheme.typography.bodyLarge)
+                if (details.isNotEmpty()) {
+                    Text(
+                        details,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Box(
+                Modifier
+                    .minimumInteractiveComponentSize()
+                    .clickable(onClick = onStar, role = Role.Button)
+                    .testTag("star-${tune.id}"),
+                contentAlignment = Alignment.Center,
+            ) {
                 Icon(
                     if (tune.starred) Icons.Filled.Star else Icons.Outlined.StarOutline,
                     contentDescription = stringResource(if (tune.starred) R.string.unstar else R.string.star),
                     tint = if (tune.starred) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-        },
-        modifier = Modifier.clickable(onClick = onClick).testTag("tune-${tune.id}"),
-    )
+        }
+        HorizontalDivider()
+    }
 }
 
 @Composable
