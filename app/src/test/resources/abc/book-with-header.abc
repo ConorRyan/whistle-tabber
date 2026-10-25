@@ -1,0 +1,27 @@
+% A hand-written test book.
+%%titlefont Times 18
+L:1/8
+R:reel
+
+X:1
+T:First Reel
+M:4/4
+K:D
+|:dAFA dAFA|BcdB AFEF:|
+
+X:2
+T:Second Jig
+T:The Other Name
+R:jig
+M:6/8
+L:1/16
+K:G
+|:G2B2d2 g2d2B2:|
+
+This text sits between tunes and is not part of either.
+
+X:3
+T:Third, With: Colons
+M:3/4
+K:Em
+E2 G2 B2|e6|]

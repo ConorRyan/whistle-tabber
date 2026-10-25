@@ -77,7 +77,7 @@ Key design points:
   - Node tests for diagram layout.
   - Emulator: diagram count equals note count (excluding rests and grace notes) on a fixture tune.
 
-**S3 — Library, editor, storage**
+**S3 — Library, editor, storage** (detailed checklist: `docs/TODO-S3.md`)
 - Room tune store, `TuneRepository`, `SettingsStore`, and `AppGraph` (built like weeklies').
 - Library list with search and a rhythm filter.
 - Tune screen.
