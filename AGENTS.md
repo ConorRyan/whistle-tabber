@@ -91,7 +91,9 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     and fields are copied in after each tune's `X:`), `headers`, `join`
     (renumbers `X:`), `withTitle`, `suggestWhistle(K:)`, and Eskin's
     `%whistle_tab_key` directive (`whistleOf`/`withWhistle`; our extension
-    `%whistle_tab_key d low`).
+    `%whistle_tab_key d low`). `AbcHeaders.problems()` (`AbcProblem`) is the
+    one "is this tune storable" check (a `T:` and a `K:`), shared by the
+    editor and the import.
   - `KeyChange`: target tonics, steps (−6..+5) and names for rewriting a
     tune into another key.
 - `data/settings/` — `TabSettingsStore` (DataStore, injected; enums stored by
@@ -127,7 +129,8 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     `#credits` below the SVG. `layoutReport()` exists for instrumented tests.
   - `index.html`: strict CSP, local scripts only.
 - `ui/` — `theme/`; `components/` (`FingeringDiagram`, matching the page's
-  diagrams; `whistleLabel`). `AppNavHost` holds type-safe `@Serializable`
+  diagrams, with `FingeringDiagramGeometryTest` pinning the shared geometry;
+  `whistleLabel`). `AppNavHost` holds type-safe `@Serializable`
   routes: `LibraryRoute` (start), `TuneRoute(id)`, `EditorRoute(id?)`,
   `SettingsRoute`. Each screen has a ViewModel built from `AppGraph` and a
   stateless `…Content` composable where Compose tests need one.

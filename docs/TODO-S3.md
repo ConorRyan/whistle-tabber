@@ -12,7 +12,7 @@ Rules from AGENTS.md still apply:
 - Keep AGENTS.md's architecture section in sync.
 
 ## 0. Before coding
-- [x] Check in Eskin's MIT `abcjs-basic-eskin.js` (seisiuneer/abctools) for the exact syntax of `%whistle_tab_key` and `%whistle_tab_octave`, so files round-trip with his tool. Write down what you find in `AbcBook.kt`.
+- [x] Research Eskin's MIT `abcjs-basic-eskin.js` (seisiuneer/abctools) for the exact syntax of `%whistle_tab_key` and `%whistle_tab_octave`, so files round-trip with his tool; the findings are written down in `AbcBook.kt`. (The file itself, 1.4 MB of abcjs, was not checked in: the notes and the round-trip tests carry the syntax.)
 - [x] Spike in node: does `ABCJS.strTranspose(abc, visualObj, steps)` work on a `parseOnly` tune, or does it need a rendered one? This decides whether "rewrite key" can be node-tested or must go through the WebView.
 
 ## 1. Pure Kotlin: `music/AbcBook.kt`
@@ -87,8 +87,9 @@ Rules from AGENTS.md still apply:
 - [x] Compose UI tests (Robolectric): the library list and its empty state, and editor validation messages.
 - [ ] Emulator end-to-end: first run → add starter set → search "reel" → open a tune → diagrams drawn → play → edit a note → the preview updates → save → export → re-import gives the same count.
 - [ ] Re-check the layout on the emulator with a few starter tunes: a long air, a polka, and a tune in E minor.
-- [ ] Run `./gradlew :app:testDebugUnitTest`, `(cd web-tests && node --test)`, `ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest`, and a minified `assembleRelease` smoke test on the emulator.
-- [ ] Update AGENTS.md (architecture, invariants) and add an S3 entry to the ROADMAP log.
+- [x] Run `./gradlew :app:testDebugUnitTest` (175 tests) and `(cd web-tests && node --test)` (35 tests), both green.
+- [ ] Run `ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest` and a minified `assembleRelease` smoke test on the emulator.
+- [x] Update AGENTS.md (architecture, invariants) and add an S3 entry to the ROADMAP log.
 - [ ] Commit and push to `main`.
 
 ## Open questions (ask at the start of S3)

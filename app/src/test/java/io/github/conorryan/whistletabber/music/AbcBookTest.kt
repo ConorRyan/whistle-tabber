@@ -186,4 +186,12 @@ class AbcBookTest {
         }
         assertEquals(WhistleKey.D, AbcBook.suggestWhistle("D clef=treble"))
     }
+
+    @Test
+    fun `problems of a tune that cannot be stored`() {
+        assertEquals(listOf(AbcProblem.NO_TITLE, AbcProblem.NO_KEY), AbcBook.headers("X:1\nT:\n").problems())
+        assertEquals(listOf(AbcProblem.NO_TITLE), AbcBook.headers("X:1\nT:  \nK:D\n").problems())
+        assertEquals(listOf(AbcProblem.NO_KEY), AbcBook.headers("X:1\nT:Keyless\nK:\n").problems())
+        assertEquals(emptyList<AbcProblem>(), AbcBook.headers("X:1\nT:Fine\nK:D\n").problems())
+    }
 }

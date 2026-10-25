@@ -50,7 +50,7 @@ class BridgeCodecTest {
     @Test
     fun `render includes default fields so the page never sees undefined`() {
         val json = Json.parseToJsonElement(BridgeCodec.encode(BridgeCommand.Render("X:1"))).jsonObject
-        assertEquals("0", json["visualTranspose"]!!.jsonPrimitive.content)
+        assertEquals("0", json["midiTranspose"]!!.jsonPrimitive.content)
     }
 
     @Test

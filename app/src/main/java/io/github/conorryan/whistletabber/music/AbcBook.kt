@@ -19,6 +19,15 @@ data class AbcHeaders(
     val alternateTitles: List<String> get() = titles.drop(1)
 }
 
+/** Why a tune can't be stored; a storable tune needs a `T:` and a `K:`. */
+enum class AbcProblem { NO_TITLE, NO_KEY }
+
+/** What keeps a tune with these headers from being stored, title first. */
+fun AbcHeaders.problems(): List<AbcProblem> = buildList {
+    if (title.isNullOrBlank()) add(AbcProblem.NO_TITLE)
+    if (key.isNullOrBlank()) add(AbcProblem.NO_KEY)
+}
+
 /**
  * Plain-text operations on ABC tunes and tune books. Text in, text out: the
  * ABC stays the canonical record, so edits touch only the lines they must.

@@ -1,8 +1,11 @@
 package io.github.conorryan.whistletabber.data.tunes
 
 import androidx.room.withTransaction
+import io.github.conorryan.whistletabber.data.enumByName
 import io.github.conorryan.whistletabber.music.AbcBook
+import io.github.conorryan.whistletabber.music.AbcProblem
 import io.github.conorryan.whistletabber.music.WhistleKey
+import io.github.conorryan.whistletabber.music.problems
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -35,9 +38,7 @@ data class ImportResult(
 }
 
 /** A tune that could not be imported; [position] counts from 1 in the file. */
-data class ImportError(val position: Int, val title: String?, val problem: Problem) {
-    enum class Problem { NO_TITLE, NO_KEY }
-}
+data class ImportError(val position: Int, val title: String?, val problem: AbcProblem)
 
 /**
  * The only way from the UI to stored tunes. Every write goes through
@@ -67,7 +68,7 @@ class TuneRepository(
      */
     suspend fun save(abc: String, id: Long? = null, source: String = TuneEntity.SOURCE_USER): Long {
         val headers = AbcBook.headers(abc)
-        require(!headers.title.isNullOrBlank()) { "ABC has no T: line" }
+        require(headers.problems().isEmpty()) { "ABC has no T: or K: line" }
         val time = now()
         val existing = id?.let { dao.get(it) }
         return if (existing == null) {
@@ -113,12 +114,15 @@ class TuneRepository(
             AbcBook.split(text).forEachIndexed { i, abc ->
                 val headers = AbcBook.headers(abc)
                 val title = headers.title
-                when {
-                    title.isNullOrBlank() -> errors += ImportError(i + 1, null, ImportError.Problem.NO_TITLE)
-                    headers.key == null -> errors += ImportError(i + 1, title, ImportError.Problem.NO_KEY)
-                    (dao.findByTitle(title) + toAdd.filter { it.title == title })
-                        .any { TuneIndex.sameMusic(it.abc, abc) } -> skipped++
-                    else -> toAdd += TuneIndex.apply(blank(source, time), abc, headers)
+                when (headers.problems().firstOrNull()) {
+                    AbcProblem.NO_TITLE -> errors += ImportError(i + 1, null, AbcProblem.NO_TITLE)
+                    AbcProblem.NO_KEY -> errors += ImportError(i + 1, title, AbcProblem.NO_KEY)
+                    null -> when {
+                        // No problems, so [title] is there.
+                        (dao.findByTitle(title!!) + toAdd.filter { it.title == title })
+                            .any { TuneIndex.sameMusic(it.abc, abc) } -> skipped++
+                        else -> toAdd += TuneIndex.apply(blank(source, time), abc, headers)
+                    }
                 }
             }
             dao.insertAll(toAdd)
@@ -144,7 +148,7 @@ class TuneRepository(
         rhythm = e.rhythm,
         key = e.keySignature,
         meter = e.meter,
-        whistle = WhistleKey.entries.firstOrNull { it.name == e.whistle },
+        whistle = enumByName<WhistleKey>(e.whistle),
         starred = e.starred,
         source = e.source,
         createdAt = e.createdAt,

@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.conorryan.whistletabber.data.tunes.TuneRepository
 import io.github.conorryan.whistletabber.music.AbcBook
+import io.github.conorryan.whistletabber.music.AbcProblem
+import io.github.conorryan.whistletabber.music.problems
 import io.github.conorryan.whistletabber.render.TunePage
 import io.github.conorryan.whistletabber.render.TuneRenderer
 import kotlinx.coroutines.channels.Channel
@@ -16,13 +18,11 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class EditorProblem { NO_TITLE, NO_KEY }
-
 data class EditorUiState(
     /** Null while an existing tune is loading. */
     val text: String? = null,
     /** Why the text can't be saved yet; empty when it can. */
-    val problems: List<EditorProblem> = emptyList(),
+    val problems: List<AbcProblem> = emptyList(),
     /** The text differs from what was loaded (or the template). */
     val dirty: Boolean = false,
     val saving: Boolean = false,
@@ -100,12 +100,6 @@ class EditorViewModel(
 
         const val TEMPLATE = "X:1\nT:\nR:reel\nM:4/4\nL:1/8\nK:D\n|:DEFG ABcd|edcB A2FA:|\n"
 
-        fun problemsOf(text: String): List<EditorProblem> {
-            val headers = AbcBook.headers(text)
-            return buildList {
-                if (headers.title.isNullOrBlank()) add(EditorProblem.NO_TITLE)
-                if (headers.key.isNullOrBlank()) add(EditorProblem.NO_KEY)
-            }
-        }
+        fun problemsOf(text: String): List<AbcProblem> = AbcBook.headers(text).problems()
     }
 }

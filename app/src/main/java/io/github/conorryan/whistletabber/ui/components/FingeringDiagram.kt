@@ -18,9 +18,16 @@ import io.github.conorryan.whistletabber.music.Hole
 
 /**
  * Six holes, mouthpiece at the top, with a gap between the hands; matches
- * the diagrams the page draws under the staff. The octave mark is left to
- * the caller so lists can align it.
+ * the diagrams the page draws under the staff (same geometry constants as
+ * `whistle-core.js`, expressed here in units of the hole's diameter;
+ * `FingeringDiagramGeometryTest` fails if the two drift apart). The octave
+ * mark is left to the caller so lists can align it.
  */
+// whistle-core.js geometry, in SVG user units at scale 1.
+internal const val HOLE_R = 3.3f
+internal const val HOLE_PITCH = 8.2f
+internal const val HAND_GAP = 3f
+
 @Composable
 fun FingeringDiagram(
     fingering: Fingering,
@@ -28,8 +35,9 @@ fun FingeringDiagram(
     holeSize: Dp = 10.dp,
     color: Color = LocalContentColor.current,
 ) {
-    val pitch = holeSize * 1.25f
-    val gap = holeSize * 0.4f
+    val diameter = 2 * HOLE_R
+    val pitch = holeSize * (HOLE_PITCH / diameter)
+    val gap = holeSize * (HAND_GAP / diameter)
     Canvas(
         modifier
             .size(holeSize + 2.dp, pitch * 6 + gap)

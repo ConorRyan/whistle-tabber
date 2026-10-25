@@ -16,7 +16,6 @@ sealed interface BridgeCommand {
     @SerialName("render")
     data class Render(
         val abc: String,
-        val visualTranspose: Int = 0,
         /** Written-to-played semitones, e.g. +12 for a soprano whistle. */
         val midiTranspose: Int = 0,
     ) : BridgeCommand

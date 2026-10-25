@@ -77,7 +77,7 @@ Key design points:
   - Node tests for diagram layout.
   - Emulator: diagram count equals note count (excluding rests and grace notes) on a fixture tune.
 
-**S3 — Library, editor, storage** (detailed checklist: `docs/TODO-S3.md`)
+**S3 — Library, editor, storage** (detailed checklist: `docs/TODO-S3.md`) ✅ done 2026-10-25
 - Room tune store, `TuneRepository`, `SettingsStore`, and `AppGraph` (built like weeklies').
 - Library list with search and a rhythm filter.
 - Tune screen.
@@ -143,3 +143,9 @@ Key design points:
   - Per-tune whistle (`%whistle_tab_key`).
   - Rewriting the tune into another key with `strTranspose`.
   - Replace the demo screen with the library and tune screens.
+
+### S3 (2026-10-25)
+- Done: Room tune store (`TuneEntity`/`TuneDao`/`TuneRepository`, every other column derived by `TuneIndex` on save), `AbcBook` (`split`/`headers`/`join`, Eskin's `%whistle_tab_key` directive), rewriting into another key (`transposeAbc` + the `transposeText` bridge, `KeyChange`, a `KeyChangePreview` that saves a copy by default), the library (search, rhythm and starred chips, starter-set offer on first run, SAF import/export), the tune screen (per-tune whistle, settings sheet, delete undo), the editor (debounced preview, `T:`/`K:` validation), the starter set (50 O'Neill's 1850 tunes built by `scripts/build-starter-set.sh`), and the render cycle gathered into one `TuneRenderer` behind the `TunePage` port. 175 JVM and 35 node tests, all green.
+- Also done, pulled forward from S6: a placeholder launcher icon and a navy splash screen.
+- Learned: abcjs's `strTranspose` needs the *array* `parseOnly` returns (with a single tune it silently changes nothing), so key rewriting is node-tested through `whistle-core.js` and only the bridge stays WebView-side.
+- Carry into S4: the emulator pass (first-run end-to-end, layout re-check, `connectedDebugAndroidTest`, a minified `assembleRelease` smoke test), the real icon, and a share sheet for one tune (was optional in S3).

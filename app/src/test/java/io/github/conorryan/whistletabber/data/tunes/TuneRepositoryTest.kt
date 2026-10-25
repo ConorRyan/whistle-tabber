@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import io.github.conorryan.whistletabber.music.AbcBook
+import io.github.conorryan.whistletabber.music.AbcProblem
 import io.github.conorryan.whistletabber.music.WhistleKey
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -146,8 +147,8 @@ class TuneRepositoryTest {
         ).joinToString("\n")
         val result = repo.importBook(book)
         assertEquals(ImportResult(added = 2, skipped = 2, errors = listOf(
-            ImportError(5, null, ImportError.Problem.NO_TITLE),
-            ImportError(6, "Keyless", ImportError.Problem.NO_KEY),
+            ImportError(5, null, AbcProblem.NO_TITLE),
+            ImportError(6, "Keyless", AbcProblem.NO_KEY),
         )), result)
         assertEquals(6, result.total)
         assertEquals(3, repo.count.first())

@@ -38,6 +38,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.conorryan.whistletabber.music.AbcProblem
 import io.github.conorryan.whistletabber.R
 import io.github.conorryan.whistletabber.web.TuneWebController
 import io.github.conorryan.whistletabber.web.TuneWebViewHost
@@ -127,8 +128,8 @@ fun EditorContent(
                     Text(
                         stringResource(
                             when (problem) {
-                                EditorProblem.NO_TITLE -> R.string.problem_no_title
-                                EditorProblem.NO_KEY -> R.string.problem_no_key
+                                AbcProblem.NO_TITLE -> R.string.problem_no_title
+                                AbcProblem.NO_KEY -> R.string.problem_no_key
                             },
                         ),
                         color = MaterialTheme.colorScheme.error,

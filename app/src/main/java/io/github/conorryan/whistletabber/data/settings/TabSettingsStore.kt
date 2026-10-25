@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import io.github.conorryan.whistletabber.data.enumByName
 import io.github.conorryan.whistletabber.music.CNatural
 import io.github.conorryan.whistletabber.music.TabSettings
 import io.github.conorryan.whistletabber.music.TransposeMode
@@ -28,10 +29,10 @@ class TabSettingsStore(private val dataStore: DataStore<Preferences>) {
     val settings: Flow<TabSettings> = dataStore.data.map { prefs ->
         val defaults = TabSettings()
         TabSettings(
-            whistle = enumOrNull<WhistleKey>(prefs[WHISTLE_KEY]) ?: defaults.whistle,
-            cNatural = enumOrNull<CNatural>(prefs[C_NATURAL_KEY]) ?: defaults.cNatural,
+            whistle = enumByName<WhistleKey>(prefs[WHISTLE_KEY]) ?: defaults.whistle,
+            cNatural = enumByName<CNatural>(prefs[C_NATURAL_KEY]) ?: defaults.cNatural,
             foldOutOfRange = prefs[FOLD_KEY] ?: defaults.foldOutOfRange,
-            mode = enumOrNull<TransposeMode>(prefs[MODE_KEY]) ?: defaults.mode,
+            mode = enumByName<TransposeMode>(prefs[MODE_KEY]) ?: defaults.mode,
         )
     }
 
@@ -55,6 +56,3 @@ class TabSettingsStore(private val dataStore: DataStore<Preferences>) {
         fun create(context: Context): TabSettingsStore = TabSettingsStore(SettingsDataStores.tab(context))
     }
 }
-
-private inline fun <reified E : Enum<E>> enumOrNull(name: String?): E? =
-    name?.let { n -> enumValues<E>().firstOrNull { it.name == n } }

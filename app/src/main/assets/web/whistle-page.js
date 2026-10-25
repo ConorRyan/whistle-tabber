@@ -81,7 +81,6 @@
         var rendered = ABCJS.renderAbc("paper", cmd.abc, {
             responsive: "resize",
             add_classes: true,
-            visualTranspose: cmd.visualTranspose || 0,
             staffwidth: Math.max(240, paper.clientWidth * ZOOM_OUT),
             wrap: { minSpacing: 1.4, maxSpacing: 2.7, preferredMeasuresPerLine: 4 },
             paddingright: 8,

@@ -3,6 +3,7 @@ package io.github.conorryan.whistletabber.ui.editor
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import io.github.conorryan.whistletabber.render.FakeTunePage
+import io.github.conorryan.whistletabber.music.AbcProblem
 import io.github.conorryan.whistletabber.ui.TestGraph
 import io.github.conorryan.whistletabber.web.BridgeCommand
 import io.github.conorryan.whistletabber.web.BridgeEvent
@@ -83,12 +84,12 @@ class EditorViewModelTest {
     fun `validation needs a title and a key`() = runTest {
         Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
         val vm = vm(null)
-        assertEquals(listOf(EditorProblem.NO_TITLE), vm.state.value.problems) // the template has no title
+        assertEquals(listOf(AbcProblem.NO_TITLE), vm.state.value.problems) // the template has no title
         assertFalse(vm.state.value.canSave)
         vm.setText("X:1\nT:\nR:reel\n")
-        assertEquals(listOf(EditorProblem.NO_TITLE, EditorProblem.NO_KEY), vm.state.value.problems)
+        assertEquals(listOf(AbcProblem.NO_TITLE, AbcProblem.NO_KEY), vm.state.value.problems)
         vm.setText("X:1\nT:Fine\nK:G\n")
-        assertEquals(emptyList<EditorProblem>(), vm.state.value.problems)
+        assertEquals(emptyList<AbcProblem>(), vm.state.value.problems)
         assertTrue(vm.state.value.canSave)
         assertTrue(vm.state.value.dirty)
     }
