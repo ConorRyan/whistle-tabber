@@ -1,0 +1,65 @@
+# Third-Party Notices
+
+This file lists the third-party code and data used by Whistle Tabber and
+their licences. The project itself is released under the MIT License (see
+[LICENSE](LICENSE)).
+
+## Bundled JavaScript
+
+| Component | Version | Location | License |
+|---|---|---|---|
+| [abcjs](https://github.com/paulrosen/abcjs) | 6.7.2 | `app/src/main/assets/web/abcjs-basic.js` | MIT (`abcjs-LICENSE.md` alongside) |
+
+abcjs is vendored unminified by `scripts/update-abcjs.sh`, which pins the
+release tarball's sha256.
+
+## Bundled tunes
+
+| Data | Location | License |
+|---|---|---|
+| O'Neill's Music of Ireland (1850) ABC transcriptions, [O'Neill's Project](https://trillian.mit.edu/~jc/music/book/ONeills/_1850/) | `app/src/main/assets/tunes/`, `web-tests/fixtures/` | GNU GPL version 2 or later |
+
+The transcriptions are © 1997–2000 the contributors to the O'Neill's Project.
+Each tune keeps its transcriber credit in its `Z:` field.
+
+## Fingering data
+
+Third-octave tin whistle fingerings follow the chart in the
+[Woodwind Fingering Guide](https://www.wfg.woodwind.org/tinwhistle/tw_bas_3.html)
+(© 1998–2005 Timothy Reichard). Fingerings are facts; the source is credited
+in `FingeringEngine.kt`. The other fingerings are standard tin whistle
+technique, written for this project.
+
+## Sounds
+
+Playback samples are synthesised at runtime by the app's own code
+(`WhistleSynth`); no soundfont is bundled.
+
+## Runtime dependencies
+
+Direct dependencies compiled into the APK. The Compose libraries are resolved
+through the `androidx.compose:compose-bom` bill of materials.
+
+| Library | Artifact | License |
+|---|---|---|
+| AndroidX Core KTX | `androidx.core:core-ktx` | Apache License 2.0 |
+| AndroidX Activity Compose | `androidx.activity:activity-compose` | Apache License 2.0 |
+| AndroidX Lifecycle Runtime Compose | `androidx.lifecycle:lifecycle-runtime-compose` | Apache License 2.0 |
+| AndroidX Lifecycle ViewModel Compose | `androidx.lifecycle:lifecycle-viewmodel-compose` | Apache License 2.0 |
+| AndroidX Navigation Compose | `androidx.navigation:navigation-compose` | Apache License 2.0 |
+| AndroidX WebKit | `androidx.webkit:webkit` | Apache License 2.0 |
+| AndroidX Compose UI | `androidx.compose.ui:ui` | Apache License 2.0 |
+| AndroidX Compose UI Graphics | `androidx.compose.ui:ui-graphics` | Apache License 2.0 |
+| AndroidX Compose UI Tooling Preview | `androidx.compose.ui:ui-tooling-preview` | Apache License 2.0 |
+| AndroidX Compose Material 3 | `androidx.compose.material3:material3` | Apache License 2.0 |
+| AndroidX Compose Material Icons Extended | `androidx.compose.material:material-icons-extended` | Apache License 2.0 |
+| AndroidX Room Runtime / KTX | `androidx.room:room-runtime`, `room-ktx` | Apache License 2.0 |
+| AndroidX DataStore Preferences | `androidx.datastore:datastore-preferences` | Apache License 2.0 |
+| Kotlin Serialization JSON | `org.jetbrains.kotlinx:kotlinx-serialization-json` | Apache License 2.0 |
+| Kotlin Coroutines Android | `org.jetbrains.kotlinx:kotlinx-coroutines-android` | Apache License 2.0 |
+
+## Build and test-only dependencies
+
+Not shipped in the APK: Android Gradle Plugin, Kotlin, KSP, Room compiler
+(Apache-2.0); JUnit 4 (EPL-1.0); Robolectric, Turbine, AndroidX Test, Espresso,
+Compose UI Test (Apache-2.0 / MIT).

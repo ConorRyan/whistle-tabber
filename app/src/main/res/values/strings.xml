@@ -1,0 +1,28 @@
+<resources>
+    <string name="app_name">Whistle Tabber</string>
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
+    <string name="restart">Restart</string>
+    <string name="tempo_percent">Tempo: %1$d%%</string>
+    <string name="settings_title">Tab settings</string>
+    <string name="settings_whistle">Whistle</string>
+    <string name="settings_mode">When the whistle changes, keep</string>
+    <string name="mode_same_pitches">The notes</string>
+    <string name="mode_same_fingerings">The fingerings</string>
+    <string name="mode_same_pitches_help">Fingerings are worked out for the chosen whistle. The tune sounds the same.</string>
+    <string name="mode_same_fingerings_help">Fingerings stay as written for a D whistle. The tune sounds in the chosen whistle\'s key.</string>
+    <string name="settings_c_natural">C natural fingering</string>
+    <string name="settings_fold">Fold out-of-range notes</string>
+    <string name="settings_fold_help">Move notes the whistle can\'t play by an octave. Folded notes are faded with an arrow.</string>
+    <string name="whistle_high_g">High G</string>
+    <string name="whistle_f">F</string>
+    <string name="whistle_e_flat">E♭</string>
+    <string name="whistle_d">D</string>
+    <string name="whistle_c">C</string>
+    <string name="whistle_b_flat">B♭</string>
+    <string name="whistle_a">A</string>
+    <string name="whistle_low_g">Low G</string>
+    <string name="whistle_low_f">Low F</string>
+    <string name="whistle_low_d">Low D</string>
+    <string name="whistle_low_c">Low C</string>
+</resources>

@@ -1,0 +1,28 @@
+<resources>
+    <string name="app_name">Whistle Tabber</string>
+    <string name="play">Lecture</string>
+    <string name="pause">Pause</string>
+    <string name="restart">Recommencer</string>
+    <string name="tempo_percent">Tempo : %1$d %%</string>
+    <string name="settings_title">Réglages des tablatures</string>
+    <string name="settings_whistle">Flûte irlandaise (whistle)</string>
+    <string name="settings_mode">Quand le whistle change, garder</string>
+    <string name="mode_same_pitches">Les notes</string>
+    <string name="mode_same_fingerings">Les doigtés</string>
+    <string name="mode_same_pitches_help">Les doigtés sont calculés pour le whistle choisi. L\'air sonne pareil.</string>
+    <string name="mode_same_fingerings_help">Les doigtés restent ceux d\'un whistle en ré. L\'air sonne dans la tonalité du whistle choisi.</string>
+    <string name="settings_c_natural">Doigté du do bécarre</string>
+    <string name="settings_fold">Replier les notes hors tessiture</string>
+    <string name="settings_fold_help">Déplacer d\'une octave les notes injouables. Elles sont estompées et marquées d\'une flèche.</string>
+    <string name="whistle_high_g">Sol aigu</string>
+    <string name="whistle_f">Fa</string>
+    <string name="whistle_e_flat">Mi♭</string>
+    <string name="whistle_d">Ré</string>
+    <string name="whistle_c">Do</string>
+    <string name="whistle_b_flat">Si♭</string>
+    <string name="whistle_a">La</string>
+    <string name="whistle_low_g">Sol grave</string>
+    <string name="whistle_low_f">Fa grave</string>
+    <string name="whistle_low_d">Ré grave</string>
+    <string name="whistle_low_c">Do grave</string>
+</resources>

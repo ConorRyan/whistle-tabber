@@ -1,0 +1,8 @@
+{
+  "name": "whistle-tabber-web-tests",
+  "private": true,
+  "description": "Node tests for the JS shipped in app/src/main/assets/web. No dependencies.",
+  "scripts": {
+    "test": "node --test"
+  }
+}

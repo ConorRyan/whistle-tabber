@@ -1,0 +1,87 @@
+:root {
+    color-scheme: light dark;
+    --ink: #11181c;
+    --paper: #ffffff;
+    --highlight: #0a7ea4;
+    --warning: #c0392b;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --ink: #ecedee;
+        --paper: #151718;
+        --highlight: #1da1ff;
+        --warning: #ff6b5b;
+    }
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--paper);
+    color: var(--ink);
+}
+
+/* Padding lives on #sheet: abcjs makes #paper itself a width: 100% container. */
+#sheet {
+    padding: 8px 12px;
+}
+
+#paper svg path,
+#paper svg text {
+    fill: var(--ink);
+}
+
+#paper svg path[stroke] {
+    stroke: var(--ink);
+}
+
+#paper svg .abcjs-highlight path,
+#paper svg .abcjs-highlight text {
+    fill: var(--highlight);
+}
+
+#credits {
+    padding: 0 0 16px;
+    font: 14px/1.4 serif;
+}
+
+#credits p {
+    margin: 0;
+}
+
+/* Fingering diagrams (drawn by whistle-page.js). */
+.wt-hole circle {
+    stroke: var(--ink);
+    stroke-width: 0.9;
+    fill: var(--paper);
+}
+
+#paper svg .wt-closed circle,
+#paper svg .wt-hole path {
+    fill: var(--ink);
+}
+
+#paper svg .wt-diagram text {
+    fill: var(--ink);
+    font-family: sans-serif;
+    font-weight: bold;
+}
+
+#paper svg .wt-hard,
+#paper svg .wt-folded {
+    opacity: 0.55;
+}
+
+#paper svg .wt-out-of-range text {
+    fill: var(--warning);
+}
+
+#paper svg .wt-diagram.wt-highlight circle {
+    stroke: var(--highlight);
+}
+
+#paper svg .wt-diagram.wt-highlight .wt-closed circle,
+#paper svg .wt-diagram.wt-highlight .wt-hole path {
+    fill: var(--highlight);
+}
