@@ -29,15 +29,15 @@ Rules from AGENTS.md still apply:
   - [x] `join` renumbers `X:`.
 
 ## 2. Storage: Room
-- [ ] `TuneEntity`:
+- [x] `TuneEntity`:
   - Fields: id, abc (the canonical record), title, rhythm, key, meter, whistle, starred, source, createdAt, updatedAt.
   - The index fields are derived from `abc` with `AbcBook.headers` on every save. The UI never sets them directly.
-- [ ] `TuneDao`: observe all tunes, sorted by title; search title and alternate titles, case- and accent-insensitive; filter by rhythm and starred; insert many in one transaction.
-- [ ] `AppDatabase` v1 with `exportSchema = true` (`app/schemas/` is already set up in ksp). Add a migration test harness now, even with only one version.
-- [ ] `TuneRepository`, the only way from the UI to the database: `tunes`, `search`, `get(id)`, `save(abc)`, `delete`, `importBook(text): ImportResult(added, skipped duplicates, errors)`, `exportAll(): String`.
-- [ ] Duplicates: on import, a tune with the same title and the same ABC is skipped. A same title with different ABC is added.
-- [ ] Add the database and repository to `AppGraph`. Add an `appScope` like weeklies has.
-- [ ] Tests: the DAO and repository with in-memory Room under Robolectric; import counts; derived fields update when the ABC is edited; export and re-import is lossless.
+- [x] `TuneDao`: observe all tunes, sorted by title; search title and alternate titles, case- and accent-insensitive; filter by rhythm and starred; insert many in one transaction.
+- [x] `AppDatabase` v1 with `exportSchema = true` (`app/schemas/` is already set up in ksp). Add a migration test harness now, even with only one version.
+- [x] `TuneRepository`, the only way from the UI to the database: `tunes`, `search`, `get(id)`, `save(abc)`, `delete`, `importBook(text): ImportResult(added, skipped duplicates, errors)`, `exportAll(): String`.
+- [x] Duplicates: on import, a tune with the same title and the same ABC is skipped. A same title with different ABC is added.
+- [x] Add the database and repository to `AppGraph`. Add an `appScope` like weeklies has.
+- [x] Tests: the DAO and repository with in-memory Room under Robolectric; import counts; derived fields update when the ABC is edited; export and re-import is lossless.
 
 ## 3. Starter set
 - [ ] Pick about 50 tunes from O'Neill's 1850: a mix of reels, jigs, slip jigs, hornpipes, polkas, slides and airs, mostly in D, G, Em, Am and Bm, and playable on a D whistle with folding off where possible. List them in `scripts/starter-tunes.txt`.

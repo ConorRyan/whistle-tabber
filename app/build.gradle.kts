@@ -64,6 +64,15 @@ android {
             isIncludeAndroidResources = true
         }
     }
+
+    // Room's MigrationTestHelper reads the exported schemas as assets. Robolectric
+    // only sees the variant's merged assets (not the test source set's), so they
+    // go into debug builds; release APKs don't carry them.
+    sourceSets {
+        getByName("debug") {
+            assets.srcDir("$projectDir/schemas")
+        }
+    }
 }
 
 ksp {

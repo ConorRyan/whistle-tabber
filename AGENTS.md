@@ -76,10 +76,22 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     the chosen whistle; SAME_FINGERINGS keeps the tune whistle's fingerings
     and changes playback pitch (`midiTranspose`).
   - `WhistleSynth`: deterministic whistle tone samples as WAV.
+- `music/AbcBook`: plain-text ABC operations. `split` (like abcjs's
+  `bookParser`: a tune ends at a blank line; file-header `%%` directives and
+  fields are copied in after each tune's `X:`), `headers`, `join` (renumbers
+  `X:`), `suggestWhistle(K:)`, and Eskin's `%whistle_tab_key` directive
+  (`whistleOf`/`withWhistle`; our extension `%whistle_tab_key d low`).
 - `data/settings/` — `TabSettingsStore` (DataStore, injected; enums stored by
   name, unknown names fall back to defaults); `SettingsDataStores` owns the
   process-wide instance. `AppGraph` in `WhistleTabberApplication.kt` is the
-  manual DI root.
+  manual DI root, with an `appScope` for work that outlives a screen.
+- `data/tunes/` — Room (`AppDatabase`, `whistle-tabber.db`, schemas exported
+  to `app/schemas/`, also served as debug assets for `MigrationTestHelper`).
+  `TuneEntity.abc` is the canonical record; every other column is derived by
+  `TuneIndex.apply` on each save (folded `searchKey`/`sortKey` make search and
+  sorting case- and accent-insensitive). `TuneRepository` is the only way in
+  from the UI and maps rows to `Tune`; `importBook` skips a tune with the same
+  title and the same music (`TuneIndex.sameMusic`).
 - `assets/web/`
   - `whistle-core.js`: pure helpers, node-testable. `extractNotes` lists the
     first voice's written notes with MIDI pitch from abcjs's own audio

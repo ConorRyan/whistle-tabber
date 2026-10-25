@@ -16,8 +16,8 @@ class AbcBookTest {
         val tunes = AbcBook.split(fixture("book-with-header.abc"))
         assertEquals(3, tunes.size)
         assertEquals(listOf("First Reel", "Second Jig", "Third, With: Colons"), tunes.map { AbcBook.headers(it).title })
-        // %% directives go before X:, inherited fields right after it.
-        assertTrue(tunes[0].startsWith("%%titlefont Times 18\nX:1\nL:1/8\nR:reel\nT:First Reel"))
+        // The file header's %% directives and fields go right after X:.
+        assertTrue(tunes[0].startsWith("X:1\n%%titlefont Times 18\nL:1/8\nR:reel\nT:First Reel"))
         // A tune's own field wins over the file header's.
         assertEquals("jig", AbcBook.headers(tunes[1]).rhythm)
         assertEquals("1/16", AbcBook.headers(tunes[1]).unitLength)

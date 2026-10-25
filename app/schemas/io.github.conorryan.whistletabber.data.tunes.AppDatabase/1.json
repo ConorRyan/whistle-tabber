@@ -1,0 +1,125 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "56c759a09c1b0e45fbfdf5d7b0d88d31",
+    "entities": [
+      {
+        "tableName": "tunes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `abc` TEXT NOT NULL, `title` TEXT NOT NULL, `altTitles` TEXT NOT NULL, `searchKey` TEXT NOT NULL, `sortKey` TEXT NOT NULL, `rhythm` TEXT, `keySignature` TEXT, `meter` TEXT, `whistle` TEXT, `starred` INTEGER NOT NULL, `source` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "abc",
+            "columnName": "abc",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "altTitles",
+            "columnName": "altTitles",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "searchKey",
+            "columnName": "searchKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sortKey",
+            "columnName": "sortKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rhythm",
+            "columnName": "rhythm",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "keySignature",
+            "columnName": "keySignature",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "meter",
+            "columnName": "meter",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "whistle",
+            "columnName": "whistle",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "starred",
+            "columnName": "starred",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_tunes_sortKey",
+            "unique": false,
+            "columnNames": [
+              "sortKey"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_tunes_sortKey` ON `${TABLE_NAME}` (`sortKey`)"
+          },
+          {
+            "name": "index_tunes_rhythm",
+            "unique": false,
+            "columnNames": [
+              "rhythm"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_tunes_rhythm` ON `${TABLE_NAME}` (`rhythm`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '56c759a09c1b0e45fbfdf5d7b0d88d31')"
+    ]
+  }
+}

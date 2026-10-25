@@ -26,8 +26,10 @@ data class AbcHeaders(
  * Splitting follows abcjs's own book parser (`bookParser` in abcjs-basic.js):
  * a tune starts at a line beginning `X:` and ends at the first blank line, and
  * the `%%` directives of the file header (text before the first `X:`) apply to
- * every tune. Header fields such as `M:` or `L:` in the file header are copied
- * in after the tune's `X:` line unless the tune sets that field itself.
+ * every tune. Each tune keeps its `X:` line first; the file header's `%%`
+ * directives and its fields such as `M:` or `L:` (unless the tune sets that
+ * field itself) are copied in right after it, so a split tune is self-contained
+ * and [join] never produces text that looks like a file header.
  *
  * The per-tune whistle uses Michael Eskin's directive from his ABC Tools
  * (seisiuneer/abctools, `abcjs-basic-eskin.js`, MIT), so files round-trip:
@@ -86,7 +88,7 @@ object AbcBook {
         return tunes.map { tune ->
             val own = tune.lines.mapNotNull { FIELD.find(it)?.groupValues?.get(1) }.toSet()
             val inherited = fields.filter { FIELD.find(it)!!.groupValues[1] !in own }
-            (directives + tune.prefix + tune.lines.first() + inherited + tune.lines.drop(1)).joinToString("\n")
+            (listOf(tune.lines.first()) + directives + tune.prefix + inherited + tune.lines.drop(1)).joinToString("\n")
         }
     }
 
