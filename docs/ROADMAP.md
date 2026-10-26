@@ -153,4 +153,4 @@ Key design points:
 
 ### Between S3 and S4 (2026-10-26)
 - Done: multi-select in the library (long press, select all, batch delete with one Undo; `RecentlyDeleted` now offers a batch), and the starter set cut from 50 to 10 well-known tunes (Drowsy Maggie, The Merry Blacksmith, The Wind that Shakes the Barley, Banish Misfortune, Out on the Ocean, Haste to the Wedding, The Harvest Home, Off to California, The Boys of Bluehill, The Rakes of Mallow), all kept from the vetted 50.
-- Done: whistle note names are a setting (`NoteNames`: "C D E" or "Do Ré Mi", default letters) instead of following the phone language; each is a whole convention ("Low D", "Eb" / "Ré grave", "Mi♭") in every language.
+- Done: whistle note names are a setting (`NoteNames`): "C D E" ("Low D", "Eb") and "Do Ré Mi" ("Ré grave", "Mi♭") are each a whole convention in every language; the default, Auto, picks by the app language.

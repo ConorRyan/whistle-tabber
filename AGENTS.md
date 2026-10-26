@@ -87,8 +87,10 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
   - `WhistleKey`: `writtenTonic` (fingering) and `soundingShift` (+12 for
     soprano whistles: whistle music is written an octave below sounding),
     plus `letter` and `register` (high/normal/low) for its name.
-  - `NoteNames` (LETTERS/SOLFEGE, a tab setting, default letters): each is
-    a whole convention, never chosen by the app's language.
+  - `NoteNames` (AUTO/LETTERS/SOLFEGE, a tab setting, default AUTO): LETTERS
+    and SOLFEGE are each a whole convention, the same in every app language;
+    AUTO `resolve`s by the app's language (`R.bool.language_uses_solfege`,
+    true in `values-fr`) through `resolvedNoteNames` in `MainActivity`.
     `WhistleKey.label` gives "High G", "Eb", "Low D" or "Sol aigu", "Mi♭",
     "Ré grave"; `noteName` is the key alone.
   - `TabSettings` + `TransposeMode`: SAME_PITCHES recomputes fingerings for

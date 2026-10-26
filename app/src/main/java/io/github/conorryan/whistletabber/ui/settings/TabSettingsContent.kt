@@ -114,8 +114,16 @@ fun TabSettingsContent(
                     selected = settings.noteNames == names,
                     onClick = { onNoteNames(names) },
                     shape = SegmentedButtonDefaults.itemShape(i, NoteNames.entries.size),
-                    // Examples, not words: the same in every language.
-                    label = { Text(if (names == NoteNames.LETTERS) "C D E" else "Do Ré Mi") },
+                    // The fixed schemes show examples, not words: the same in every language.
+                    label = {
+                        Text(
+                            when (names) {
+                                NoteNames.AUTO -> stringResource(R.string.note_names_auto)
+                                NoteNames.LETTERS -> "C D E"
+                                NoteNames.SOLFEGE -> "Do Ré Mi"
+                            },
+                        )
+                    },
                     modifier = Modifier.testTag("notes-${names.name}"),
                 )
             }

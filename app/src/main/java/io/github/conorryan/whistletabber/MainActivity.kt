@@ -11,6 +11,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.conorryan.whistletabber.music.NoteNames
 import io.github.conorryan.whistletabber.ui.AppNavHost
 import io.github.conorryan.whistletabber.ui.components.LocalNoteNames
+import io.github.conorryan.whistletabber.ui.components.resolvedNoteNames
 import io.github.conorryan.whistletabber.ui.theme.WhistleTabberTheme
 import kotlinx.coroutines.flow.map
 
@@ -23,7 +24,7 @@ class MainActivity : ComponentActivity() {
             val noteNamesFlow = remember { graph.tabSettingsStore.settings.map { it.noteNames } }
             val noteNames by noteNamesFlow.collectAsStateWithLifecycle(NoteNames.DEFAULT)
             WhistleTabberTheme {
-                CompositionLocalProvider(LocalNoteNames provides noteNames) {
+                CompositionLocalProvider(LocalNoteNames provides resolvedNoteNames(noteNames)) {
                     AppNavHost(graph)
                 }
             }

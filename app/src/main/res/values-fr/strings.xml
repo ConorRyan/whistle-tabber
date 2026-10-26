@@ -117,7 +117,8 @@
     <string name="settings_fold">Ramener les notes hors tessiture</string>
     <string name="settings_fold_help">Décale d\'une octave les notes que le whistle ne peut pas jouer. Elles sont estompées et marquées d\'une flèche.</string>
     <string name="settings_note_names">Noms des notes</string>
-    <string name="settings_note_names_help">Comment les whistles sont nommés, quelle que soit la langue de l\'application.</string>
+    <string name="settings_note_names_help">Comment les whistles sont nommés. Auto suit la langue de l\'application\u00A0; les autres s\'appliquent dans toutes les langues.</string>
+    <string name="note_names_auto">Auto</string>
     <string name="settings_library">Bibliothèque</string>
     <string name="starter_set">Sélection O\'Neill\'s</string>
     <string name="starter_set_help">10 airs bien connus tirés du recueil O\'Neill\'s Music of Ireland (1850). Les airs déjà présents sont ignorés.</string>

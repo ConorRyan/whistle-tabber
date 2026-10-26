@@ -1,0 +1,4 @@
+<resources>
+    <!-- Whether this language names notes in solfège (Do Ré Mi); decides NoteNames.AUTO. -->
+    <bool name="language_uses_solfege">false</bool>
+</resources>

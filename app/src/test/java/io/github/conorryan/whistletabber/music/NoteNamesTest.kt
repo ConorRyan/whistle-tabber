@@ -35,7 +35,20 @@ class NoteNamesTest {
     }
 
     @Test
-    fun `letters are the default`() {
-        assertEquals(NoteNames.LETTERS, TabSettings().noteNames)
+    fun `auto is the default and resolves by language`() {
+        assertEquals(NoteNames.AUTO, TabSettings().noteNames)
+        assertEquals(NoteNames.SOLFEGE, NoteNames.AUTO.resolve(languageUsesSolfege = true))
+        assertEquals(NoteNames.LETTERS, NoteNames.AUTO.resolve(languageUsesSolfege = false))
+    }
+
+    @Test
+    fun `fixed schemes ignore the language`() {
+        assertEquals(NoteNames.LETTERS, NoteNames.LETTERS.resolve(languageUsesSolfege = true))
+        assertEquals(NoteNames.SOLFEGE, NoteNames.SOLFEGE.resolve(languageUsesSolfege = false))
+    }
+
+    @Test
+    fun `an unresolved auto reads as letters`() {
+        assertEquals("Low D", WhistleKey.LOW_D.label(NoteNames.AUTO))
     }
 }

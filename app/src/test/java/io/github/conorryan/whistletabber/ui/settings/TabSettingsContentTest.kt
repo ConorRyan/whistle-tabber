@@ -14,6 +14,7 @@ import androidx.compose.ui.test.performScrollTo
 import io.github.conorryan.whistletabber.music.NoteNames
 import io.github.conorryan.whistletabber.music.TabSettings
 import io.github.conorryan.whistletabber.ui.components.LocalNoteNames
+import io.github.conorryan.whistletabber.ui.components.resolvedNoteNames
 import io.github.conorryan.whistletabber.ui.theme.WhistleTabberTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -33,7 +34,7 @@ class TabSettingsContentTest {
         val settings = TabSettings(noteNames = noteNames)
         compose.setContent {
             WhistleTabberTheme {
-                CompositionLocalProvider(LocalNoteNames provides settings.noteNames) {
+                CompositionLocalProvider(LocalNoteNames provides resolvedNoteNames(settings.noteNames)) {
                     Column(Modifier.verticalScroll(rememberScrollState())) {
                         TabSettingsContent(settings, {}, {}, {}, {}, onNoteNames)
                     }
@@ -64,6 +65,21 @@ class TabSettingsContentTest {
         show(NoteNames.LETTERS)
         compose.onNodeWithTag("whistle-LOW_D").assertTextEquals("Low D")
         compose.onNodeWithTag("whistle-HIGH_G").assertTextEquals("High G")
+    }
+
+    @Test
+    fun `auto gives letters in English`() {
+        show(NoteNames.AUTO)
+        compose.onNodeWithTag("whistle-LOW_D").assertTextEquals("Low D")
+        compose.onNodeWithTag("notes-AUTO").performScrollTo().assertIsSelected()
+    }
+
+    @Test
+    @Config(qualifiers = "fr")
+    fun `auto gives solfege in French`() {
+        show(NoteNames.AUTO)
+        compose.onNodeWithTag("whistle-LOW_D").assertTextEquals("Ré grave")
+        compose.onNodeWithTag("whistle-E_FLAT").assertTextEquals("Mi♭")
     }
 
     @Test
