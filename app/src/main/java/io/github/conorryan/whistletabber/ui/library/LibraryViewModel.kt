@@ -91,7 +91,7 @@ class LibraryViewModel(
 
     init {
         viewModelScope.launch {
-            recentlyDeleted.tune.filterNotNull().collect { tune ->
+            recentlyDeleted.offer.filterNotNull().collect { tune ->
                 _messages.send(LibraryMessage.Deleted(tune))
             }
         }
@@ -142,12 +142,12 @@ class LibraryViewModel(
 
     /** Puts back a tune deleted on the tune screen. */
     fun undoDelete(tune: Tune) {
-        if (recentlyDeleted.take(tune)) appScope.launch { repository.restore(tune) }
+        recentlyDeleted.undo(tune)
     }
 
     /** The Undo offer for [tune] was dismissed. */
     fun forgetDeleted(tune: Tune) {
-        recentlyDeleted.take(tune)
+        recentlyDeleted.dismiss(tune)
     }
 
     private fun runImport(block: suspend () -> LibraryMessage) {

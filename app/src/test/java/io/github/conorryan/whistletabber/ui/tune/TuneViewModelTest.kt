@@ -250,7 +250,7 @@ class TuneViewModelTest {
             assertEquals(TuneEffect.Close, awaitItem())
         }
         assertNull(graph.repository.get(id))
-        assertEquals(id, graph.recentlyDeleted.tune.value?.id)
+        assertEquals(id, graph.recentlyDeleted.offer.value?.id)
         assertEquals(false, vm.state.value.missing)
     }
 

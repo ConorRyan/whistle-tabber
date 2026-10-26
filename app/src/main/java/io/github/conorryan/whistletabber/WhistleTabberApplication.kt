@@ -22,10 +22,12 @@ class AppGraph(
 ) {
     val tuneRepository = TuneRepository(db)
     val starterTunes = StarterTunes(tuneRepository, loadStarterSet)
-    val recentlyDeleted = RecentlyDeleted()
 
     /** Application-lived scope for work that must outlive a screen, like an import. */
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    /** Delete with undo: the tune screen deletes, the library offers Undo. */
+    val recentlyDeleted = RecentlyDeleted(tuneRepository, appScope)
 
     /** One owner for tab-settings writes from the UI (both settings surfaces). */
     val tabSettingsEditor = TabSettingsEditor(tabSettingsStore, appScope)

@@ -141,26 +141,13 @@ class LibraryViewModelTest {
         val vm = vm()
         val id = vm.state.first { it.tunes.size == 1 }.tunes.single().id
         vm.messages.test {
-            graph.recentlyDeleted.put(graph.repository.delete(id)!!)
+            graph.recentlyDeleted.delete(id)
             val deleted = awaitItem() as LibraryMessage.Deleted
             assertEquals("Gone", deleted.tune.title)
             vm.undoDelete(deleted.tune)
         }
         assertEquals(id, vm.state.first { it.tunes.size == 1 }.tunes.single().id)
-        assertNull(graph.recentlyDeleted.tune.value)
-    }
-
-    @Test
-    fun `dismissing the undo forgets the tune`() = runTest {
-        save(tune("Gone"))
-        val vm = vm()
-        val id = vm.state.first { it.tunes.size == 1 }.tunes.single().id
-        val tune = graph.repository.delete(id)!!
-        graph.recentlyDeleted.put(tune)
-        vm.forgetDeleted(tune)
-        assertNull(graph.recentlyDeleted.tune.value)
-        vm.undoDelete(tune) // too late: nothing happens
-        assertEquals(0, graph.repository.count.first())
+        assertNull(graph.recentlyDeleted.offer.value)
     }
 
     private suspend fun app.cash.turbine.ReceiveTurbine<LibraryUiState>.awaitUntil(

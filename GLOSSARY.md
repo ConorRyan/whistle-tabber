@@ -20,3 +20,7 @@ are named here; add a term when code names a new concept.
 - **Key-change preview** (`KeyChangePreview`): previewing a tune rewritten
   into another key: the tonic, its name, the steps, and the rewritten ABC
   once the page has answered.
+- **Recently deleted** (`RecentlyDeleted`): delete with undo. Deleting a
+  tune removes it and puts it on offer; the library offers Undo and answers
+  with undo (restored with its id, star and dates) or dismiss. One tune is on
+  offer at a time.

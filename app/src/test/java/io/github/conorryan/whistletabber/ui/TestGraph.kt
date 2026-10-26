@@ -11,6 +11,9 @@ import io.github.conorryan.whistletabber.data.tunes.RecentlyDeleted
 import io.github.conorryan.whistletabber.data.tunes.StarterTunes
 import io.github.conorryan.whistletabber.data.tunes.TuneRepository
 import java.io.File
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 
 /** Real data layer for ViewModel tests: in-memory Room and a temp-file DataStore. Robolectric only. */
 class TestGraph(dir: File) {
@@ -23,8 +26,13 @@ class TestGraph(dir: File) {
         PreferenceDataStoreFactory.create(produceFile = { File(dir, "tab.preferences_pb") }),
     )
     val files = AbcFiles(context.contentResolver)
-    val recentlyDeleted = RecentlyDeleted()
+    /** Stands in for the app scope; cancelled by [close]. */
+    val appScope = CoroutineScope(SupervisorJob())
+    val recentlyDeleted = RecentlyDeleted(repository, appScope)
     val starterTunes = StarterTunes.fromAssets(context, repository)
 
-    fun close() = db.close()
+    fun close() {
+        appScope.cancel()
+        db.close()
+    }
 }

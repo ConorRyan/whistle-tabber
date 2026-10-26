@@ -137,8 +137,7 @@ class TuneViewModel(
     fun delete() {
         deleting = true
         viewModelScope.launch {
-            val tune = repository.delete(id)
-            if (tune != null) recentlyDeleted.put(tune)
+            recentlyDeleted.delete(id)
             _effects.send(TuneEffect.Close)
         }
     }
