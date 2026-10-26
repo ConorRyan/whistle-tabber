@@ -98,6 +98,8 @@
     <string name="settings_c_natural">Doigté du do bécarre</string>
     <string name="settings_fold">Replier les notes hors tessiture</string>
     <string name="settings_fold_help">Déplacer d\'une octave les notes injouables. Elles sont estompées et marquées d\'une flèche.</string>
+    <string name="settings_note_names">Noms des notes</string>
+    <string name="settings_note_names_help">Comment les whistles sont nommés, quelle que soit la langue de l\'appli.</string>
     <string name="settings_library">Bibliothèque</string>
     <string name="starter_set">Sélection O\'Neill\'s</string>
     <string name="starter_set_help">50 airs traditionnels tirés de O\'Neill\'s Music of Ireland (1850). Les airs déjà présents sont ignorés.</string>
@@ -111,15 +113,6 @@
     <string name="licence_libraries">AndroidX, Jetpack Compose et les bibliothèques Kotlin : licence Apache 2.0.</string>
 
     <!-- Whistles -->
-    <string name="whistle_high_g">Sol aigu</string>
-    <string name="whistle_f">Fa</string>
-    <string name="whistle_e_flat">Mi♭</string>
-    <string name="whistle_d">Ré</string>
-    <string name="whistle_c">Do</string>
-    <string name="whistle_b_flat">Si♭</string>
-    <string name="whistle_a">La</string>
-    <string name="whistle_low_g">Sol grave</string>
-    <string name="whistle_low_f">Fa grave</string>
-    <string name="whistle_low_d">Ré grave</string>
-    <string name="whistle_low_c">Do grave</string>
+    <string name="whistle_high">%1$s aigu</string>
+    <string name="whistle_low">%1$s grave</string>
 </resources>

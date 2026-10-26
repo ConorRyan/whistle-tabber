@@ -7,22 +7,26 @@ package io.github.conorryan.whistletabber.music
  *
  * "A" is the common A whistle (bottom note A4, 440 Hz).
  *
+ * @property letter the whistle's key as a letter name ("G", "E♭"); see [noteName]
+ * @property register how the whistle is named beside its key: "High G", "Low D"
  * @property writtenTonic MIDI pitch of the bottom note (all holes closed) as written
  * @property soundingShift semitones from written to sounding pitch
  */
-enum class WhistleKey(val label: String, val writtenTonic: Int, val soundingShift: Int) {
-    HIGH_G("High G", 67, 12),
-    F("F", 65, 12),
-    E_FLAT("E♭", 63, 12),
-    D("D", 62, 12),
-    C("C", 60, 12),
-    B_FLAT("B♭", 58, 12),
-    A("A", 57, 12),
-    LOW_G("Low G", 67, 0),
-    LOW_F("Low F", 65, 0),
-    LOW_D("Low D", 62, 0),
-    LOW_C("Low C", 60, 0),
+enum class WhistleKey(val letter: String, val register: Register, val writtenTonic: Int, val soundingShift: Int) {
+    HIGH_G("G", Register.HIGH, 67, 12),
+    F("F", Register.NORMAL, 65, 12),
+    E_FLAT("E♭", Register.NORMAL, 63, 12),
+    D("D", Register.NORMAL, 62, 12),
+    C("C", Register.NORMAL, 60, 12),
+    B_FLAT("B♭", Register.NORMAL, 58, 12),
+    A("A", Register.NORMAL, 57, 12),
+    LOW_G("G", Register.LOW, 67, 0),
+    LOW_F("F", Register.LOW, 65, 0),
+    LOW_D("D", Register.LOW, 62, 0),
+    LOW_C("C", Register.LOW, 60, 0),
     ;
+
+    enum class Register { HIGH, NORMAL, LOW }
 
     companion object {
         val DEFAULT = D

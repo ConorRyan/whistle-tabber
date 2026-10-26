@@ -14,6 +14,7 @@ data class TabSettings(
     val cNatural: CNatural = CNatural.DEFAULT,
     val foldOutOfRange: Boolean = true,
     val mode: TransposeMode = TransposeMode.SAME_PITCHES,
+    val noteNames: NoteNames = NoteNames.DEFAULT,
 ) {
     /** The whistle whose fingerings are shown for a tune written for [tuneWhistle]. */
     fun fingeringWhistle(tuneWhistle: WhistleKey): WhistleKey = when (mode) {

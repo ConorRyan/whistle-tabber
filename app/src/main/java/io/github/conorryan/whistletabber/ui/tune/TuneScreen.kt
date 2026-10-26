@@ -203,6 +203,7 @@ fun TuneScreen(
                     onCNatural = vm.settingsEditor::setCNatural,
                     onFold = vm.settingsEditor::setFoldOutOfRange,
                     onMode = vm.settingsEditor::setMode,
+                    onNoteNames = vm.settingsEditor::setNoteNames,
                 )
             }
         }

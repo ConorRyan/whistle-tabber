@@ -75,7 +75,7 @@ import io.github.conorryan.whistletabber.R
 import io.github.conorryan.whistletabber.data.tunes.ExportNames
 import io.github.conorryan.whistletabber.data.tunes.ImportResult
 import io.github.conorryan.whistletabber.data.tunes.Tune
-import io.github.conorryan.whistletabber.ui.components.whistleLabelRes
+import io.github.conorryan.whistletabber.ui.components.whistleLabel
 import java.time.LocalDate
 import java.util.Locale
 
@@ -315,7 +315,7 @@ private fun TuneRow(tune: Tune, selected: Boolean?, onClick: () -> Unit, onLongC
     val details = listOfNotNull(
         tune.rhythm?.capitalized(),
         tune.key,
-        tune.whistle?.let { stringResource(R.string.tune_whistle, stringResource(whistleLabelRes(it))) },
+        tune.whistle?.let { stringResource(R.string.tune_whistle, whistleLabel(it)) },
     ).joinToString(" · ")
     val selection = when (selected) {
         null -> Modifier

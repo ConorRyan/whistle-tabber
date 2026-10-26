@@ -3,6 +3,7 @@ package io.github.conorryan.whistletabber.ui.settings
 import app.cash.turbine.test
 import io.github.conorryan.whistletabber.data.tunes.ImportResult
 import io.github.conorryan.whistletabber.music.CNatural
+import io.github.conorryan.whistletabber.music.NoteNames
 import io.github.conorryan.whistletabber.music.TabSettings
 import io.github.conorryan.whistletabber.music.TransposeMode
 import io.github.conorryan.whistletabber.music.WhistleKey
@@ -55,7 +56,8 @@ class SettingsViewModelTest {
         editor.setCNatural(CNatural.OXX_XOX)
         editor.setFoldOutOfRange(false)
         editor.setMode(TransposeMode.SAME_FINGERINGS)
-        val expected = TabSettings(WhistleKey.LOW_D, CNatural.OXX_XOX, false, TransposeMode.SAME_FINGERINGS)
+        editor.setNoteNames(NoteNames.SOLFEGE)
+        val expected = TabSettings(WhistleKey.LOW_D, CNatural.OXX_XOX, false, TransposeMode.SAME_FINGERINGS, NoteNames.SOLFEGE)
         assertEquals(expected, graph.store.settings.first { it == expected })
     }
 

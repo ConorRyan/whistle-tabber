@@ -2,6 +2,7 @@ package io.github.conorryan.whistletabber.ui.settings
 
 import io.github.conorryan.whistletabber.data.settings.TabSettingsStore
 import io.github.conorryan.whistletabber.music.CNatural
+import io.github.conorryan.whistletabber.music.NoteNames
 import io.github.conorryan.whistletabber.music.TabSettings
 import io.github.conorryan.whistletabber.music.TransposeMode
 import io.github.conorryan.whistletabber.music.WhistleKey
@@ -25,4 +26,5 @@ class TabSettingsEditor(
     fun setCNatural(cNatural: CNatural) = scope.launch { store.setCNatural(cNatural) }
     fun setFoldOutOfRange(fold: Boolean) = scope.launch { store.setFoldOutOfRange(fold) }
     fun setMode(mode: TransposeMode) = scope.launch { store.setMode(mode) }
+    fun setNoteNames(noteNames: NoteNames) = scope.launch { store.setNoteNames(noteNames) }
 }

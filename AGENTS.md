@@ -81,7 +81,11 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     `hard`. C natural comes from the `CNatural` preference. Out-of-range notes
     fold by octaves when enabled (`Playable.folded`) or report `OutOfRange`.
   - `WhistleKey`: `writtenTonic` (fingering) and `soundingShift` (+12 for
-    soprano whistles: whistle music is written an octave below sounding).
+    soprano whistles: whistle music is written an octave below sounding),
+    plus `letter` and `register` (high/normal/low) for its name.
+  - `NoteNames` (LETTERS/SOLFEGE, a tab setting, default letters):
+    `WhistleKey.noteName` gives "E♭" or "Mi♭". The style never follows the
+    app's language; only "High"/"Low" are translated.
   - `TabSettings` + `TransposeMode`: SAME_PITCHES recomputes fingerings for
     the chosen whistle; SAME_FINGERINGS keeps the tune whistle's fingerings
     and changes playback pitch (`midiTranspose`).
@@ -135,7 +139,8 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
   - `index.html`: strict CSP, local scripts only.
 - `ui/` — `theme/`; `components/` (`FingeringDiagram`, matching the page's
   diagrams, with `FingeringDiagramGeometryTest` pinning the shared geometry;
-  `whistleLabel`). `AppNavHost` holds type-safe `@Serializable`
+  `whistleLabel`, which reads the `LocalNoteNames` composition local that
+  `MainActivity` provides from the settings store). `AppNavHost` holds type-safe `@Serializable`
   routes: `LibraryRoute` (start), `TuneRoute(id)`, `EditorRoute(id?)`,
   `SettingsRoute`. Each screen has a ViewModel built from `AppGraph` and a
   stateless `…Content` composable where Compose tests need one.

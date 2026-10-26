@@ -22,6 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.conorryan.whistletabber.R
 import io.github.conorryan.whistletabber.music.CNatural
+import io.github.conorryan.whistletabber.music.NoteNames
 import io.github.conorryan.whistletabber.music.TabSettings
 import io.github.conorryan.whistletabber.music.TransposeMode
 import io.github.conorryan.whistletabber.music.WhistleKey
@@ -46,7 +47,7 @@ fun WhistleChips(selected: WhistleKey?, onSelect: (WhistleKey) -> Unit, tagPrefi
 
 /**
  * The tab settings that apply to every tune: my whistle, transpose mode,
- * C natural and folding. Shown in Settings and in the tune screen's sheet.
+ * C natural, folding and note names. Shown in Settings and in the tune screen's sheet.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -56,6 +57,7 @@ fun TabSettingsContent(
     onCNatural: (CNatural) -> Unit,
     onFold: (Boolean) -> Unit,
     onMode: (TransposeMode) -> Unit,
+    onNoteNames: (NoteNames) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(stringResource(R.string.settings_whistle), style = MaterialTheme.typography.titleMedium)
@@ -104,5 +106,20 @@ fun TabSettingsContent(
             }
             Switch(checked = settings.foldOutOfRange, onCheckedChange = onFold, modifier = Modifier.testTag("fold"))
         }
+
+        Text(stringResource(R.string.settings_note_names), style = MaterialTheme.typography.titleMedium)
+        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+            NoteNames.entries.forEachIndexed { i, names ->
+                SegmentedButton(
+                    selected = settings.noteNames == names,
+                    onClick = { onNoteNames(names) },
+                    shape = SegmentedButtonDefaults.itemShape(i, NoteNames.entries.size),
+                    // Examples, not words: the same in every language.
+                    label = { Text(if (names == NoteNames.LETTERS) "C D E" else "Do Ré Mi") },
+                    modifier = Modifier.testTag("notes-${names.name}"),
+                )
+            }
+        }
+        Text(stringResource(R.string.settings_note_names_help), style = MaterialTheme.typography.bodySmall)
     }
 }

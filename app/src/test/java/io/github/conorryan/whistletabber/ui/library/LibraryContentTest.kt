@@ -1,5 +1,6 @@
 package io.github.conorryan.whistletabber.ui.library
 
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
@@ -11,7 +12,9 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import io.github.conorryan.whistletabber.data.tunes.Tune
+import io.github.conorryan.whistletabber.music.NoteNames
 import io.github.conorryan.whistletabber.music.WhistleKey
+import io.github.conorryan.whistletabber.ui.components.LocalNoteNames
 import io.github.conorryan.whistletabber.ui.theme.WhistleTabberTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -55,6 +58,19 @@ class LibraryContentTest {
         assertEquals(2L, opened)
         compose.onNodeWithTag("star-2").performClick()
         assertEquals(2L to false, starred) // already starred: unstar
+    }
+
+    @Test
+    fun `rows name the whistle in the chosen note names`() {
+        val state = LibraryUiState(tunes = listOf(tune(1, "Drowsy Maggie")), loaded = true)
+        compose.setContent {
+            WhistleTabberTheme {
+                CompositionLocalProvider(LocalNoteNames provides NoteNames.SOLFEGE) {
+                    LibraryContent(state, onOpenTune = {}, onStar = { _, _ -> })
+                }
+            }
+        }
+        compose.onNodeWithText("Reel · D · Ré whistle").assertIsDisplayed()
     }
 
     @Test

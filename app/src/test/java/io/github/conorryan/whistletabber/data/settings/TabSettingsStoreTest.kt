@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import io.github.conorryan.whistletabber.music.CNatural
+import io.github.conorryan.whistletabber.music.NoteNames
 import io.github.conorryan.whistletabber.music.TabSettings
 import io.github.conorryan.whistletabber.music.TransposeMode
 import io.github.conorryan.whistletabber.music.WhistleKey
@@ -36,9 +37,10 @@ class TabSettingsStoreTest {
         store.setCNatural(CNatural.OXX_XOX)
         store.setFoldOutOfRange(false)
         store.setMode(TransposeMode.SAME_FINGERINGS)
+        store.setNoteNames(NoteNames.SOLFEGE)
 
         assertEquals(
-            TabSettings(WhistleKey.LOW_D, CNatural.OXX_XOX, foldOutOfRange = false, mode = TransposeMode.SAME_FINGERINGS),
+            TabSettings(WhistleKey.LOW_D, CNatural.OXX_XOX, foldOutOfRange = false, mode = TransposeMode.SAME_FINGERINGS, noteNames = NoteNames.SOLFEGE),
             store.settings.first(),
         )
     }
@@ -57,6 +59,7 @@ class TabSettingsStoreTest {
             it[stringPreferencesKey("whistle")] = "KAZOO"
             it[stringPreferencesKey("cNatural")] = "XXX_XXX"
             it[stringPreferencesKey("transposeMode")] = ""
+            it[stringPreferencesKey("noteNames")] = "NASHVILLE"
         }
         assertEquals(TabSettings(), TabSettingsStore(dataStore).settings.first())
     }
