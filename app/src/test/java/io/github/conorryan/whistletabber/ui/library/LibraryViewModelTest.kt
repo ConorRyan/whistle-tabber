@@ -105,9 +105,9 @@ class LibraryViewModelTest {
         val vm = vm()
         vm.messages.test {
             vm.addStarterSet()
-            assertEquals(LibraryMessage.Imported(ImportResult(50, 0, emptyList())), awaitItem())
+            assertEquals(LibraryMessage.Imported(ImportResult(10, 0, emptyList())), awaitItem())
         }
-        assertEquals(50, vm.state.first { it.tunes.size == 50 }.tunes.size)
+        assertEquals(10, vm.state.first { it.tunes.size == 10 }.tunes.size)
         assertFalse(vm.state.value.busy)
     }
 
@@ -142,10 +142,61 @@ class LibraryViewModelTest {
         vm.messages.test {
             graph.recentlyDeleted.delete(id)
             val deleted = awaitItem() as LibraryMessage.Deleted
-            assertEquals("Gone", deleted.tune.title)
-            vm.undoDelete(deleted.tune)
+            assertEquals(listOf("Gone"), deleted.tunes.map { it.title })
+            vm.undoDelete(deleted.tunes)
         }
         assertEquals(id, vm.state.first { it.tunes.size == 1 }.tunes.single().id)
+        assertNull(graph.recentlyDeleted.offer.value)
+    }
+
+    @Test
+    fun `selection toggles, selects all shown, and clears`() = runTest {
+        save(tune("A"), tune("B"), tune("C", "jig"))
+        val vm = vm()
+        val ids = vm.state.first { it.tunes.size == 3 }.tunes.associate { it.title to it.id }
+        assertFalse(vm.state.value.selecting)
+        vm.toggleSelected(ids.getValue("A"))
+        vm.toggleSelected(ids.getValue("B"))
+        vm.toggleSelected(ids.getValue("A"))
+        assertEquals(setOf(ids.getValue("B")), vm.state.first { it.selected.size == 1 }.selected)
+        assertTrue(vm.state.value.selecting)
+
+        vm.toggleRhythm("reel")
+        vm.selectAll()
+        assertEquals(setOf(ids.getValue("A"), ids.getValue("B")), vm.state.first { it.selected.size == 2 }.selected)
+        vm.clearSelection()
+        assertFalse(vm.state.first { it.selected.isEmpty() }.selecting)
+    }
+
+    @Test
+    fun `tunes hidden by a filter drop out of the selection`() = runTest {
+        save(tune("Reel"), tune("Jig", "jig"))
+        val vm = vm()
+        vm.state.first { it.tunes.size == 2 }
+        vm.selectAll()
+        assertEquals(2, vm.state.first { it.selected.size == 2 }.selected.size)
+        vm.toggleRhythm("jig")
+        val jigs = vm.state.first { it.tunes.size == 1 }
+        assertEquals(setOf(jigs.tunes.single().id), jigs.selected)
+    }
+
+    @Test
+    fun `deleting the selection offers the batch for undo, and undo restores it`() = runTest {
+        save(tune("A"), tune("B"), tune("Kept"))
+        val vm = vm()
+        val ids = vm.state.first { it.tunes.size == 3 }.tunes.associate { it.title to it.id }
+        vm.toggleSelected(ids.getValue("A"))
+        vm.toggleSelected(ids.getValue("B"))
+        vm.messages.test {
+            vm.deleteSelected()
+            val deleted = awaitItem() as LibraryMessage.Deleted
+            assertEquals(setOf("A", "B"), deleted.tunes.map { it.title }.toSet())
+            val left = vm.state.first { it.tunes.size == 1 }
+            assertEquals("Kept", left.tunes.single().title)
+            assertFalse(left.selecting)
+            vm.undoDelete(deleted.tunes)
+        }
+        assertEquals(ids.values.toSet(), vm.state.first { it.tunes.size == 3 }.tunes.map { it.id }.toSet())
         assertNull(graph.recentlyDeleted.offer.value)
     }
 

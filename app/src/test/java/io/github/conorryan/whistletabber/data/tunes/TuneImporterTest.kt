@@ -57,9 +57,9 @@ class TuneImporterTest {
     }
 
     @Test
-    fun `asset has 50 tunes, each titled, keyed, credited and with a rhythm`() {
+    fun `asset has 10 tunes, each titled, keyed, credited and with a rhythm`() {
         val tunes = AbcBook.split(TuneImporter.readStarterSet(context))
-        assertEquals(50, tunes.size)
+        assertEquals(10, tunes.size)
         for (tune in tunes) {
             val h = AbcBook.headers(tune)
             assertFalse(tune, h.title.isNullOrBlank())
@@ -72,17 +72,17 @@ class TuneImporterTest {
 
     @Test
     fun `adding the starter set imports every tune once`() = runBlocking {
-        assertEquals(ImportResult(50, 0, emptyList()), importer.addStarterSet())
+        assertEquals(ImportResult(10, 0, emptyList()), importer.addStarterSet())
         assertTrue(repo.tunes.first().all { it.source == TuneEntity.SOURCE_STARTER })
-        assertEquals(ImportResult(0, 50, emptyList()), importer.addStarterSet())
-        assertEquals(50, repo.count.first())
+        assertEquals(ImportResult(0, 10, emptyList()), importer.addStarterSet())
+        assertEquals(10, repo.count.first())
     }
 
     @Test
     fun `the starter set covers the rhythm filters`() = runBlocking {
         importer.addStarterSet()
         assertEquals(
-            setOf("reel", "jig", "slip jig", "slide", "hornpipe", "set dance", "march", "air"),
+            setOf("reel", "jig", "hornpipe", "march"),
             repo.rhythms.first().toSet(),
         )
     }

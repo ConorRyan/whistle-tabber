@@ -42,19 +42,25 @@ data class LibraryUiState(
     /** The library has no tunes at all (not just none matching the filters). */
     val libraryEmpty: Boolean = false,
     val busy: Boolean = false,
-)
+    /** Ids of the selected tunes; only tunes in [tunes], so a filter can't hide one. */
+    val selected: Set<Long> = emptySet(),
+) {
+    /** Selection mode: a tap selects instead of opening, and the top bar acts on the selection. */
+    val selecting: Boolean get() = selected.isNotEmpty()
+}
 
 sealed interface LibraryMessage {
     data class Imported(val result: ImportResult) : LibraryMessage
     data class Exported(val count: Int) : LibraryMessage
     data object ExportFailed : LibraryMessage
-    data class Deleted(val tune: Tune) : LibraryMessage
+    data class Deleted(val tunes: List<Tune>) : LibraryMessage
 }
 
 /**
- * The tune list with search and filters, the starter-set offer, and import
- * and export of whole files. Imports run in [appScope] so leaving the screen
- * doesn't cancel them half way.
+ * The tune list with search and filters, selection for deleting several
+ * tunes at once, the starter-set offer, and import and export of whole files.
+ * Imports and deletes run in [appScope] so leaving the screen doesn't cancel
+ * them half way.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class LibraryViewModel(
@@ -66,6 +72,7 @@ class LibraryViewModel(
 ) : ViewModel() {
 
     private val filters = MutableStateFlow(LibraryFilters())
+    private val selection = MutableStateFlow<Set<Long>>(emptySet())
 
     private val _messages = Channel<LibraryMessage>(Channel.BUFFERED)
     val messages: Flow<LibraryMessage> = _messages.receiveAsFlow()
@@ -85,12 +92,14 @@ class LibraryViewModel(
             libraryEmpty = count == 0,
             busy = busy,
         )
+    }.combine(selection) { state, selection ->
+        state.copy(selected = state.tunes.mapNotNullTo(mutableSetOf()) { tune -> tune.id.takeIf { it in selection } })
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LibraryUiState())
 
     init {
         viewModelScope.launch {
-            recentlyDeleted.offer.filterNotNull().collect { tune ->
-                _messages.send(LibraryMessage.Deleted(tune))
+            recentlyDeleted.offer.filterNotNull().collect { tunes ->
+                _messages.send(LibraryMessage.Deleted(tunes))
             }
         }
     }
@@ -106,6 +115,21 @@ class LibraryViewModel(
 
     fun setStarred(tune: Tune, starred: Boolean) {
         viewModelScope.launch { repository.setStarred(tune.id, starred) }
+    }
+
+    fun toggleSelected(id: Long) = selection.update { it.toMutableSet().apply { if (!add(id)) remove(id) } }
+
+    /** Selects every tune the filters show. */
+    fun selectAll() = selection.update { state.value.tunes.mapTo(mutableSetOf()) { it.id } }
+
+    fun clearSelection() = selection.update { emptySet() }
+
+    /** Deletes the selected tunes; the library then offers them for Undo. */
+    fun deleteSelected() {
+        val ids = state.value.selected
+        if (ids.isEmpty()) return
+        clearSelection()
+        appScope.launch { recentlyDeleted.delete(ids) }
     }
 
     fun addStarterSet() = runImport { importer.addStarterSet() }
@@ -124,14 +148,14 @@ class LibraryViewModel(
         }
     }
 
-    /** Puts back a tune deleted on the tune screen. */
-    fun undoDelete(tune: Tune) {
-        recentlyDeleted.undo(tune)
+    /** Puts back tunes deleted here or on the tune screen. */
+    fun undoDelete(tunes: List<Tune>) {
+        recentlyDeleted.undo(tunes)
     }
 
-    /** The Undo offer for [tune] was dismissed. */
-    fun forgetDeleted(tune: Tune) {
-        recentlyDeleted.dismiss(tune)
+    /** The Undo offer for [tunes] was dismissed. */
+    fun forgetDeleted(tunes: List<Tune>) {
+        recentlyDeleted.dismiss(tunes)
     }
 
     private fun runImport(block: suspend () -> ImportResult) {

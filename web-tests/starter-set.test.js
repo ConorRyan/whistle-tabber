@@ -10,9 +10,9 @@ const ASSET = path.join(__dirname, "..", "app", "src", "main", "assets", "tunes"
 const book = fs.readFileSync(ASSET, "utf8");
 const tunes = ABCJS.parseOnly(book);
 
-test("the starter set has 50 tunes", () => {
+test("the starter set has 10 tunes", () => {
     // (ABCJS.numberOfTunes counts the comment header as a tune, parseOnly doesn't.)
-    assert.strictEqual(tunes.length, 50);
+    assert.strictEqual(tunes.length, 10);
 });
 
 test("every starter tune parses without warnings", () => {

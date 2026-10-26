@@ -99,16 +99,17 @@ class TuneRepository(
         save(AbcBook.withWhistle(tune.abc, whistle), id)
     }
 
-    /** Deletes the tune and returns it, so the caller can offer [restore]. */
-    suspend fun delete(id: Long): Tune? {
-        val tune = dao.get(id) ?: return null
-        dao.delete(id)
-        return toTune(tune)
+    /**
+     * Deletes the tunes and returns those that existed, so the caller can
+     * offer [restore]. One transaction.
+     */
+    suspend fun delete(ids: Collection<Long>): List<Tune> = db.withTransaction {
+        ids.mapNotNull { id -> dao.get(id)?.also { dao.delete(id) }?.let(::toTune) }
     }
 
-    /** Puts back a tune returned by [delete], with its id, star and dates. */
-    suspend fun restore(tune: Tune) {
-        dao.insert(toEntity(tune))
+    /** Puts back tunes returned by [delete], with their ids, stars and dates. */
+    suspend fun restore(tunes: List<Tune>) {
+        dao.insertAll(tunes.map(::toEntity))
     }
 
     /**

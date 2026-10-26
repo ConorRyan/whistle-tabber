@@ -1,10 +1,9 @@
-# Starter set: tunes from O'Neill's Music of Ireland (1850), O'Neill's Project
-# transcriptions (GPL-2+), fetched by scripts/build-starter-set.sh.
+# Starter set: ten of the best-known Irish session tunes, as printed in
+# O'Neill's Music of Ireland (1850), O'Neill's Project transcriptions (GPL-2+),
+# fetched by scripts/build-starter-set.sh.
 #
-# Chosen to fit a D whistle without octave folding (written D to b'), with no
-# accidentals beyond C natural, and to parse in abcjs without warnings.
-# The 1850 collection has no polkas; Dan Rogers' slide is the only slide, and
-# is kept although its D sharps need a half-hole.
+# Each fits a D whistle without octave folding (written D to b'), has no
+# accidentals beyond C natural, and parses in abcjs without warnings.
 #
 # Format: <file in _1850/X/> | <R: value we set> | <title, for humans>
 #         [| <Z: credit to add when the file has no Z: line>]
@@ -12,67 +11,19 @@
 # differently ("slipjig", "double jig"), so the script sets R: from column 2.
 
 # Reels
-1198_to.abc | reel | The Lame Fisherman
-1199_to.abc | reel | The Bucks of Oranmore
-1205_to.abc | reel | The Green Mountain
-1217_to.abc | reel | The Youngest Daughter
-1240_to.abc | reel | The Green Fields of America
-1298_to.abc | reel | Lovely Molly
-1304_to.abc | reel | The Satin Slipper
-1345_to.abc | reel | The Old Grey Gander
-1392_bs.abc | reel | The Sligo Lasses
 1425_bs.abc | reel | Drowsy Maggie
-1502_jw.abc | reel | The Rambling Sailor
-1505_jw.abc | reel | New Potatoes
 1509_jw.abc | reel | The Merry Blacksmith
 1518_jw.abc | reel | The Wind that Shakes the Barley
 
 # Jigs
-0721_mp.abc | jig | The Hag with the Money
-0755_mh.abc | jig | The Templehouse Jig
-0767_sf.abc | jig | The Hare in the Corn
-0775_sf.abc | jig | Tobin's Favorite
 0776_sf.abc | jig | Banish Misfortune
 0795_sf.abc | jig | Out on the Ocean
-0877_dp.abc | jig | Ballyhooley
-0931_tk.abc | jig | The Fisherman's Widow
-0940_tk.abc | jig | The Humours of Passage
 0987_rt.abc | jig | Haste to the Wedding
-1043_hn.abc | jig | Kitty's Rambles
-
-# Slip jigs
-1117_mh.abc | slip jig | Hardy Man the Fiddler
-1122_mh.abc | slip jig | Will You Come Down to Limerick?
-1131_mh.abc | slip jig | Give Us a Drink of Water
-1134_mh.abc | slip jig | The Boys of Ballysadare
-1145_sf.abc | slip jig | Barney Brallaghan
-1149_sf.abc | slip jig | Jack on the Green
-
-# Slide
-0787_sf.abc | slide | Dan Rogers' Jig
 
 # Hornpipes
-1565_mh.abc | hornpipe | The Liverpool Hornpipe
-1576_mh.abc | hornpipe | Fisher's Hornpipe
-1594_mh.abc | hornpipe | The Boys of Ballysimon
 1603_mh.abc | hornpipe | The Harvest Home
-1623_mh.abc | hornpipe | Tobin's Resource
-1627_nt.abc | hornpipe | The Little Stack of Barley
 1628_nt.abc | hornpipe | Off to California
 1700_nt.abc | hornpipe | The Boys of Bluehill | Transcribed by Nick Terhorst (O'Neill's Project file F/1625-1700_nt.abc; credit line added by Whistle Tabber)
-1742_bs.abc | hornpipe | Back of the Haggard
 
-# Set dance
-1798_rt.abc | set dance | The Garden of Daisies
-
-# Marches
-1804_bs.abc | march | The Green Flag Flying
+# March
 1814_bs.abc | march | The Rakes of Mallow
-
-# Airs
-0006_np.abc | air | The Dark Woman of the Glen
-0199_hn.abc | air | The Blackbird
-0338_jc.abc | air | The Streams of Bunclody
-0467_hn.abc | air | The Wearing of the Green
-0505_dw.abc | air | The Maid of the Golden Tresses
-0663_jc.abc | air | Planxty Kitty O'Brien

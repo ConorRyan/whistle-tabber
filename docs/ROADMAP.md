@@ -150,3 +150,6 @@ Key design points:
 - Also done, pulled forward from S6: a placeholder launcher icon and a navy splash screen.
 - Learned: abcjs's `strTranspose` needs the *array* `parseOnly` returns (with a single tune it silently changes nothing), so key rewriting is node-tested through `whistle-core.js` and only the bridge stays WebView-side.
 - Carry into S4: the real icon, and a share sheet for one tune (was optional in S3).
+
+### Between S3 and S4 (2026-10-26)
+- Done: multi-select in the library (long press, select all, batch delete with one Undo; `RecentlyDeleted` now offers a batch), and the starter set cut from 50 to 10 well-known tunes (Drowsy Maggie, The Merry Blacksmith, The Wind that Shakes the Barley, Banish Misfortune, Out on the Ocean, Haste to the Wedding, The Harvest Home, Off to California, The Boys of Bluehill, The Rakes of Mallow), all kept from the vetted 50.

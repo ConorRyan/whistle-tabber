@@ -64,9 +64,9 @@ class SettingsViewModelTest {
         val vm = SettingsViewModel(TabSettingsEditor(graph.store, backgroundScope), graph.importer, backgroundScope)
         vm.starterAdded.test {
             vm.addStarterSet()
-            assertEquals(ImportResult(50, 0, emptyList()), awaitItem())
+            assertEquals(ImportResult(10, 0, emptyList()), awaitItem())
             vm.addStarterSet()
-            assertEquals(ImportResult(0, 50, emptyList()), awaitItem())
+            assertEquals(ImportResult(0, 10, emptyList()), awaitItem())
         }
         assertEquals(false, vm.addingStarter.value)
     }

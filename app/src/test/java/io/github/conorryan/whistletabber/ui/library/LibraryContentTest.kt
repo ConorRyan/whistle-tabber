@@ -1,14 +1,20 @@
 package io.github.conorryan.whistletabber.ui.library
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
 import io.github.conorryan.whistletabber.data.tunes.Tune
 import io.github.conorryan.whistletabber.music.WhistleKey
 import io.github.conorryan.whistletabber.ui.theme.WhistleTabberTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -86,5 +92,60 @@ class LibraryContentTest {
         compose.setContent { WhistleTabberTheme { LibraryContent(LibraryUiState()) } }
         compose.onNodeWithTag("emptyLibrary").assertDoesNotExist()
         compose.onNodeWithTag("tuneList").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a long press selects a tune`() {
+        var toggled: Long? = null
+        compose.setContent {
+            WhistleTabberTheme {
+                LibraryContent(
+                    LibraryUiState(tunes = listOf(tune(1, "A"), tune(2, "B")), loaded = true),
+                    onToggleSelected = { toggled = it },
+                )
+            }
+        }
+        compose.onNodeWithTag("selectedCount").assertDoesNotExist()
+        compose.onNodeWithTag("tune-2").performTouchInput { longClick() }
+        assertEquals(2L, toggled)
+    }
+
+    @Test
+    fun `while selecting, the bar acts on the selection and a tap toggles instead of opening`() {
+        var opened: Long? = null
+        var toggled: Long? = null
+        var selectedAll = false
+        var deleted = false
+        var cleared = false
+        compose.setContent {
+            WhistleTabberTheme {
+                LibraryContent(
+                    LibraryUiState(tunes = listOf(tune(1, "A"), tune(2, "B"), tune(3, "C")), loaded = true, selected = setOf(1, 3)),
+                    onOpenTune = { opened = it },
+                    onToggleSelected = { toggled = it },
+                    onSelectAll = { selectedAll = true },
+                    onDeleteSelected = { deleted = true },
+                    onClearSelection = { cleared = true },
+                )
+            }
+        }
+        compose.onNodeWithTag("selectedCount").assertTextEquals("2 selected")
+        compose.onNodeWithTag("newTune").assertDoesNotExist()
+        compose.onNodeWithTag("settings").assertDoesNotExist()
+        compose.onNodeWithTag("star-1").assertDoesNotExist()
+        compose.onNodeWithTag("select-1", useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithTag("tune-1").assertIsOn()
+        compose.onNodeWithTag("tune-2").assertIsOff()
+
+        compose.onNodeWithTag("tune-2").performClick()
+        assertEquals(2L, toggled)
+        assertNull(opened)
+
+        compose.onNodeWithTag("selectAll").performClick()
+        assertTrue(selectedAll)
+        compose.onNodeWithTag("deleteSelected").performClick()
+        assertTrue(deleted)
+        compose.onNodeWithTag("clearSelection").performClick()
+        assertTrue(cleared)
     }
 }

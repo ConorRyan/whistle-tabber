@@ -124,14 +124,20 @@ class TuneRepositoryTest {
     }
 
     @Test
-    fun `delete and restore keep id, star and dates`() = runBlocking {
-        val id = repo.save(tune("A"))
-        repo.setStarred(id, true)
-        val deleted = repo.delete(id)!!
-        assertNull(repo.get(id))
+    fun `delete and restore keep ids, stars and dates`() = runBlocking {
+        val a = repo.save(tune("A"))
+        val b = repo.save(tune("B"))
+        val kept = repo.save(tune("C"))
+        repo.setStarred(a, true)
+        val deleted = repo.delete(listOf(a, b, 12345))
+        assertEquals(listOf(a, b), deleted.map { it.id })
+        assertNull(repo.get(a))
+        assertNull(repo.get(b))
+        assertNotNull(repo.get(kept))
         repo.restore(deleted)
-        assertEquals(deleted, repo.get(id))
-        assertNull(repo.delete(12345))
+        assertEquals(deleted, listOf(repo.get(a), repo.get(b)))
+        assertTrue(repo.get(a)!!.starred)
+        assertEquals(emptyList<Tune>(), repo.delete(listOf(12345)))
     }
 
     @Test

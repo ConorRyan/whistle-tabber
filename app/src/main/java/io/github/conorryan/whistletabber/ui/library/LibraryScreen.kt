@@ -1,9 +1,12 @@
 package io.github.conorryan.whistletabber.ui.library
 
 import android.content.res.Resources
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,12 +21,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -55,8 +62,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -97,12 +108,14 @@ fun LibraryScreen(
                 is LibraryMessage.Exported -> snackbar.showSnackbar(res.getQuantityString(R.plurals.exported, message.count, message.count))
                 LibraryMessage.ExportFailed -> snackbar.showSnackbar(res.getString(R.string.export_failed))
                 is LibraryMessage.Deleted -> {
+                    val tunes = message.tunes
                     val result = snackbar.showSnackbar(
-                        res.getString(R.string.deleted, message.tune.title),
+                        tunes.singleOrNull()?.let { res.getString(R.string.deleted, it.title) }
+                            ?: res.getQuantityString(R.plurals.deleted_many, tunes.size, tunes.size),
                         actionLabel = res.getString(R.string.undo),
                         duration = SnackbarDuration.Long,
                     )
-                    if (result == SnackbarResult.ActionPerformed) vm.undoDelete(message.tune) else vm.forgetDeleted(message.tune)
+                    if (result == SnackbarResult.ActionPerformed) vm.undoDelete(tunes) else vm.forgetDeleted(tunes)
                 }
             }
         }
@@ -116,6 +129,10 @@ fun LibraryScreen(
         onStarredOnly = vm::toggleStarredOnly,
         onClearFilters = vm::clearFilters,
         onStar = vm::setStarred,
+        onToggleSelected = vm::toggleSelected,
+        onSelectAll = vm::selectAll,
+        onClearSelection = vm::clearSelection,
+        onDeleteSelected = vm::deleteSelected,
         onOpenTune = onOpenTune,
         onNewTune = onNewTune,
         onSettings = onSettings,
@@ -136,6 +153,10 @@ fun LibraryContent(
     onStarredOnly: () -> Unit = {},
     onClearFilters: () -> Unit = {},
     onStar: (Tune, Boolean) -> Unit = { _, _ -> },
+    onToggleSelected: (Long) -> Unit = {},
+    onSelectAll: () -> Unit = {},
+    onClearSelection: () -> Unit = {},
+    onDeleteSelected: () -> Unit = {},
     onOpenTune: (Long) -> Unit = {},
     onNewTune: () -> Unit = {},
     onSettings: () -> Unit = {},
@@ -144,9 +165,12 @@ fun LibraryContent(
     onExport: () -> Unit = {},
 ) {
     var menuOpen by remember { mutableStateOf(false) }
+    BackHandler(enabled = state.selecting, onBack = onClearSelection)
     Scaffold(
         topBar = {
-            TopAppBar(
+            if (state.selecting) {
+                SelectionBar(state.selected.size, onClearSelection, onSelectAll, onDeleteSelected)
+            } else TopAppBar(
                 title = { Text(stringResource(R.string.library_title)) },
                 actions = {
                     IconButton(onClick = onSettings, modifier = Modifier.testTag("settings")) {
@@ -174,8 +198,10 @@ fun LibraryContent(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onNewTune, modifier = Modifier.testTag("newTune")) {
-                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.action_new_tune))
+            if (!state.selecting) {
+                FloatingActionButton(onClick = onNewTune, modifier = Modifier.testTag("newTune")) {
+                    Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.action_new_tune))
+                }
             }
         },
         snackbarHost = { SnackbarHost(snackbar) },
@@ -192,7 +218,13 @@ fun LibraryContent(
                     } else {
                         LazyColumn(Modifier.fillMaxSize().testTag("tuneList"), contentPadding = PaddingValues(bottom = 88.dp)) {
                             items(state.tunes, key = { it.id }, contentType = { "tune" }) { tune ->
-                                TuneRow(tune, onClick = { onOpenTune(tune.id) }, onStar = { onStar(tune, !tune.starred) })
+                                TuneRow(
+                                    tune,
+                                    selected = if (state.selecting) tune.id in state.selected else null,
+                                    onClick = { if (state.selecting) onToggleSelected(tune.id) else onOpenTune(tune.id) },
+                                    onLongClick = { onToggleSelected(tune.id) },
+                                    onStar = { onStar(tune, !tune.starred) },
+                                )
                             }
                         }
                     }
@@ -248,24 +280,53 @@ private fun Filters(
     }
 }
 
+/** The top bar while tunes are selected: cancel, how many, select all, delete. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SelectionBar(count: Int, onClear: () -> Unit, onSelectAll: () -> Unit, onDelete: () -> Unit) {
+    TopAppBar(
+        title = { Text(pluralStringResource(R.plurals.selected_count, count, count), Modifier.testTag("selectedCount")) },
+        navigationIcon = {
+            IconButton(onClick = onClear, modifier = Modifier.testTag("clearSelection")) {
+                Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.clear_selection))
+            }
+        },
+        actions = {
+            IconButton(onClick = onSelectAll, modifier = Modifier.testTag("selectAll")) {
+                Icon(Icons.Filled.SelectAll, contentDescription = stringResource(R.string.select_all))
+            }
+            IconButton(onClick = onDelete, modifier = Modifier.testTag("deleteSelected")) {
+                Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.action_delete))
+            }
+        },
+    )
+}
+
 /**
  * A single line of the tune list. Deliberately plain: no Material3 `ListItem`,
  * no shape or container work, one ripple, so composing a row while scrolling
  * stays cheap (this list is the main screen; debug builds feel every
  * composable). The divider belongs to the row so the list holds one item per
- * tune.
+ * tune. [selected] is null outside selection mode; in it, a checkbox replaces
+ * the star.
  */
 @Composable
-private fun TuneRow(tune: Tune, onClick: () -> Unit, onStar: () -> Unit) {
+private fun TuneRow(tune: Tune, selected: Boolean?, onClick: () -> Unit, onLongClick: () -> Unit, onStar: () -> Unit) {
     val details = listOfNotNull(
         tune.rhythm?.capitalized(),
         tune.key,
         tune.whistle?.let { stringResource(R.string.tune_whistle, stringResource(whistleLabelRes(it))) },
     ).joinToString(" · ")
+    val selection = when (selected) {
+        null -> Modifier
+        true -> Modifier.background(MaterialTheme.colorScheme.secondaryContainer).semantics { toggleableState = ToggleableState.On }
+        false -> Modifier.semantics { toggleableState = ToggleableState.Off }
+    }
     Column(
         Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .then(selection)
+            .combinedClickable(onLongClick = onLongClick, onClick = onClick)
             .testTag("tune-${tune.id}"),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -279,18 +340,27 @@ private fun TuneRow(tune: Tune, onClick: () -> Unit, onStar: () -> Unit) {
                     )
                 }
             }
-            Box(
-                Modifier
-                    .minimumInteractiveComponentSize()
-                    .clickable(onClick = onStar, role = Role.Button)
-                    .testTag("star-${tune.id}"),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    if (tune.starred) Icons.Filled.Star else Icons.Outlined.StarOutline,
-                    contentDescription = stringResource(if (tune.starred) R.string.unstar else R.string.star),
-                    tint = if (tune.starred) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            if (selected != null) {
+                // The row's own click toggles and carries the state; the checkbox only shows it.
+                Checkbox(
+                    checked = selected,
+                    onCheckedChange = null,
+                    modifier = Modifier.minimumInteractiveComponentSize().testTag("select-${tune.id}"),
                 )
+            } else {
+                Box(
+                    Modifier
+                        .minimumInteractiveComponentSize()
+                        .clickable(onClick = onStar, role = Role.Button)
+                        .testTag("star-${tune.id}"),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        if (tune.starred) Icons.Filled.Star else Icons.Outlined.StarOutline,
+                        contentDescription = stringResource(if (tune.starred) R.string.unstar else R.string.star),
+                        tint = if (tune.starred) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
         HorizontalDivider()

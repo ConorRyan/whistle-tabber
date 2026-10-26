@@ -47,7 +47,7 @@ class RecentlyDeletedTest {
 
         assertTrue(bin.delete(id))
         assertNull(repo.get(id))
-        assertEquals(before, bin.offer.value)
+        assertEquals(listOf(before), bin.offer.value)
 
         bin.undo(bin.offer.value!!)
         assertNull(bin.offer.value)
@@ -59,9 +59,9 @@ class RecentlyDeletedTest {
         val id = save("Gone")
         val bin = RecentlyDeleted(repo, this)
         bin.delete(id)
-        val tune = bin.offer.value!!
-        bin.undo(tune)
-        bin.undo(tune)
+        val tunes = bin.offer.value!!
+        bin.undo(tunes)
+        bin.undo(tunes)
         assertEquals(1, withTimeout(5_000) { repo.count.first { it == 1 } })
     }
 
@@ -70,26 +70,26 @@ class RecentlyDeletedTest {
         val id = save("Gone")
         val bin = RecentlyDeleted(repo, this)
         bin.delete(id)
-        val tune = bin.offer.value!!
-        bin.dismiss(tune)
+        val tunes = bin.offer.value!!
+        bin.dismiss(tunes)
         assertNull(bin.offer.value)
-        bin.undo(tune)
+        bin.undo(tunes)
         assertEquals(0, repo.count.first())
     }
 
     @Test
-    fun `a newer deletion replaces the offer, and answers about the older tune do nothing`() = runBlocking {
+    fun `a newer deletion replaces the offer, and answers about the older batch do nothing`() = runBlocking {
         val first = save("First")
         val second = save("Second")
         val bin = RecentlyDeleted(repo, this)
         bin.delete(first)
         val older = bin.offer.value!!
         bin.delete(second)
-        assertEquals(second, bin.offer.value?.id)
+        assertEquals(second, bin.offer.value?.single()?.id)
 
         bin.undo(older)
         bin.dismiss(older)
-        assertEquals(second, bin.offer.value?.id)
+        assertEquals(second, bin.offer.value?.single()?.id)
         assertEquals(0, repo.count.first())
     }
 
@@ -98,5 +98,34 @@ class RecentlyDeletedTest {
         val bin = RecentlyDeleted(repo, this)
         assertFalse(bin.delete(42))
         assertNull(bin.offer.value)
+    }
+
+    @Test
+    fun `a batch delete offers every tune that was there, and undo restores them all`() = runBlocking {
+        val a = save("A")
+        val b = save("B")
+        val kept = save("Kept")
+        repo.setStarred(b, true)
+        val before = listOf(repo.get(a)!!, repo.get(b)!!)
+        val bin = RecentlyDeleted(repo, this)
+
+        assertEquals(2, bin.delete(listOf(a, b, 42)))
+        assertEquals(before, bin.offer.value)
+        assertEquals(listOf(kept), repo.tunes.first().map { it.id })
+
+        bin.undo(bin.offer.value!!)
+        assertNull(bin.offer.value)
+        withTimeout(5_000) { repo.count.first { it == 3 } }
+        assertEquals(before, listOf(repo.get(a), repo.get(b)))
+    }
+
+    @Test
+    fun `a batch of tunes that are all gone offers nothing and keeps the older offer`() = runBlocking {
+        val id = save("Gone")
+        val bin = RecentlyDeleted(repo, this)
+        bin.delete(id)
+        val older = bin.offer.value
+        assertEquals(0, bin.delete(listOf(41L, 42L)))
+        assertEquals(older, bin.offer.value)
     }
 }

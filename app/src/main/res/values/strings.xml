@@ -31,8 +31,8 @@
     <string name="star">Star</string>
     <string name="unstar">Unstar</string>
     <string name="empty_title">Your library is empty</string>
-    <string name="empty_body">Add 50 traditional Irish tunes from O\'Neill\'s Music of Ireland (1850), or import your own .abc files.</string>
-    <string name="add_starter_set">Add 50 traditional tunes</string>
+    <string name="empty_body">Add 10 well-known Irish tunes from O\'Neill\'s Music of Ireland (1850), or import your own .abc files.</string>
+    <string name="add_starter_set">Add 10 well-known tunes</string>
     <string name="no_matches">No tunes match</string>
     <string name="clear_filters">Clear filters</string>
     <string name="tune_whistle">%1$s whistle</string>
@@ -59,6 +59,16 @@
     </plurals>
     <string name="export_failed">Export failed</string>
     <string name="deleted">“%1$s” deleted</string>
+    <plurals name="deleted_many">
+        <item quantity="one">%d tune deleted</item>
+        <item quantity="other">%d tunes deleted</item>
+    </plurals>
+    <plurals name="selected_count">
+        <item quantity="one">%d selected</item>
+        <item quantity="other">%d selected</item>
+    </plurals>
+    <string name="select_all">Select all</string>
+    <string name="clear_selection">Cancel selection</string>
 
     <!-- Tune -->
     <string name="action_edit">Edit</string>
@@ -100,7 +110,7 @@
     <string name="settings_fold_help">Move notes the whistle can\'t play by an octave. Folded notes are faded with an arrow.</string>
     <string name="settings_library">Library</string>
     <string name="starter_set">O\'Neill\'s starter set</string>
-    <string name="starter_set_help">50 traditional tunes from O\'Neill\'s Music of Ireland (1850). Tunes you already have are skipped.</string>
+    <string name="starter_set_help">10 well-known tunes from O\'Neill\'s Music of Ireland (1850). Tunes you already have are skipped.</string>
     <string name="settings_about">About</string>
     <string name="about_version">Version %1$s</string>
     <string name="about_app">Whistle Tabber is free software under the MIT License. It has no network access and collects no data.</string>
