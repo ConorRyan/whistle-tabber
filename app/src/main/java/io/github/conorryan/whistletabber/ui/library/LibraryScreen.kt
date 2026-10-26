@@ -93,7 +93,7 @@ fun LibraryScreen(
         vm.messages.collect { message ->
             val res = context.resources
             when (message) {
-                is LibraryMessage.Imported -> snackbar.showSnackbar(importSummary(res, message.result, message.unreadable))
+                is LibraryMessage.Imported -> snackbar.showSnackbar(importSummary(res, message.result))
                 is LibraryMessage.Exported -> snackbar.showSnackbar(res.getQuantityString(R.plurals.exported, message.count, message.count))
                 LibraryMessage.ExportFailed -> snackbar.showSnackbar(res.getString(R.string.export_failed))
                 is LibraryMessage.Deleted -> {
@@ -330,12 +330,12 @@ private fun NoMatches(onClearFilters: () -> Unit) {
 private fun String.capitalized(): String = replaceFirstChar { it.titlecase(Locale.getDefault()) }
 
 /** "3 tunes added, 1 duplicate skipped", or "No tunes found". */
-fun importSummary(res: Resources, result: ImportResult, unreadable: Int = 0): String {
+fun importSummary(res: Resources, result: ImportResult): String {
     val parts = buildList {
         if (result.added > 0) add(res.getQuantityString(R.plurals.import_added, result.added, result.added))
         if (result.skipped > 0) add(res.getQuantityString(R.plurals.import_skipped, result.skipped, result.skipped))
         if (result.errors.isNotEmpty()) add(res.getQuantityString(R.plurals.import_errors, result.errors.size, result.errors.size))
-        if (unreadable > 0) add(res.getQuantityString(R.plurals.import_unreadable, unreadable, unreadable))
+        if (result.unreadable > 0) add(res.getQuantityString(R.plurals.import_unreadable, result.unreadable, result.unreadable))
     }
     return if (parts.isEmpty()) res.getString(R.string.import_nothing) else parts.joinToString(", ")
 }

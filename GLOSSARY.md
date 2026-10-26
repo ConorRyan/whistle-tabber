@@ -24,3 +24,6 @@ are named here; add a term when code names a new concept.
   tune removes it and puts it on offer; the library offers Undo and answers
   with undo (restored with its id, star and dates) or dismiss. One tune is on
   offer at a time.
+- **Tune importer** (`TuneImporter`): how tunes come into the library:
+  picked `.abc` files and the starter set, each reported as one
+  `ImportResult` (added, skipped duplicates, errors, unreadable files).

@@ -6,7 +6,7 @@ import io.github.conorryan.whistletabber.data.settings.TabSettingsStore
 import io.github.conorryan.whistletabber.data.tunes.AbcFiles
 import io.github.conorryan.whistletabber.data.tunes.AppDatabase
 import io.github.conorryan.whistletabber.data.tunes.RecentlyDeleted
-import io.github.conorryan.whistletabber.data.tunes.StarterTunes
+import io.github.conorryan.whistletabber.data.tunes.TuneImporter
 import io.github.conorryan.whistletabber.data.tunes.TuneRepository
 import io.github.conorryan.whistletabber.ui.settings.TabSettingsEditor
 import kotlinx.coroutines.CoroutineScope
@@ -21,7 +21,7 @@ class AppGraph(
     val abcFiles: AbcFiles,
 ) {
     val tuneRepository = TuneRepository(db)
-    val starterTunes = StarterTunes(tuneRepository, loadStarterSet)
+    val tuneImporter = TuneImporter(tuneRepository, abcFiles, loadStarterSet)
 
     /** Application-lived scope for work that must outlive a screen, like an import. */
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -36,7 +36,7 @@ class AppGraph(
         fun create(context: Context): AppGraph = AppGraph(
             tabSettingsStore = TabSettingsStore.create(context),
             db = AppDatabase.build(context),
-            loadStarterSet = { StarterTunes.readAsset(context) },
+            loadStarterSet = { TuneImporter.readStarterSet(context) },
             abcFiles = AbcFiles(context.contentResolver),
         )
     }

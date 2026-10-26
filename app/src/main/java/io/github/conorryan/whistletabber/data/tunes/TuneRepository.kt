@@ -29,15 +29,26 @@ data class Tune(
     val explicitWhistle: WhistleKey? get() = AbcBook.whistleOf(abc)
 }
 
+/** [unreadable] files could not be opened or decoded at all. */
 data class ImportResult(
     val added: Int,
     val skipped: Int,
     val errors: List<ImportError>,
+    val unreadable: Int = 0,
 ) {
     val total: Int get() = added + skipped + errors.size
+
+    operator fun plus(other: ImportResult) = ImportResult(
+        added + other.added, skipped + other.skipped, errors + other.errors, unreadable + other.unreadable,
+    )
+
+    companion object {
+        val NONE = ImportResult(0, 0, emptyList())
+        val UNREADABLE_FILE = ImportResult(0, 0, emptyList(), unreadable = 1)
+    }
 }
 
-/** A tune that could not be imported; [position] counts from 1 in the file. */
+/** A tune that could not be imported; [position] counts from 1 in its file. */
 data class ImportError(val position: Int, val title: String?, val problem: AbcProblem)
 
 /**

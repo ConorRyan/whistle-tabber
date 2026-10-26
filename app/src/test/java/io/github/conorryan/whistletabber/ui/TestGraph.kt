@@ -8,7 +8,7 @@ import io.github.conorryan.whistletabber.data.settings.TabSettingsStore
 import io.github.conorryan.whistletabber.data.tunes.AbcFiles
 import io.github.conorryan.whistletabber.data.tunes.AppDatabase
 import io.github.conorryan.whistletabber.data.tunes.RecentlyDeleted
-import io.github.conorryan.whistletabber.data.tunes.StarterTunes
+import io.github.conorryan.whistletabber.data.tunes.TuneImporter
 import io.github.conorryan.whistletabber.data.tunes.TuneRepository
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
@@ -29,7 +29,7 @@ class TestGraph(dir: File) {
     /** Stands in for the app scope; cancelled by [close]. */
     val appScope = CoroutineScope(SupervisorJob())
     val recentlyDeleted = RecentlyDeleted(repository, appScope)
-    val starterTunes = StarterTunes.fromAssets(context, repository)
+    val importer = TuneImporter(repository, files) { TuneImporter.readStarterSet(context) }
 
     fun close() {
         appScope.cancel()

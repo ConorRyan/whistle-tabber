@@ -52,7 +52,7 @@ class LibraryViewModelTest {
     }
 
     private fun TestScope.vm() = LibraryViewModel(
-        graph.repository, graph.starterTunes, graph.files, graph.recentlyDeleted, backgroundScope,
+        graph.repository, graph.importer, graph.files, graph.recentlyDeleted, backgroundScope,
     )
 
     private fun tune(title: String, rhythm: String = "reel") = "X:1\nT:$title\nR:$rhythm\nK:D\nDEF|\n"
@@ -112,13 +112,12 @@ class LibraryViewModelTest {
     }
 
     @Test
-    fun `importing files sums the results and counts unreadable files`() = runTest {
-        File(graph.context.cacheDir, "a.abc").writeText(tune("One") + "\n" + tune("Two"))
-        File(graph.context.cacheDir, "b.abc").writeText(tune("One"))
+    fun `importing files reports the importer's result`() = runTest {
+        File(graph.context.cacheDir, "a.abc").writeText(tune("One"))
         val vm = vm()
         vm.messages.test {
-            vm.importFiles(listOf("a.abc", "b.abc", "missing.abc").map(FakeDocumentsProvider::uri))
-            assertEquals(LibraryMessage.Imported(ImportResult(2, 1, emptyList()), unreadable = 1), awaitItem())
+            vm.importFiles(listOf(FakeDocumentsProvider.uri("a.abc")))
+            assertEquals(LibraryMessage.Imported(ImportResult(1, 0, emptyList())), awaitItem())
         }
     }
 

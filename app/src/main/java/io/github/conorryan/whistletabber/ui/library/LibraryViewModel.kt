@@ -6,8 +6,8 @@ import androidx.lifecycle.viewModelScope
 import io.github.conorryan.whistletabber.data.tunes.AbcFiles
 import io.github.conorryan.whistletabber.data.tunes.ImportResult
 import io.github.conorryan.whistletabber.data.tunes.RecentlyDeleted
-import io.github.conorryan.whistletabber.data.tunes.StarterTunes
 import io.github.conorryan.whistletabber.data.tunes.Tune
+import io.github.conorryan.whistletabber.data.tunes.TuneImporter
 import io.github.conorryan.whistletabber.data.tunes.TuneRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -45,8 +45,7 @@ data class LibraryUiState(
 )
 
 sealed interface LibraryMessage {
-    /** [unreadable] files could not be opened or decoded at all. */
-    data class Imported(val result: ImportResult, val unreadable: Int = 0) : LibraryMessage
+    data class Imported(val result: ImportResult) : LibraryMessage
     data class Exported(val count: Int) : LibraryMessage
     data object ExportFailed : LibraryMessage
     data class Deleted(val tune: Tune) : LibraryMessage
@@ -60,14 +59,13 @@ sealed interface LibraryMessage {
 @OptIn(ExperimentalCoroutinesApi::class)
 class LibraryViewModel(
     private val repository: TuneRepository,
-    private val starterTunes: StarterTunes,
+    private val importer: TuneImporter,
     private val files: AbcFiles,
     private val recentlyDeleted: RecentlyDeleted,
     private val appScope: CoroutineScope,
 ) : ViewModel() {
 
     private val filters = MutableStateFlow(LibraryFilters())
-    private val busy = MutableStateFlow(false)
 
     private val _messages = Channel<LibraryMessage>(Channel.BUFFERED)
     val messages: Flow<LibraryMessage> = _messages.receiveAsFlow()
@@ -77,7 +75,7 @@ class LibraryViewModel(
         filters.flatMapLatest { repository.search(it.query, it.rhythm, it.starredOnly) },
         repository.rhythms,
         repository.count,
-        busy,
+        importer.busy,
     ) { filters, tunes, rhythms, count, busy ->
         LibraryUiState(
             filters = filters,
@@ -110,24 +108,10 @@ class LibraryViewModel(
         viewModelScope.launch { repository.setStarred(tune.id, starred) }
     }
 
-    fun addStarterSet() = runImport { LibraryMessage.Imported(starterTunes.add()) }
+    fun addStarterSet() = runImport { importer.addStarterSet() }
 
     fun importFiles(uris: List<Uri>) {
-        if (uris.isEmpty()) return
-        runImport {
-            var total = ImportResult(0, 0, emptyList())
-            var unreadable = 0
-            for (uri in uris) {
-                val text = runCatching { files.read(uri) }.getOrNull()
-                if (text == null) {
-                    unreadable++
-                    continue
-                }
-                val result = repository.importBook(text)
-                total = ImportResult(total.added + result.added, total.skipped + result.skipped, total.errors + result.errors)
-            }
-            LibraryMessage.Imported(total, unreadable)
-        }
+        if (uris.isNotEmpty()) runImport { importer.importFiles(uris) }
     }
 
     fun exportAll(uri: Uri) {
@@ -150,14 +134,7 @@ class LibraryViewModel(
         recentlyDeleted.dismiss(tune)
     }
 
-    private fun runImport(block: suspend () -> LibraryMessage) {
-        busy.value = true
-        appScope.launch {
-            try {
-                _messages.send(block())
-            } finally {
-                busy.value = false
-            }
-        }
+    private fun runImport(block: suspend () -> ImportResult) {
+        appScope.launch { _messages.send(LibraryMessage.Imported(block())) }
     }
 }
