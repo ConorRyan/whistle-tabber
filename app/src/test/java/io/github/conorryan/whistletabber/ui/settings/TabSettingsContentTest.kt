@@ -46,7 +46,7 @@ class TabSettingsContentTest {
     fun `whistle chips use letters by default`() {
         show(NoteNames.LETTERS)
         compose.onNodeWithTag("whistle-HIGH_G").assertTextEquals("High G")
-        compose.onNodeWithTag("whistle-E_FLAT").assertTextEquals("E♭")
+        compose.onNodeWithTag("whistle-E_FLAT").assertTextEquals("Eb")
         compose.onNodeWithTag("whistle-LOW_D").assertTextEquals("Low D")
         compose.onNodeWithTag("notes-LETTERS").performScrollTo().assertIsSelected()
     }
@@ -54,7 +54,7 @@ class TabSettingsContentTest {
     @Test
     fun `solfege follows the setting, not the language`() {
         show(NoteNames.SOLFEGE)
-        compose.onNodeWithTag("whistle-LOW_D").assertTextEquals("Low Ré")
+        compose.onNodeWithTag("whistle-LOW_D").assertTextEquals("Ré grave")
         compose.onNodeWithTag("whistle-B_FLAT").assertTextEquals("Si♭")
     }
 
@@ -62,8 +62,8 @@ class TabSettingsContentTest {
     @Config(qualifiers = "fr")
     fun `a French phone still shows letters when letters are chosen`() {
         show(NoteNames.LETTERS)
-        compose.onNodeWithTag("whistle-LOW_D").assertTextEquals("D grave")
-        compose.onNodeWithTag("whistle-HIGH_G").assertTextEquals("G aigu")
+        compose.onNodeWithTag("whistle-LOW_D").assertTextEquals("Low D")
+        compose.onNodeWithTag("whistle-HIGH_G").assertTextEquals("High G")
     }
 
     @Test

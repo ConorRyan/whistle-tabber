@@ -12,13 +12,14 @@
     <string name="play">Lecture</string>
     <string name="pause">Pause</string>
     <string name="restart">Recommencer</string>
-    <string name="tempo_percent">Tempo : %1$d %%</string>
+    <string name="tempo_percent">Tempo\u00A0: %1$d\u00A0%%</string>
     <string name="bar_n">Mesure %1$d</string>
     <plurals name="warnings_count">
         <item quantity="one">%d avertissement</item>
         <item quantity="other">%d avertissements</item>
+        <item quantity="many">%d avertissements</item>
     </plurals>
-    <string name="page_error">Erreur : %1$s</string>
+    <string name="page_error">Erreur\u00A0: %1$s</string>
 
     <!-- Library -->
     <string name="library_title">Airs</string>
@@ -31,34 +32,51 @@
     <string name="star">Ajouter aux favoris</string>
     <string name="unstar">Retirer des favoris</string>
     <string name="empty_title">Votre bibliothèque est vide</string>
-    <string name="empty_body">Ajoutez 50 airs irlandais traditionnels tirés de O\'Neill\'s Music of Ireland (1850), ou importez vos propres fichiers .abc.</string>
-    <string name="add_starter_set">Ajouter 50 airs traditionnels</string>
+    <string name="empty_body">Ajoutez 10 airs irlandais bien connus tirés du recueil O\'Neill\'s Music of Ireland (1850), ou importez vos propres fichiers .abc.</string>
+    <string name="add_starter_set">Ajouter 10 airs bien connus</string>
     <string name="no_matches">Aucun air ne correspond</string>
     <string name="clear_filters">Effacer les filtres</string>
-    <string name="tune_whistle">Whistle %1$s</string>
+    <string name="tune_whistle">Whistle en %1$s</string>
     <plurals name="import_added">
         <item quantity="one">%d air ajouté</item>
         <item quantity="other">%d airs ajoutés</item>
+        <item quantity="many">%d airs ajoutés</item>
     </plurals>
     <plurals name="import_skipped">
         <item quantity="one">%d doublon ignoré</item>
         <item quantity="other">%d doublons ignorés</item>
+        <item quantity="many">%d doublons ignorés</item>
     </plurals>
     <plurals name="import_errors">
-        <item quantity="one">%d sans titre ou sans tonalité</item>
-        <item quantity="other">%d sans titre ou sans tonalité</item>
+        <item quantity="one">%d air sans titre ou sans tonalité</item>
+        <item quantity="other">%d airs sans titre ou sans tonalité</item>
+        <item quantity="many">%d airs sans titre ou sans tonalité</item>
     </plurals>
     <plurals name="import_unreadable">
         <item quantity="one">%d fichier illisible</item>
         <item quantity="other">%d fichiers illisibles</item>
+        <item quantity="many">%d fichiers illisibles</item>
     </plurals>
     <string name="import_nothing">Aucun air trouvé</string>
     <plurals name="exported">
         <item quantity="one">%d air exporté</item>
         <item quantity="other">%d airs exportés</item>
+        <item quantity="many">%d airs exportés</item>
     </plurals>
-    <string name="export_failed">Échec de l\'export</string>
-    <string name="deleted">« %1$s » supprimé</string>
+    <string name="export_failed">L\'export a échoué</string>
+    <string name="deleted">«\u00A0%1$s\u00A0» supprimé</string>
+    <plurals name="deleted_many">
+        <item quantity="one">%d air supprimé</item>
+        <item quantity="other">%d airs supprimés</item>
+        <item quantity="many">%d airs supprimés</item>
+    </plurals>
+    <plurals name="selected_count">
+        <item quantity="one">%d sélectionné</item>
+        <item quantity="other">%d sélectionnés</item>
+        <item quantity="many">%d sélectionnés</item>
+    </plurals>
+    <string name="select_all">Tout sélectionner</string>
+    <string name="clear_selection">Annuler la sélection</string>
 
     <!-- Tune -->
     <string name="action_edit">Modifier</string>
@@ -68,9 +86,9 @@
     <string name="tune_missing">Cet air n\'existe plus.</string>
     <string name="tune_exported">Air exporté</string>
     <string name="written_for">Écrit pour</string>
-    <string name="written_for_help">Le whistle pour lequel les doigtés de cet air sont écrits. Il est enregistré dans l\'ABC de l\'air, sous la même forme que dans ABC Tools d\'Eskin.</string>
+    <string name="written_for_help">Le whistle pour lequel les doigtés de cet air sont écrits. Il est enregistré dans l\'ABC de l\'air, sous la même forme que dans les ABC Tools d\'Eskin.</string>
     <string name="written_for_auto">D\'après la tonalité (%1$s)</string>
-    <string name="key_change_help">Réécrit les notes, les altérations, les accords et la ligne K:. Vous pouvez voir le résultat avant d\'enregistrer.</string>
+    <string name="key_change_help">Réécrit les notes, les altérations, les accords et la ligne K:. Vous pouvez prévisualiser le résultat avant d\'enregistrer.</string>
     <string name="preview_in">Aperçu en %1$s</string>
     <string name="save_copy">Enregistrer une copie</string>
     <string name="replace">Remplacer</string>
@@ -80,39 +98,36 @@
     <string name="editor_edit_title">Modifier l\'air</string>
     <string name="editor_abc_label">ABC</string>
     <string name="editor_preview">Aperçu</string>
-    <string name="problem_no_title">Ajoutez une ligne de titre, par ex. T:The Kesh</string>
-    <string name="problem_no_key">Ajoutez une ligne de tonalité, par ex. K:G</string>
-    <string name="discard_title">Abandonner les modifications ?</string>
+    <string name="problem_no_title">Ajoutez une ligne de titre, par ex.\u00A0T:The Kesh</string>
+    <string name="problem_no_key">Ajoutez une ligne de tonalité, par ex.\u00A0K:G</string>
+    <string name="discard_title">Abandonner les modifications\u00A0?</string>
     <string name="discard">Abandonner</string>
-    <string name="keep_editing">Continuer</string>
+    <string name="keep_editing">Continuer à modifier</string>
 
     <!-- Settings -->
     <string name="settings_screen_title">Réglages</string>
     <string name="settings_title">Réglages des tablatures</string>
     <string name="settings_whistle">Mon whistle</string>
-    <string name="settings_mode">Quand mon whistle diffère de celui de l\'air, garder</string>
+    <string name="settings_mode">Si mon whistle n\'est pas celui de l\'air, conserver</string>
     <string name="mode_same_pitches">Les notes</string>
     <string name="mode_same_fingerings">Les doigtés</string>
-    <string name="mode_same_pitches_help">Les doigtés sont calculés pour votre whistle. L\'air sonne pareil.</string>
+    <string name="mode_same_pitches_help">Les doigtés sont calculés pour votre whistle. L\'air sonne de la même façon.</string>
     <string name="mode_same_fingerings_help">Les doigtés restent ceux du whistle de l\'air. L\'air sonne dans la tonalité de votre whistle.</string>
     <string name="settings_c_natural">Doigté du do bécarre</string>
-    <string name="settings_fold">Replier les notes hors tessiture</string>
-    <string name="settings_fold_help">Déplacer d\'une octave les notes injouables. Elles sont estompées et marquées d\'une flèche.</string>
+    <string name="settings_fold">Ramener les notes hors tessiture</string>
+    <string name="settings_fold_help">Décale d\'une octave les notes que le whistle ne peut pas jouer. Elles sont estompées et marquées d\'une flèche.</string>
     <string name="settings_note_names">Noms des notes</string>
-    <string name="settings_note_names_help">Comment les whistles sont nommés, quelle que soit la langue de l\'appli.</string>
+    <string name="settings_note_names_help">Comment les whistles sont nommés, quelle que soit la langue de l\'application.</string>
     <string name="settings_library">Bibliothèque</string>
     <string name="starter_set">Sélection O\'Neill\'s</string>
-    <string name="starter_set_help">50 airs traditionnels tirés de O\'Neill\'s Music of Ireland (1850). Les airs déjà présents sont ignorés.</string>
+    <string name="starter_set_help">10 airs bien connus tirés du recueil O\'Neill\'s Music of Ireland (1850). Les airs déjà présents sont ignorés.</string>
     <string name="settings_about">À propos</string>
     <string name="about_version">Version %1$s</string>
     <string name="about_app">Whistle Tabber est un logiciel libre sous licence MIT. Il n\'a pas accès au réseau et ne collecte aucune donnée.</string>
-    <string name="licences">Licences et remerciements</string>
+    <string name="licences">Licences et crédits</string>
     <string name="licence_abcjs">abcjs, de Paul Rosen et ses contributeurs, affiche et joue la musique. Licence MIT.</string>
-    <string name="licence_oneills">Airs de départ : transcriptions de O\'Neill\'s Music of Ireland (1850) par le O\'Neill\'s Project, © 1997–2000 les contributeurs. Licence GNU GPL version 2 ou ultérieure. Chaque air crédite son transcripteur.</string>
+    <string name="licence_oneills">Sélection O\'Neill\'s\u00A0: transcriptions du recueil O\'Neill\'s Music of Ireland (1850) par le projet O\'Neill\'s, © 1997–2000 ses contributeurs. Licence GNU GPL version 2 ou ultérieure. Chaque air mentionne son transcripteur.</string>
     <string name="licence_wfg">Les doigtés de la troisième octave suivent le Woodwind Fingering Guide de Timothy Reichard.</string>
-    <string name="licence_libraries">AndroidX, Jetpack Compose et les bibliothèques Kotlin : licence Apache 2.0.</string>
+    <string name="licence_libraries">AndroidX, Jetpack Compose et les bibliothèques Kotlin\u00A0: licence Apache 2.0.</string>
 
-    <!-- Whistles -->
-    <string name="whistle_high">%1$s aigu</string>
-    <string name="whistle_low">%1$s grave</string>
 </resources>

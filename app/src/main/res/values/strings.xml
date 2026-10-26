@@ -122,7 +122,4 @@
     <string name="licence_wfg">Third-octave fingerings follow the Woodwind Fingering Guide by Timothy Reichard.</string>
     <string name="licence_libraries">AndroidX, Jetpack Compose and the Kotlin libraries: Apache License 2.0.</string>
 
-    <!-- Whistles -->
-    <string name="whistle_high">High %1$s</string>
-    <string name="whistle_low">Low %1$s</string>
 </resources>

@@ -28,6 +28,10 @@
 - Match existing style: 4-space indent, trailing commas, explicit types only
   where the codebase already uses them. Prefer pure, testable functions over
   Android-coupled code.
+- **Every user-visible string is translated.** When you add or change a
+  string in `values/strings.xml` (including numbers in it, like the
+  starter-set size), update `values-fr/strings.xml` in the same change.
+  `TranslationsTest` fails on a missing name but can't catch stale text.
 - **No AI features, no network.** The app has no INTERNET permission.
 - **Data provenance.** Never bundle or use TheSession.org data (its licence
   forbids LLM processing), including as test fixtures. Tunes come from
@@ -83,9 +87,10 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
   - `WhistleKey`: `writtenTonic` (fingering) and `soundingShift` (+12 for
     soprano whistles: whistle music is written an octave below sounding),
     plus `letter` and `register` (high/normal/low) for its name.
-  - `NoteNames` (LETTERS/SOLFEGE, a tab setting, default letters):
-    `WhistleKey.noteName` gives "E♭" or "Mi♭". The style never follows the
-    app's language; only "High"/"Low" are translated.
+  - `NoteNames` (LETTERS/SOLFEGE, a tab setting, default letters): each is
+    a whole convention, never chosen by the app's language.
+    `WhistleKey.label` gives "High G", "Eb", "Low D" or "Sol aigu", "Mi♭",
+    "Ré grave"; `noteName` is the key alone.
   - `TabSettings` + `TransposeMode`: SAME_PITCHES recomputes fingerings for
     the chosen whistle; SAME_FINGERINGS keeps the tune whistle's fingerings
     and changes playback pitch (`midiTranspose`).

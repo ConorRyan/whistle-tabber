@@ -8,32 +8,30 @@ class NoteNamesTest {
     @Test
     fun `every whistle has a letter and a solfege name`() {
         val expected = mapOf(
-            WhistleKey.HIGH_G to ("G" to "Sol"),
+            WhistleKey.HIGH_G to ("High G" to "Sol aigu"),
             WhistleKey.F to ("F" to "Fa"),
-            WhistleKey.E_FLAT to ("E♭" to "Mi♭"),
+            WhistleKey.E_FLAT to ("Eb" to "Mi♭"),
             WhistleKey.D to ("D" to "Ré"),
             WhistleKey.C to ("C" to "Do"),
-            WhistleKey.B_FLAT to ("B♭" to "Si♭"),
+            WhistleKey.B_FLAT to ("Bb" to "Si♭"),
             WhistleKey.A to ("A" to "La"),
-            WhistleKey.LOW_G to ("G" to "Sol"),
-            WhistleKey.LOW_F to ("F" to "Fa"),
-            WhistleKey.LOW_D to ("D" to "Ré"),
-            WhistleKey.LOW_C to ("C" to "Do"),
+            WhistleKey.LOW_G to ("Low G" to "Sol grave"),
+            WhistleKey.LOW_F to ("Low F" to "Fa grave"),
+            WhistleKey.LOW_D to ("Low D" to "Ré grave"),
+            WhistleKey.LOW_C to ("Low C" to "Do grave"),
         )
         assertEquals(WhistleKey.entries.toSet(), expected.keys)
         expected.forEach { (key, names) ->
-            assertEquals(names.first, key.noteName(NoteNames.LETTERS))
-            assertEquals(names.second, key.noteName(NoteNames.SOLFEGE))
+            assertEquals(names.first, key.label(NoteNames.LETTERS))
+            assertEquals(names.second, key.label(NoteNames.SOLFEGE))
         }
     }
 
     @Test
-    fun `registers name the high and low whistles`() {
-        assertEquals(listOf(WhistleKey.HIGH_G), WhistleKey.entries.filter { it.register == WhistleKey.Register.HIGH })
-        assertEquals(
-            listOf(WhistleKey.LOW_G, WhistleKey.LOW_F, WhistleKey.LOW_D, WhistleKey.LOW_C),
-            WhistleKey.entries.filter { it.register == WhistleKey.Register.LOW },
-        )
+    fun `note names leave out the register`() {
+        assertEquals("D", WhistleKey.LOW_D.noteName(NoteNames.LETTERS))
+        assertEquals("Ré", WhistleKey.LOW_D.noteName(NoteNames.SOLFEGE))
+        assertEquals("Mi♭", WhistleKey.E_FLAT.noteName(NoteNames.SOLFEGE))
     }
 
     @Test
