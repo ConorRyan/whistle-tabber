@@ -7,6 +7,7 @@ import androidx.test.core.app.ApplicationProvider
 import io.github.conorryan.whistletabber.data.settings.TabSettingsStore
 import io.github.conorryan.whistletabber.data.tunes.AbcFiles
 import io.github.conorryan.whistletabber.data.tunes.AppDatabase
+import io.github.conorryan.whistletabber.data.tunes.IncomingTunes
 import io.github.conorryan.whistletabber.data.tunes.RecentlyDeleted
 import io.github.conorryan.whistletabber.data.tunes.TuneImporter
 import io.github.conorryan.whistletabber.data.tunes.TuneRepository
@@ -30,6 +31,7 @@ class TestGraph(dir: File) {
     val appScope = CoroutineScope(SupervisorJob())
     val recentlyDeleted = RecentlyDeleted(repository, appScope)
     val importer = TuneImporter(repository, files) { TuneImporter.readStarterSet(context) }
+    val incomingTunes = IncomingTunes(importer, appScope)
 
     fun close() {
         appScope.cancel()

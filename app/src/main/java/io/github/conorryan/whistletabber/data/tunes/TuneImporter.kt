@@ -9,8 +9,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 
 /**
- * Brings tunes into the library: `.abc` files picked by the user and the
- * bundled O'Neill's starter set (built by scripts/build-starter-set.sh).
+ * Brings tunes into the library: `.abc` files picked by the user or shared
+ * by another app, shared ABC text, and the bundled O'Neill's starter set
+ * (built by scripts/build-starter-set.sh).
  * Duplicates are skipped (see [TuneRepository.importBook]), so adding the
  * same file or the starter set twice is harmless. [busy] is true while any
  * import runs, on any screen. Call from a scope that outlives the screen.
@@ -32,6 +33,9 @@ class TuneImporter(
             total + (text?.let { repository.importBook(it) } ?: ImportResult.UNREADABLE_FILE)
         }
     }
+
+    /** Every tune in [text], such as ABC shared from a browser. */
+    suspend fun importText(text: String): ImportResult = tracked { repository.importBook(text) }
 
     suspend fun addStarterSet(): ImportResult = tracked {
         val text = withContext(Dispatchers.IO) { loadStarterSet() }

@@ -3,6 +3,7 @@ package io.github.conorryan.whistletabber.ui.library
 import app.cash.turbine.test
 import io.github.conorryan.whistletabber.data.tunes.FakeDocumentsProvider
 import io.github.conorryan.whistletabber.data.tunes.ImportResult
+import io.github.conorryan.whistletabber.data.tunes.SharedTunes
 import io.github.conorryan.whistletabber.ui.TestGraph
 import java.io.File
 import kotlinx.coroutines.Dispatchers
@@ -52,7 +53,7 @@ class LibraryViewModelTest {
     }
 
     private fun TestScope.vm() = LibraryViewModel(
-        graph.repository, graph.importer, graph.files, graph.recentlyDeleted, backgroundScope,
+        graph.repository, graph.importer, graph.files, graph.recentlyDeleted, graph.incomingTunes, backgroundScope,
     )
 
     private fun tune(title: String, rhythm: String = "reel") = "X:1\nT:$title\nR:$rhythm\nK:D\nDEF|\n"
@@ -119,6 +120,16 @@ class LibraryViewModelTest {
             vm.importFiles(listOf(FakeDocumentsProvider.uri("a.abc")))
             assertEquals(LibraryMessage.Imported(ImportResult(1, 0, emptyList())), awaitItem())
         }
+    }
+
+    @Test
+    fun `tunes shared from another app are reported once`() = runTest {
+        val vm = vm()
+        vm.messages.test {
+            graph.incomingTunes.receive(SharedTunes(emptyList(), tune("Shared")))
+            assertEquals(LibraryMessage.Imported(ImportResult(1, 0, emptyList())), awaitItem())
+        }
+        graph.incomingTunes.result.first { it == null }
     }
 
     @Test

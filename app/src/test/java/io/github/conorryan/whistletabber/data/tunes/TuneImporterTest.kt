@@ -100,6 +100,14 @@ class TuneImporterTest {
     }
 
     @Test
+    fun `text is imported like a file, skipping duplicates`() = runBlocking {
+        assertEquals(ImportResult(2, 0, emptyList()), importer.importText(tune("One") + "\n" + tune("Two")))
+        assertEquals(ImportResult(0, 1, emptyList()), importer.importText(tune("One")))
+        assertTrue(repo.tunes.first().all { it.source == TuneEntity.SOURCE_IMPORT })
+        assertFalse(importer.busy.value)
+    }
+
+    @Test
     fun `no files import nothing`() = runBlocking {
         assertEquals(ImportResult.NONE, importer.importFiles(emptyList()))
     }

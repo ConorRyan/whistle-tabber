@@ -78,6 +78,20 @@
     <string name="select_all">Tout sélectionner</string>
     <string name="clear_selection">Annuler la sélection</string>
 
+    <!-- Find tunes -->
+    <string name="find_tunes">Trouver des airs en ligne</string>
+    <string name="find_tunes_howto">Ces sites s\'ouvrent dans votre navigateur. Téléchargez le fichier .abc d\'un air, ou sélectionnez son texte ABC, puis utilisez Partager ou Ouvrir avec et choisissez Whistle Tabber.</string>
+    <string name="find_tunes_licences">Chaque site fixe ses propres conditions pour ses airs. Whistle Tabber n\'a pas accès au réseau\u00A0; c\'est votre navigateur qui télécharge.</string>
+    <string name="no_browser">Aucun navigateur n\'est installé</string>
+    <string name="site_oneills_name">Projet O\'Neill\'s</string>
+    <string name="site_oneills_about">Transcriptions des recueils d\'O\'Neill, dont Music of Ireland (1850), d\'où vient la sélection de départ.</string>
+    <string name="site_abcnotation_name">abcnotation.com</string>
+    <string name="site_abcnotation_about">Recherche des airs dans de nombreuses collections ABC.</string>
+    <string name="site_norbeck_name">ABC Tunes de Henrik Norbeck</string>
+    <string name="site_norbeck_about">Un recueil gratuit de plus de 3\u00A0000 airs, surtout irlandais et suédois.</string>
+    <string name="site_chambers_name">Tune Finder de John Chambers</string>
+    <string name="site_chambers_about">Recherche dans les index d\'airs ABC de nombreux sites.</string>
+
     <!-- Tune -->
     <string name="action_edit">Modifier</string>
     <string name="action_export_tune">Exporter l\'air</string>

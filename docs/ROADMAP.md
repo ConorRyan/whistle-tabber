@@ -154,3 +154,6 @@ Key design points:
 ### Between S3 and S4 (2026-10-26)
 - Done: multi-select in the library (long press, select all, batch delete with one Undo; `RecentlyDeleted` now offers a batch), and the starter set cut from 50 to 10 well-known tunes (Drowsy Maggie, The Merry Blacksmith, The Wind that Shakes the Barley, Banish Misfortune, Out on the Ocean, Haste to the Wedding, The Harvest Home, Off to California, The Boys of Bluehill, The Rakes of Mallow), all kept from the vetted 50.
 - Done: whistle note names are a setting (`NoteNames`): "C D E" ("Low D", "Eb") and "Do Ré Mi" ("Ré grave", "Mi♭") are each a whole convention in every language; the default, Auto, picks by the app language.
+
+### Between S3 and S4 (2026-10-27)
+- Done: tunes from the web without network access. `MainActivity` (now `singleTask`) accepts "Open with" (`VIEW`, `content:` only) and "Share" (`SEND`/`SEND_MULTIPLE`, files or ABC text); `IncomingTunes` imports them and the library reports the result, popping back to the library unless the editor is open. A "Find tunes online" screen (Library menu and empty library) opens O'Neill's Project, abcnotation.com, Henrik Norbeck's ABC Tunes and John Chambers' Tune Finder in the browser. TheSession.org is deliberately left out, and a test guards that.

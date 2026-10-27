@@ -5,6 +5,7 @@ import android.content.Context
 import io.github.conorryan.whistletabber.data.settings.TabSettingsStore
 import io.github.conorryan.whistletabber.data.tunes.AbcFiles
 import io.github.conorryan.whistletabber.data.tunes.AppDatabase
+import io.github.conorryan.whistletabber.data.tunes.IncomingTunes
 import io.github.conorryan.whistletabber.data.tunes.RecentlyDeleted
 import io.github.conorryan.whistletabber.data.tunes.TuneImporter
 import io.github.conorryan.whistletabber.data.tunes.TuneRepository
@@ -28,6 +29,9 @@ class AppGraph(
 
     /** Delete with undo: the tune screen deletes, the library offers Undo. */
     val recentlyDeleted = RecentlyDeleted(tuneRepository, appScope)
+
+    /** Files and text shared from other apps: MainActivity receives, the library reports. */
+    val incomingTunes = IncomingTunes(tuneImporter, appScope)
 
     /** One owner for tab-settings writes from the UI (both settings surfaces). */
     val tabSettingsEditor = TabSettingsEditor(tabSettingsStore, appScope)

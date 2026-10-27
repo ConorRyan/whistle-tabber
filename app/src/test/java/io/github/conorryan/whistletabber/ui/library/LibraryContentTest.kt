@@ -88,6 +88,20 @@ class LibraryContentTest {
     }
 
     @Test
+    fun `find tunes is in the menu and on the empty library`() {
+        var found = 0
+        compose.setContent {
+            WhistleTabberTheme {
+                LibraryContent(LibraryUiState(loaded = true, libraryEmpty = true), onFindTunes = { found++ })
+            }
+        }
+        compose.onNodeWithTag("findTunes").performClick()
+        compose.onNodeWithTag("menu").performClick()
+        compose.onNodeWithTag("menuFindTunes").performClick()
+        assertEquals(2, found)
+    }
+
+    @Test
     fun `no matches offers to clear the filters`() {
         var cleared = false
         compose.setContent {

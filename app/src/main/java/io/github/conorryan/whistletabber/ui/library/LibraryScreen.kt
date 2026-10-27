@@ -88,6 +88,7 @@ fun LibraryScreen(
     onOpenTune: (Long) -> Unit,
     onNewTune: () -> Unit,
     onSettings: () -> Unit,
+    onFindTunes: () -> Unit,
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
@@ -136,6 +137,7 @@ fun LibraryScreen(
         onOpenTune = onOpenTune,
         onNewTune = onNewTune,
         onSettings = onSettings,
+        onFindTunes = onFindTunes,
         onAddStarterSet = vm::addStarterSet,
         onImport = { importLauncher.launch(ABC_MIME_TYPES) },
         onExport = { exportLauncher.launch(ExportNames.library(LocalDate.now())) },
@@ -160,6 +162,7 @@ fun LibraryContent(
     onOpenTune: (Long) -> Unit = {},
     onNewTune: () -> Unit = {},
     onSettings: () -> Unit = {},
+    onFindTunes: () -> Unit = {},
     onAddStarterSet: () -> Unit = {},
     onImport: () -> Unit = {},
     onExport: () -> Unit = {},
@@ -187,6 +190,11 @@ fun LibraryContent(
                                 modifier = Modifier.testTag("menuImport"),
                             )
                             DropdownMenuItem(
+                                text = { Text(stringResource(R.string.find_tunes)) },
+                                onClick = { menuOpen = false; onFindTunes() },
+                                modifier = Modifier.testTag("menuFindTunes"),
+                            )
+                            DropdownMenuItem(
                                 text = { Text(stringResource(R.string.action_export_all)) },
                                 onClick = { menuOpen = false; onExport() },
                                 enabled = !state.libraryEmpty,
@@ -210,7 +218,7 @@ fun LibraryContent(
             if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth().testTag("busy"))
             when {
                 !state.loaded -> Unit
-                state.libraryEmpty -> EmptyLibrary(state.busy, onAddStarterSet, onImport)
+                state.libraryEmpty -> EmptyLibrary(state.busy, onAddStarterSet, onImport, onFindTunes)
                 else -> {
                     Filters(state, onQuery, onRhythm, onStarredOnly)
                     if (state.tunes.isEmpty()) {
@@ -368,7 +376,7 @@ private fun TuneRow(tune: Tune, selected: Boolean?, onClick: () -> Unit, onLongC
 }
 
 @Composable
-private fun EmptyLibrary(busy: Boolean, onAddStarterSet: () -> Unit, onImport: () -> Unit) {
+private fun EmptyLibrary(busy: Boolean, onAddStarterSet: () -> Unit, onImport: () -> Unit, onFindTunes: () -> Unit) {
     Column(
         Modifier.fillMaxSize().padding(32.dp).testTag("emptyLibrary"),
         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
@@ -381,6 +389,9 @@ private fun EmptyLibrary(busy: Boolean, onAddStarterSet: () -> Unit, onImport: (
         }
         OutlinedButton(onClick = onImport, enabled = !busy) {
             Text(stringResource(R.string.action_import))
+        }
+        TextButton(onClick = onFindTunes, modifier = Modifier.testTag("findTunes")) {
+            Text(stringResource(R.string.find_tunes))
         }
     }
 }

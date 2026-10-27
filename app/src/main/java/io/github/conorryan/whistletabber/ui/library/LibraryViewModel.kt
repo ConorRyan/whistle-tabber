@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.conorryan.whistletabber.data.tunes.AbcFiles
 import io.github.conorryan.whistletabber.data.tunes.ImportResult
+import io.github.conorryan.whistletabber.data.tunes.IncomingTunes
 import io.github.conorryan.whistletabber.data.tunes.RecentlyDeleted
 import io.github.conorryan.whistletabber.data.tunes.Tune
 import io.github.conorryan.whistletabber.data.tunes.TuneImporter
@@ -59,6 +60,7 @@ sealed interface LibraryMessage {
 /**
  * The tune list with search and filters, selection for deleting several
  * tunes at once, the starter-set offer, and import and export of whole files.
+ * It also reports imports shared from other apps ([IncomingTunes]).
  * Imports and deletes run in [appScope] so leaving the screen doesn't cancel
  * them half way.
  */
@@ -68,6 +70,7 @@ class LibraryViewModel(
     private val importer: TuneImporter,
     private val files: AbcFiles,
     private val recentlyDeleted: RecentlyDeleted,
+    private val incomingTunes: IncomingTunes,
     private val appScope: CoroutineScope,
 ) : ViewModel() {
 
@@ -100,6 +103,13 @@ class LibraryViewModel(
         viewModelScope.launch {
             recentlyDeleted.offer.filterNotNull().collect { tunes ->
                 _messages.send(LibraryMessage.Deleted(tunes))
+            }
+        }
+        viewModelScope.launch {
+            // The channel holds the message until the library is on screen again.
+            incomingTunes.result.filterNotNull().collect { result ->
+                _messages.send(LibraryMessage.Imported(result))
+                incomingTunes.consume(result)
             }
         }
     }

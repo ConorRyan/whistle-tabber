@@ -70,6 +70,20 @@
     <string name="select_all">Select all</string>
     <string name="clear_selection">Cancel selection</string>
 
+    <!-- Find tunes -->
+    <string name="find_tunes">Find tunes online</string>
+    <string name="find_tunes_howto">These sites open in your browser. Download a tune\'s .abc file, or select its ABC text, then use Share or Open with and pick Whistle Tabber.</string>
+    <string name="find_tunes_licences">Each site sets its own terms for its tunes. Whistle Tabber has no network access; your browser does the downloading.</string>
+    <string name="no_browser">No browser is installed</string>
+    <string name="site_oneills_name">O\'Neill\'s Project</string>
+    <string name="site_oneills_about">Transcriptions of O\'Neill\'s collections, including Music of Ireland (1850), the source of the starter set.</string>
+    <string name="site_abcnotation_name">abcnotation.com</string>
+    <string name="site_abcnotation_about">Searches tunes across many ABC collections.</string>
+    <string name="site_norbeck_name">Henrik Norbeck\'s ABC Tunes</string>
+    <string name="site_norbeck_about">A free tune book of over 3,000 mostly Irish and Swedish tunes.</string>
+    <string name="site_chambers_name">John Chambers\' Tune Finder</string>
+    <string name="site_chambers_about">Searches the ABC tune indexes of many websites.</string>
+
     <!-- Tune -->
     <string name="action_edit">Edit</string>
     <string name="action_export_tune">Export tune</string>
