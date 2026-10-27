@@ -12,6 +12,9 @@ class GrayImage(val width: Int, val height: Int, val luma: IntArray) {
 
     operator fun get(x: Int, y: Int): Int = luma[y * width + x]
 
+    /** Black for white: dark-mode screenshots become dark-on-light. */
+    fun inverted(): GrayImage = GrayImage(width, height, IntArray(luma.size) { 255 - luma[it] })
+
     /**
      * Enlarges to [newWidth] × [newHeight] with bicubic interpolation (a = −0.5),
      * one axis at a time. Bicubic keeps thin rings closed where bilinear breaks them.

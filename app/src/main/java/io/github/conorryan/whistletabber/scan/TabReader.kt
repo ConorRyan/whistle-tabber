@@ -34,7 +34,9 @@ data class TabReading(val lines: List<List<TabColumn>>) {
  */
 object TabReader {
 
-    fun read(image: GrayImage): TabReading {
+    fun read(source: GrayImage): TabReading {
+        // Dark mode: light holes on dark paper read the same once inverted.
+        val image = if (median(source.luma) < 128) source.inverted() else source
         val byHoles = readHoles(image)
         val byColumns = readColumns(image)
         val columns = if (byColumns.size > byHoles.size) byColumns else byHoles
@@ -63,17 +65,17 @@ object TabReader {
         operator fun get(x: Int, y: Int): Double = (paper - image[x, y]).toDouble() / range
 
         fun mask(level: Double) = BooleanArray(width * height) { (paper - image.luma[it]).toDouble() / range > level }
+    }
 
-        private fun median(values: IntArray): Int {
-            val histogram = IntArray(256)
-            values.forEach { histogram[it.coerceIn(0, 255)]++ }
-            var seen = 0
-            for (v in 0..255) {
-                seen += histogram[v]
-                if (seen * 2 >= values.size) return v
-            }
-            return 255
+    private fun median(values: IntArray): Int {
+        val histogram = IntArray(256)
+        values.forEach { histogram[it.coerceIn(0, 255)]++ }
+        var seen = 0
+        for (v in 0..255) {
+            seen += histogram[v]
+            if (seen * 2 >= values.size) return v
         }
+        return 255
     }
 
     /** 8-connected blobs of the true pixels in [mask]. */
@@ -256,20 +258,26 @@ object TabReader {
         return runs
     }
 
+    /**
+     * Splits a chain where the spacing changes. Many charts draw the holes as
+     * two groups of three, so one wider gap after the third hole is allowed.
+     */
     private fun evenRuns(run: List<Blob>): List<List<Blob>> {
         val out = mutableListOf<List<Blob>>()
         var current = mutableListOf(run.first())
+        var pitch = 0.0
         for ((a, b) in run.zipWithNext()) {
             val gap = b.cy - a.cy
-            if (current.size >= 2) {
-                val previous = current[current.size - 1].cy - current[current.size - 2].cy
-                if (abs(gap - previous) > 0.3 * previous) {
+            val even = current.size == 1 || abs(gap - pitch) <= 0.3 * pitch
+            val groupGap = current.size == 3 && gap > pitch && gap <= 2.2 * pitch
+            when {
+                current.size == 1 -> { pitch = gap; current += b }
+                even || groupGap -> current += b
+                else -> {
                     out += current
                     current = mutableListOf(b)
-                    continue
                 }
             }
-            current += b
         }
         out += current
         return out

@@ -22,13 +22,14 @@ class TabReaderTest {
         ringDarkness: Float = 1f,
         ringThickness: Double = maxOf(1.0, r / 6),
         pitch: Double = r * 2.6,
+        groupGap: Double = 0.0,
         extras: TabPainter.() -> Unit = {},
     ): TabPainter {
-        val lineHeight = 2 * r + 5 * pitch + 4 * r
+        val lineHeight = 2 * r + 5 * pitch + groupGap + 4 * r
         val p = TabPainter(width, (lines.size * lineHeight + 2 * r).toInt() + 20)
         lines.forEachIndexed { row, line ->
             line.forEachIndexed { i, n ->
-                p.column(20 + r + i * gap, 10 + row * lineHeight, n, r, pitch, ringThickness, ringDarkness)
+                p.column(20 + r + i * gap, 10 + row * lineHeight, n, r, pitch, ringThickness, ringDarkness, groupGap)
             }
         }
         p.extras()
@@ -55,6 +56,25 @@ class TabReaderTest {
     @Test
     fun `tightly packed columns stay apart`() {
         val reading = TabReader.read(chart(tune, r = 14.0, gap = 14.0 * 2.25, pitch = 14.0 * 2.25).image())
+        assertEquals(tune, notations(reading))
+    }
+
+    @Test
+    fun `holes drawn as two groups of three, nearly touching`() {
+        // Like the app's own diagrams in a phone screenshot: 1-2 px between holes.
+        val reading = TabReader.read(chart(tune, r = 8.0, pitch = 17.5, groupGap = 7.0).image())
+        assertEquals(tune, notations(reading))
+    }
+
+    @Test
+    fun `dark mode, light holes on dark paper`() {
+        val reading = TabReader.read(chart(tune, r = 12.0).image().inverted())
+        assertEquals(tune, notations(reading))
+    }
+
+    @Test
+    fun `a dark header bar above the tab is ignored`() {
+        val reading = TabReader.read(chart(tune, r = 12.0, extras = { rect(0.0, 0.0, 1100.0, 6.0) }).image())
         assertEquals(tune, notations(reading))
     }
 

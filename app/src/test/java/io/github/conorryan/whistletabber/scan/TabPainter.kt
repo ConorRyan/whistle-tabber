@@ -49,6 +49,7 @@ class TabPainter(val width: Int, val height: Int, private val supersample: Int =
     /**
      * One diagram: [notation] in chart form ("XXO OOO+", "XX½ OOO"), holes of
      * radius [r] every [pitch] pixels down from [top], "+" marks side by side below.
+     * [groupGap] adds space between holes 3 and 4, as charts drawn in two groups of three do.
      */
     fun column(
         x: Double,
@@ -58,17 +59,18 @@ class TabPainter(val width: Int, val height: Int, private val supersample: Int =
         pitch: Double = r * 2.6,
         ringThickness: Double = maxOf(1.0, r / 6),
         ringDarkness: Float = 1f,
+        groupGap: Double = 0.0,
     ) {
         val f = Fingering.parse(notation)
         f.holes.forEachIndexed { i, hole ->
-            val cy = top + r + i * pitch
+            val cy = top + r + i * pitch + if (i >= 3) groupGap else 0.0
             when (hole) {
                 Hole.CLOSED -> disc(x, cy, r)
                 Hole.OPEN -> ring(x, cy, r, ringThickness, ringDarkness)
                 Hole.HALF -> halfDisc(x, cy, r, ringThickness)
             }
         }
-        val plusY = top + 2 * r + 5 * pitch + r * 0.9
+        val plusY = top + 2 * r + 5 * pitch + groupGap + r * 0.9
         val arm = r * 0.6
         repeat(f.octave) { i ->
             val offset = (i - (f.octave - 1) / 2.0) * arm * 2.6

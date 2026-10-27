@@ -114,8 +114,10 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     diagrams are read; staff, lyrics and chords are ignored. Two readers, the
     one finding more columns wins: hole by hole (round blobs pooled from
     several ink thresholds, linked into runs of six evenly spaced holes,
-    filled/open/half split per image) and column first (tall thin blobs of
-    small or blurry tab, cut into six cells). No OpenCV.
+    allowing one wider gap between two groups of three, filled/open/half
+    split per image) and column first (tall thin blobs of small or blurry
+    tab, cut into six cells). Dark-mode images (dark paper) are inverted
+    first. No OpenCV.
   - `TabTune`: fingering → note through `FingeringEngine` (plus vented
     `OXX XXX+` and every `CNatural`), and the reading → ABC: equal notes
     (`L:1/4`, `M:none`), one ABC line per tab line, the whistle's major key,
