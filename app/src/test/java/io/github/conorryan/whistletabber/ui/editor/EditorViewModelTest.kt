@@ -155,6 +155,24 @@ class EditorViewModelTest {
     }
 
     @Test
+    fun `a new tune can start from a given draft, unsaved`() = runTest {
+        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        val draft = "X:1\nT:From an image\nK:D\nD E F |]\n"
+        val state = EditorViewModel(null, SavedStateHandle(), graph.repository, draft).state.first { it.text != null }
+        assertEquals(draft, state.text)
+        assertTrue(state.dirty)
+        assertTrue(state.canSave)
+    }
+
+    @Test
+    fun `an existing tune ignores a given draft`() = runTest {
+        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        val id = runBlocking { graph.repository.save(abc) }
+        val state = EditorViewModel(id, SavedStateHandle(), graph.repository, "X:1\nT:Other\nK:D\n").state.first { it.text != null }
+        assertEquals(abc, state.text)
+    }
+
+    @Test
     fun `a missing tune says so`() = runTest {
         Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
         assertTrue(vm(999).state.first { it.missing }.missing)

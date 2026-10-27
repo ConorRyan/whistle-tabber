@@ -37,7 +37,8 @@ sealed interface EditorEffect {
 }
 
 /**
- * Edits one tune's ABC ([id] null: a new tune from [TEMPLATE]). The draft
+ * Edits one tune's ABC ([id] null: a new tune from [initialText], else
+ * [TEMPLATE]; a new tune from [initialText] starts unsaved). The draft
  * lives in [SavedStateHandle], so it survives process death; the preview is
  * rendered by the [TuneRenderer] this ViewModel owns, [debounceMs] after
  * typing stops. The screen attaches its WebView with [bindPage].
@@ -46,6 +47,7 @@ class EditorViewModel(
     private val id: Long?,
     private val savedState: SavedStateHandle,
     private val repository: TuneRepository,
+    private val initialText: String? = null,
     debounceMs: Long = 400,
 ) : ViewModel() {
 
@@ -71,7 +73,7 @@ class EditorViewModel(
                 _state.update { it.copy(missing = true) }
                 return@launch
             }
-            setText(savedState.get<String>(KEY_DRAFT) ?: original!!)
+            setText(savedState.get<String>(KEY_DRAFT) ?: initialText?.takeIf { id == null } ?: original!!)
         }
     }
 

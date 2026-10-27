@@ -145,4 +145,25 @@
     <string name="licence_wfg">Les doigtés de la troisième octave suivent le Woodwind Fingering Guide de Timothy Reichard.</string>
     <string name="licence_libraries">AndroidX, Jetpack Compose et les bibliothèques Kotlin\u00A0: licence Apache 2.0.</string>
 
+    <string name="scan_tab">Lire une tablature depuis une image</string>
+    <string name="scan_howto">Choisissez une image de tablature pour whistle\u00A0: capture d\'écran, scan ou photo prise bien de face. Seuls les diagrammes de doigtés sont lus. Toutes les notes ont la même durée\u00A0; ajoutez le rythme dans l\'éditeur.</string>
+    <string name="scan_choose">Choisir une image</string>
+    <string name="scan_other">Choisir une autre image</string>
+    <string name="scan_reading">Lecture de l\'image…</string>
+    <string name="scan_unreadable">Impossible d\'ouvrir cette image.</string>
+    <string name="scan_none">Aucun diagramme de doigté trouvé. Essayez une image plus nette ou plus grande.</string>
+    <plurals name="scan_found">
+        <item quantity="one">%d note trouvée</item>
+        <item quantity="other">%d notes trouvées</item>
+    </plurals>
+    <plurals name="scan_unknown">
+        <item quantity="one">%d diagramme non reconnu, marqué ? dans l\'air</item>
+        <item quantity="other">%d diagrammes non reconnus, marqués ? dans l\'air</item>
+    </plurals>
+    <string name="scan_whistle">Whistle pour lequel la tablature est écrite</string>
+    <string name="scan_title">Titre</string>
+    <string name="scan_default_title">Air lu depuis une image</string>
+    <string name="scan_open_editor">Ouvrir dans l\'éditeur</string>
+    <string name="scan_image_description">L\'image, avec chaque diagramme lu encadré</string>
+
 </resources>

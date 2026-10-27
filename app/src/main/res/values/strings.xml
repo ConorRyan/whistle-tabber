@@ -137,4 +137,25 @@
     <string name="licence_wfg">Third-octave fingerings follow the Woodwind Fingering Guide by Timothy Reichard.</string>
     <string name="licence_libraries">AndroidX, Jetpack Compose and the Kotlin libraries: Apache License 2.0.</string>
 
+    <string name="scan_tab">Read tab from an image</string>
+    <string name="scan_howto">Pick a picture of whistle tab: a screenshot, a scan or a straight-on photo. Only the fingering diagrams are read. Every note comes out the same length; add the rhythm in the editor.</string>
+    <string name="scan_choose">Choose image</string>
+    <string name="scan_other">Choose another image</string>
+    <string name="scan_reading">Reading the image…</string>
+    <string name="scan_unreadable">That image couldn\'t be opened.</string>
+    <string name="scan_none">No fingering diagrams found. Try a sharper or larger image.</string>
+    <plurals name="scan_found">
+        <item quantity="one">%d note found</item>
+        <item quantity="other">%d notes found</item>
+    </plurals>
+    <plurals name="scan_unknown">
+        <item quantity="one">%d diagram not recognised, marked ? in the tune</item>
+        <item quantity="other">%d diagrams not recognised, marked ? in the tune</item>
+    </plurals>
+    <string name="scan_whistle">Whistle the tab is written for</string>
+    <string name="scan_title">Title</string>
+    <string name="scan_default_title">Tune from an image</string>
+    <string name="scan_open_editor">Open in editor</string>
+    <string name="scan_image_description">The image, with each diagram that was read outlined</string>
+
 </resources>

@@ -9,6 +9,7 @@ import io.github.conorryan.whistletabber.data.tunes.IncomingTunes
 import io.github.conorryan.whistletabber.data.tunes.RecentlyDeleted
 import io.github.conorryan.whistletabber.data.tunes.TuneImporter
 import io.github.conorryan.whistletabber.data.tunes.TuneRepository
+import io.github.conorryan.whistletabber.scan.TabImageLoader
 import io.github.conorryan.whistletabber.ui.settings.TabSettingsEditor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -20,6 +21,7 @@ class AppGraph(
     db: AppDatabase,
     loadStarterSet: () -> String,
     val abcFiles: AbcFiles,
+    val tabImageLoader: TabImageLoader,
 ) {
     val tuneRepository = TuneRepository(db)
     val tuneImporter = TuneImporter(tuneRepository, abcFiles, loadStarterSet)
@@ -42,6 +44,7 @@ class AppGraph(
             db = AppDatabase.build(context),
             loadStarterSet = { TuneImporter.readStarterSet(context) },
             abcFiles = AbcFiles(context.contentResolver),
+            tabImageLoader = TabImageLoader(context.contentResolver),
         )
     }
 }

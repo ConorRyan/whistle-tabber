@@ -2,6 +2,7 @@ package io.github.conorryan.whistletabber.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -12,11 +13,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import io.github.conorryan.whistletabber.AppGraph
+import io.github.conorryan.whistletabber.R
 import io.github.conorryan.whistletabber.ui.editor.EditorScreen
 import io.github.conorryan.whistletabber.ui.editor.EditorViewModel
 import io.github.conorryan.whistletabber.ui.findtunes.FindTunesScreen
 import io.github.conorryan.whistletabber.ui.library.LibraryScreen
 import io.github.conorryan.whistletabber.ui.library.LibraryViewModel
+import io.github.conorryan.whistletabber.ui.scan.ScanTabScreen
+import io.github.conorryan.whistletabber.ui.scan.ScanTabViewModel
 import io.github.conorryan.whistletabber.ui.settings.SettingsScreen
 import io.github.conorryan.whistletabber.ui.settings.SettingsViewModel
 import io.github.conorryan.whistletabber.ui.tune.TuneScreen
@@ -29,15 +33,18 @@ data object LibraryRoute
 @Serializable
 data class TuneRoute(val id: Long)
 
-/** [id] null: a new tune. */
+/** [id] null: a new tune, starting from [draft] if given. */
 @Serializable
-data class EditorRoute(val id: Long? = null)
+data class EditorRoute(val id: Long? = null, val draft: String? = null)
 
 @Serializable
 data object SettingsRoute
 
 @Serializable
 data object FindTunesRoute
+
+@Serializable
+data object ScanTabRoute
 
 @Composable
 fun AppNavHost(graph: AppGraph) {
@@ -66,6 +73,7 @@ fun AppNavHost(graph: AppGraph) {
                 onNewTune = { nav.navigate(EditorRoute()) },
                 onSettings = { nav.navigate(SettingsRoute) },
                 onFindTunes = { nav.navigate(FindTunesRoute) },
+                onScanTab = { nav.navigate(ScanTabRoute) },
             )
         }
         composable<TuneRoute> { entry ->
@@ -87,10 +95,11 @@ fun AppNavHost(graph: AppGraph) {
             )
         }
         composable<EditorRoute> { entry ->
-            val id = entry.toRoute<EditorRoute>().id
+            val route = entry.toRoute<EditorRoute>()
+            val id = route.id
             val vm: EditorViewModel = viewModel(
                 factory = viewModelFactory {
-                    initializer { EditorViewModel(id, createSavedStateHandle(), graph.tuneRepository) }
+                    initializer { EditorViewModel(id, createSavedStateHandle(), graph.tuneRepository, route.draft) }
                 },
             )
             EditorScreen(
@@ -116,6 +125,21 @@ fun AppNavHost(graph: AppGraph) {
         }
         composable<FindTunesRoute> {
             FindTunesScreen(onBack = { nav.popBackStack() })
+        }
+        composable<ScanTabRoute> {
+            val defaultTitle = stringResource(R.string.scan_default_title)
+            val vm: ScanTabViewModel = viewModel(
+                factory = viewModelFactory {
+                    initializer { ScanTabViewModel(graph.tabImageLoader::load, graph.tabSettingsStore.settings, defaultTitle) }
+                },
+            )
+            ScanTabScreen(
+                vm = vm,
+                onBack = { nav.popBackStack() },
+                onOpenInEditor = { abc ->
+                    nav.navigate(EditorRoute(draft = abc)) { popUpTo<ScanTabRoute> { inclusive = true } }
+                },
+            )
         }
     }
 }

@@ -107,6 +107,20 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     editor and the import.
   - `KeyChange`: target tonics, steps (−6..+5) and names for rewriting a
     tune into another key.
+- `scan/` — reading whistle tab from images, pure Kotlin except the loader.
+  - `GrayImage`: luma per pixel (0 black–255 white), bicubic `scaled`.
+  - `TabReader.read` → `TabReading` (lines of `TabColumn`: six `Hole`s,
+    octave from "+" marks, a `Box` in source pixels). Only fingering
+    diagrams are read; staff, lyrics and chords are ignored. Two readers, the
+    one finding more columns wins: hole by hole (round blobs pooled from
+    several ink thresholds, linked into runs of six evenly spaced holes,
+    filled/open/half split per image) and column first (tall thin blobs of
+    small or blurry tab, cut into six cells). No OpenCV.
+  - `TabTune`: fingering → note through `FingeringEngine` (plus vented
+    `OXX XXX+` and every `CNatural`), and the reading → ABC: equal notes
+    (`L:1/4`, `M:none`), one ABC line per tab line, the whistle's major key,
+    `%whistle_tab_key`, unknown fingerings as `"^?"z`.
+  - `TabImageLoader`: picked image → `GrayImage` (longest side ≤ 2400).
 - `data/settings/` — `TabSettingsStore` (DataStore, injected; enums stored by
   name, unknown names fall back to defaults); `SettingsDataStores` owns the
   process-wide instance. `AppGraph` in `WhistleTabberApplication.kt` is the
@@ -154,8 +168,8 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
   diagrams, with `FingeringDiagramGeometryTest` pinning the shared geometry;
   `whistleLabel`, which reads the `LocalNoteNames` composition local that
   `MainActivity` provides from the settings store). `AppNavHost` holds type-safe `@Serializable`
-  routes: `LibraryRoute` (start), `TuneRoute(id)`, `EditorRoute(id?)`,
-  `SettingsRoute`, `FindTunesRoute`. Each screen has a ViewModel built from `AppGraph` and a
+  routes: `LibraryRoute` (start), `TuneRoute(id)`, `EditorRoute(id?, draft?)`,
+  `SettingsRoute`, `FindTunesRoute`, `ScanTabRoute`. Each screen has a ViewModel built from `AppGraph` and a
   stateless `…Content` composable where Compose tests need one.
   - `library/`: search, rhythm and Starred chips, the starter-set offer on an
     empty library, SAF import (through `TuneImporter`) and export
@@ -173,7 +187,14 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     and lets the renderer dedupe. Key change: `KeyChangePreview.start` →
     preview render → save as a copy (default) or replace.
   - `editor/`: draft in `SavedStateHandle`, preview rendered by its
-    `TuneRenderer` (debounced 400 ms), save blocked without `T:`/`K:`.
+    `TuneRenderer` (debounced 400 ms), save blocked without `T:`/`K:`. A new
+    tune may start from a given draft (`initialText`, from the scan screen),
+    unsaved until the user saves.
+  - `scan/`: "Read tab from an image" (Library menu): the photo picker,
+    `TabReader` off the main thread, the image with each diagram outlined
+    (unknown fingerings in the error colour), title and written-for whistle;
+    "Open in editor" passes `TabTune.toAbc` as the editor's draft. Nothing
+    is saved on this screen.
   - `findtunes/`: "Find tunes online", links (`TUNE_SITES`) opened in the
     browser with `ACTION_VIEW`; downloads come back through `IncomingTunes`.
     Never list TheSession.org (a test checks).

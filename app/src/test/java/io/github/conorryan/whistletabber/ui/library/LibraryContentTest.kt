@@ -102,6 +102,20 @@ class LibraryContentTest {
     }
 
     @Test
+    fun `reading tab from an image is in the menu`() {
+        var scans = 0
+        compose.setContent {
+            WhistleTabberTheme {
+                LibraryContent(LibraryUiState(loaded = true, libraryEmpty = true), onScanTab = { scans++ })
+            }
+        }
+        compose.onNodeWithTag("menu").performClick()
+        compose.onNodeWithText("Read tab from an image").assertIsDisplayed()
+        compose.onNodeWithTag("menuScanTab").performClick()
+        assertEquals(1, scans)
+    }
+
+    @Test
     fun `no matches offers to clear the filters`() {
         var cleared = false
         compose.setContent {
