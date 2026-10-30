@@ -166,4 +166,19 @@
     <string name="scan_open_editor">Ouvrir dans l\'éditeur</string>
     <string name="scan_image_description">L\'image, avec chaque diagramme lu encadré</string>
 
+    <string name="tap_write">Écrire avec les doigtés</string>
+    <string name="action_edit_abc">Modifier l\'ABC</string>
+    <string name="tap_whistle">Whistle pour lequel l\'air est écrit</string>
+    <string name="tap_empty">Touchez un doigté ci-dessous pour ajouter une note. Pour l\'instant toutes les notes ont la même durée, quatre par mesure.</string>
+    <string name="tap_octave_low">Grave</string>
+    <string name="tap_octave_high">Aigu (+)</string>
+    <string name="tap_octave_highest">Suraigu (++)</string>
+    <string name="tap_more">Plus de doigtés</string>
+    <string name="tap_fewer">Moins de doigtés</string>
+    <string name="tap_rest">Silence</string>
+    <string name="tap_delete">Supprimer la note</string>
+    <string name="tap_cursor_left">Vers la gauche</string>
+    <string name="tap_cursor_right">Vers la droite</string>
+    <string name="tap_unsupported">Cet air a été modifié en texte\u00A0: il ne peut plus être modifié avec les doigtés. Utilisez plutôt Modifier l\'ABC.</string>
+
 </resources>

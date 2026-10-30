@@ -90,6 +90,7 @@ fun LibraryScreen(
     onSettings: () -> Unit,
     onFindTunes: () -> Unit,
     onScanTab: () -> Unit,
+    onWriteTaps: () -> Unit,
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
@@ -140,6 +141,7 @@ fun LibraryScreen(
         onSettings = onSettings,
         onFindTunes = onFindTunes,
         onScanTab = onScanTab,
+        onWriteTaps = onWriteTaps,
         onAddStarterSet = vm::addStarterSet,
         onImport = { importLauncher.launch(ABC_MIME_TYPES) },
         onExport = { exportLauncher.launch(ExportNames.library(LocalDate.now())) },
@@ -166,6 +168,7 @@ fun LibraryContent(
     onSettings: () -> Unit = {},
     onFindTunes: () -> Unit = {},
     onScanTab: () -> Unit = {},
+    onWriteTaps: () -> Unit = {},
     onAddStarterSet: () -> Unit = {},
     onImport: () -> Unit = {},
     onExport: () -> Unit = {},
@@ -196,6 +199,11 @@ fun LibraryContent(
                                 text = { Text(stringResource(R.string.find_tunes)) },
                                 onClick = { menuOpen = false; onFindTunes() },
                                 modifier = Modifier.testTag("menuFindTunes"),
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.tap_write)) },
+                                onClick = { menuOpen = false; onWriteTaps() },
+                                modifier = Modifier.testTag("menuWriteTaps"),
                             )
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.scan_tab)) },

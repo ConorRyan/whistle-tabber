@@ -8,6 +8,7 @@ import io.github.conorryan.whistletabber.data.tunes.RecentlyDeleted
 import io.github.conorryan.whistletabber.data.tunes.Tune
 import io.github.conorryan.whistletabber.data.tunes.TuneRepository
 import io.github.conorryan.whistletabber.music.TabSettings
+import io.github.conorryan.whistletabber.music.TapTune
 import io.github.conorryan.whistletabber.music.WhistleKey
 import io.github.conorryan.whistletabber.render.TunePage
 import io.github.conorryan.whistletabber.render.TuneRenderer
@@ -28,6 +29,8 @@ data class TuneUiState(
     val missing: Boolean = false,
     val settings: TabSettings = TabSettings(),
     val preview: KeyChangePreview.Preview? = null,
+    /** The tune is in the form the tap editor writes ([TapTune]), so Edit opens that. */
+    val tapEditable: Boolean = false,
 ) {
     /** The whistle the tune is written for: its directive, else its key's suggestion, else D. */
     val tuneWhistle: WhistleKey get() = tune?.whistle ?: WhistleKey.DEFAULT
@@ -78,7 +81,7 @@ class TuneViewModel(
                     if (!deleting) _state.update { it.copy(missing = true) }
                     return@collect
                 }
-                _state.update { it.copy(tune = tune, settings = settings, preview = preview, missing = false) }
+                _state.update { it.copy(tune = tune, settings = settings, preview = preview, missing = false, tapEditable = TapTune.parse(tune.abc) != null) }
                 val whistle = _state.value.tuneWhistle
                 renderer.show(
                     TuneRenderer.RenderRequest(

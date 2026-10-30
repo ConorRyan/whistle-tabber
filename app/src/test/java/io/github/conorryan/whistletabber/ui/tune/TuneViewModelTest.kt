@@ -23,6 +23,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -87,6 +88,15 @@ class TuneViewModelTest {
             assertNull(diagrams[3])
         }
         assertEquals("Test Tune", vm.state.value.tune?.title)
+    }
+
+    @Test
+    fun `a tune in the tap editor's form is tap-editable, others aren't`() = runTest {
+        val tap = saved("X:1\nT:Tapped\nM:4/4\nL:1/4\n%whistle_tab_key d\nK:D\nD E F |]\n")
+        val (tapVm, _) = bound(tap, editor(backgroundScope))
+        assertTrue(tapVm.state.first { it.tune != null }.tapEditable)
+        val (textVm, _) = bound(saved(), editor(backgroundScope))
+        assertFalse(textVm.state.first { it.tune != null }.tapEditable)
     }
 
     @Test

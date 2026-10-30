@@ -250,7 +250,8 @@
 
     function ensureSynth() {
         if (synth) return Promise.resolve();
-        synth = new ABCJS.synth.SynthController();
+        var mine = new ABCJS.synth.SynthController();
+        synth = mine;
         synth.cursorControl = cursorControl;
         if (tempoPercent !== 100) synth.warp = tempoPercent;
         return synth.setTune(visualObj, true, {
@@ -265,13 +266,16 @@
                 loaded: (status.loaded || []).length + (status.cached || []).length,
                 errors: status.error || [],
             });
+        }, function (err) {
+            // A render while the samples loaded destroyed this synth; that render stopped playback.
+            if (synth === mine) throw err;
         });
     }
 
     function play() {
         if (!visualObj) return Promise.resolve();
         return ensureSynth().then(function () {
-            if (!synth.isStarted) return synth.play();
+            if (synth && !synth.isStarted) return synth.play();
         });
     }
 
@@ -281,7 +285,7 @@
 
     function seek(fraction) {
         if (!visualObj) return Promise.resolve();
-        return ensureSynth().then(function () { synth.seek(fraction); });
+        return ensureSynth().then(function () { if (synth) synth.seek(fraction); });
     }
 
     function setTempo(percent) {
@@ -369,7 +373,8 @@
         lastWidth = paper.clientWidth;
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(function () {
-            if (lastRender && !(synth && synth.isStarted)) window.whistlePage.handle(lastRender);
+            // Not while playing, nor while samples load: re-rendering destroys the synth.
+            if (lastRender && !(synth && (synth.isStarted || synth.isLoading))) window.whistlePage.handle(lastRender);
         }, 200);
     });
 

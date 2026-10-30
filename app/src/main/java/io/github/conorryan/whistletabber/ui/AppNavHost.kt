@@ -22,6 +22,8 @@ import io.github.conorryan.whistletabber.ui.library.LibraryViewModel
 import io.github.conorryan.whistletabber.ui.scan.ScanTabScreen
 import io.github.conorryan.whistletabber.ui.scan.ScanTabViewModel
 import io.github.conorryan.whistletabber.ui.settings.SettingsScreen
+import io.github.conorryan.whistletabber.ui.tap.TapEditorScreen
+import io.github.conorryan.whistletabber.ui.tap.TapEditorViewModel
 import io.github.conorryan.whistletabber.ui.settings.SettingsViewModel
 import io.github.conorryan.whistletabber.ui.tune.TuneScreen
 import io.github.conorryan.whistletabber.ui.tune.TuneViewModel
@@ -36,6 +38,10 @@ data class TuneRoute(val id: Long)
 /** [id] null: a new tune, starting from [draft] if given. */
 @Serializable
 data class EditorRoute(val id: Long? = null, val draft: String? = null)
+
+/** The tap editor; [id] null: a new tune. */
+@Serializable
+data class TapEditorRoute(val id: Long? = null)
 
 @Serializable
 data object SettingsRoute
@@ -74,6 +80,7 @@ fun AppNavHost(graph: AppGraph) {
                 onSettings = { nav.navigate(SettingsRoute) },
                 onFindTunes = { nav.navigate(FindTunesRoute) },
                 onScanTab = { nav.navigate(ScanTabRoute) },
+                onWriteTaps = { nav.navigate(TapEditorRoute()) },
             )
         }
         composable<TuneRoute> { entry ->
@@ -89,6 +96,7 @@ fun AppNavHost(graph: AppGraph) {
                 vm = vm,
                 onBack = { nav.popBackStack() },
                 onEdit = { nav.navigate(EditorRoute(id)) },
+                onEditTaps = { nav.navigate(TapEditorRoute(id)) },
                 onOpenTune = { newId ->
                     nav.navigate(TuneRoute(newId)) { popUpTo<TuneRoute> { inclusive = true } }
                 },
@@ -109,6 +117,26 @@ fun AppNavHost(graph: AppGraph) {
                 onSaved = { savedId ->
                     if (id == null) {
                         nav.navigate(TuneRoute(savedId)) { popUpTo<EditorRoute> { inclusive = true } }
+                    } else {
+                        nav.popBackStack()
+                    }
+                },
+            )
+        }
+        composable<TapEditorRoute> { entry ->
+            val id = entry.toRoute<TapEditorRoute>().id
+            val vm: TapEditorViewModel = viewModel(
+                factory = viewModelFactory {
+                    initializer { TapEditorViewModel(id, createSavedStateHandle(), graph.tuneRepository, graph.tabSettingsStore.settings) }
+                },
+            )
+            TapEditorScreen(
+                vm = vm,
+                isNew = id == null,
+                onClose = { nav.popBackStack() },
+                onSaved = { savedId ->
+                    if (id == null) {
+                        nav.navigate(TuneRoute(savedId)) { popUpTo<TapEditorRoute> { inclusive = true } }
                     } else {
                         nav.popBackStack()
                     }

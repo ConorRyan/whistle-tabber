@@ -38,19 +38,12 @@ class TabTuneTest {
     }
 
     @Test
-    fun `notes are spelled in the key`() {
-        assertEquals("D", TabTune.spell(62, "D"))
-        assertEquals("F", TabTune.spell(66, "D")) // F sharp is in D major
-        assertEquals("=F", TabTune.spell(65, "D"))
-        assertEquals("=c", TabTune.spell(72, "D"))
-        assertEquals("^G", TabTune.spell(68, "D"))
-        assertEquals("_E", TabTune.spell(63, "F"))
-        assertEquals("B", TabTune.spell(70, "Bb")) // B flat is in B flat major
-        assertEquals("=B", TabTune.spell(71, "Bb"))
-        assertEquals("d'", TabTune.spell(86, "D"))
-        assertEquals("C,", TabTune.spell(48, "C"))
-        assertEquals("C", TabTune.spell(61, "D")) // C sharp, low octave
-        assertEquals("^F", TabTune.spell(66, "C"))
+    fun `an accidental earlier in the bar is cancelled explicitly`() {
+        val reading = TabReading(listOf(listOf(column("OXX OOO+"), column("OOO OOO+"), column("OXX OOO"), column("OOO OOO"))))
+        assertEquals(
+            "X:1\nT:C\nM:none\nL:1/4\n%whistle_tab_key d\nK:D\n=c' ^c' =c ^c |]\n",
+            TabTune.toAbc(reading, WhistleKey.D, "C", CNatural.DEFAULT),
+        )
     }
 
     @Test

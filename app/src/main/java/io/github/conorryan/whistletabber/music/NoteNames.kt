@@ -23,7 +23,7 @@ enum class NoteNames {
     }
 }
 
-private val SOLFEGE = mapOf(
+internal val SOLFEGE = mapOf(
     'C' to "Do", 'D' to "Ré", 'E' to "Mi", 'F' to "Fa", 'G' to "Sol", 'A' to "La", 'B' to "Si",
 )
 

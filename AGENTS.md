@@ -107,6 +107,16 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     editor and the import.
   - `KeyChange`: target tonics, steps (−6..+5) and names for rewriting a
     tune into another key.
+  - `AbcNotes`: single ABC notes in a major key, MIDI ↔ text. `spellBar`
+    writes an explicit accidental on every note of a letter already altered
+    in the bar (abcjs's playback scopes bar accidentals by letter and octave,
+    its transposer by letter); `parseBar` reads the standard way; `name`
+    gives "F♯"/"Fa♯".
+  - `TapTune` + `TapDraft`: a tune written by tapping fingerings, stored as
+    `FingeringEngine` offsets (null = rest) for a whistle. `toAbc`: equal
+    quarter notes, `M:4/4`, 4 per bar, 4 bars per line, the whistle's major
+    key and `%whistle_tab_key`; other header lines kept. `parse` reads only
+    that form back (else null), which is what makes a tune tap-editable.
 - `scan/` — reading whistle tab from images, pure Kotlin except the loader.
   - `GrayImage`: luma per pixel (0 black–255 white), bicubic `scaled`.
   - `TabReader.read` → `TabReading` (lines of `TabColumn`: six `Hole`s,
@@ -171,7 +181,7 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
   `whistleLabel`, which reads the `LocalNoteNames` composition local that
   `MainActivity` provides from the settings store). `AppNavHost` holds type-safe `@Serializable`
   routes: `LibraryRoute` (start), `TuneRoute(id)`, `EditorRoute(id?, draft?)`,
-  `SettingsRoute`, `FindTunesRoute`, `ScanTabRoute`. Each screen has a ViewModel built from `AppGraph` and a
+  `SettingsRoute`, `FindTunesRoute`, `ScanTabRoute`, `TapEditorRoute(id?)`. Each screen has a ViewModel built from `AppGraph` and a
   stateless `…Content` composable where Compose tests need one.
   - `library/`: search, rhythm and Starred chips, the starter-set offer on an
     empty library, SAF import (through `TuneImporter`) and export
@@ -197,6 +207,15 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     (unknown fingerings in the error colour), title and written-for whistle;
     "Open in editor" passes `TabTune.toAbc` as the editor's draft. Nothing
     is saved on this screen.
+  - `tap/`: "Write with fingerings" (Library menu, `TapEditorRoute(id?)`):
+    title, a strip of the tapped diagrams with a cursor, live preview with
+    diagrams and playback, the written-for whistle, and a palette of
+    fingerings (octave chips, the scale plus C natural, half-hole notes under
+    "More"), rest, delete and cursor keys. A tap also sounds the note natively
+    (`NotePlayer`, `AudioTrack`). Draft in `SavedStateHandle`; saves
+    `TapTune.toAbc`. The tune screen's Edit opens it when
+    `TuneUiState.tapEditable` (`TapTune.parse` succeeds), with "Edit ABC" for
+    the text editor; other tunes go straight to the text editor.
   - `findtunes/`: "Find tunes online", links (`TUNE_SITES`) opened in the
     browser with `ACTION_VIEW`; downloads come back through `IncomingTunes`.
     Never list TheSession.org (a test checks).

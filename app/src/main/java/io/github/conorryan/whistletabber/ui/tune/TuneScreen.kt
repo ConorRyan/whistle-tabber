@@ -80,6 +80,7 @@ fun TuneScreen(
     vm: TuneViewModel,
     onBack: () -> Unit,
     onEdit: () -> Unit,
+    onEditTaps: () -> Unit,
     onOpenTune: (Long) -> Unit,
 ) {
     val context = LocalContext.current
@@ -138,9 +139,16 @@ fun TuneScreen(
                             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.action_edit)) },
-                                    onClick = { menuOpen = false; onEdit() },
+                                    onClick = { menuOpen = false; if (state.tapEditable) onEditTaps() else onEdit() },
                                     modifier = Modifier.testTag("menuEdit"),
                                 )
+                                if (state.tapEditable) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.action_edit_abc)) },
+                                        onClick = { menuOpen = false; onEdit() },
+                                        modifier = Modifier.testTag("menuEditAbc"),
+                                    )
+                                }
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.action_change_key)) },
                                     onClick = { menuOpen = false; keyDialog = true },

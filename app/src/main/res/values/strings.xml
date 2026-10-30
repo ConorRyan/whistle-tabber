@@ -158,4 +158,19 @@
     <string name="scan_open_editor">Open in editor</string>
     <string name="scan_image_description">The image, with each diagram that was read outlined</string>
 
+    <string name="tap_write">Write with fingerings</string>
+    <string name="action_edit_abc">Edit ABC</string>
+    <string name="tap_whistle">Whistle the tune is written for</string>
+    <string name="tap_empty">Tap a fingering below to add a note. For now every note is the same length, four to a bar.</string>
+    <string name="tap_octave_low">Low</string>
+    <string name="tap_octave_high">High (+)</string>
+    <string name="tap_octave_highest">Highest (++)</string>
+    <string name="tap_more">More fingerings</string>
+    <string name="tap_fewer">Fewer fingerings</string>
+    <string name="tap_rest">Rest</string>
+    <string name="tap_delete">Delete note</string>
+    <string name="tap_cursor_left">Move left</string>
+    <string name="tap_cursor_right">Move right</string>
+    <string name="tap_unsupported">This tune was changed as text, so it can\'t be edited with fingerings any more. Use Edit ABC instead.</string>
+
 </resources>

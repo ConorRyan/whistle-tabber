@@ -10,12 +10,17 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Deferred
+import io.github.conorryan.whistletabber.music.TapDraft
+import io.github.conorryan.whistletabber.music.TapTune
+import io.github.conorryan.whistletabber.music.WhistleKey
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.After
@@ -136,5 +141,50 @@ class TuneWebControllerTest {
         send(BridgeCommand.Render("X:1\nT:Tom's \"Reel\"\nM:4/4\nL:1/4\nK:D\nDE \\\nFG|\n"))
         assertEquals(4, rendered.await().notes.size)
         assertEquals("\"Tom's \\\"Reel\\\"\"", js("document.querySelector('#paper .abcjs-title').textContent"))
+    }
+
+    /** Every fingering in an order that puts naturals and sharps of one letter in the same bar. */
+    private val tapped = listOf(10, 11, 22, 23, 9, 10, 8, 9, 0, 1, 2, 3, 3, 4, 5, 6, 6, 7, 12, null, 24, 26, 27, 28, 29, 30, 31, 32, 33, 34, 21, 20)
+
+    /**
+     * The page reports `rendered` again when its width changes, so a late
+     * report of the last tune can arrive; wait for the one with [expected] notes.
+     */
+    private suspend fun awaitNotes(expected: List<Int?>, send: () -> Unit) = coroutineScope {
+        var seen: List<Int?>? = null
+        val match = listen {
+            withTimeoutOrNull(20_000) {
+                controller.events.first { event ->
+                    if (event is BridgeEvent.Error) error("Page error: $event")
+                    (event as? BridgeEvent.Rendered)?.notes?.map { it.midi }?.also { seen = it } == expected
+                }
+            }
+        }
+        send()
+        assertEquals(expected, if (match.await() != null) expected else seen)
+    }
+
+    @Test
+    fun tappedTunesPlayTheTappedPitchesOnEveryWhistle() = runBlocking {
+        for (whistle in WhistleKey.entries) {
+            awaitNotes(tapped.filterNotNull().map { whistle.writtenTonic + it }) {
+                send(BridgeCommand.Render(TapTune.toAbc(TapDraft("Taps", whistle, tapped))))
+            }
+        }
+    }
+
+    /**
+     * Bottom two octaves only: abcjs 6.7.2's strTranspose drops the natural
+     * from `=f' ^f'` (it writes `_e' e'`), so third-octave pairs like that
+     * change pitch in any tune.
+     */
+    @Test
+    fun aTappedTuneChangesKeyWithEveryPitch() = runBlocking {
+        val tapped = tapped.filter { it == null || it < 24 }
+        val tune = TapTune.toAbc(TapDraft("Taps", WhistleKey.D, tapped))
+        val transposed = listen { awaitEvent<BridgeEvent.TransposedText>() }
+        send(BridgeCommand.TransposeText(tune, -2)) // D to C
+        val abc = transposed.await().abc
+        awaitNotes(tapped.filterNotNull().map { 60 + it }) { send(BridgeCommand.Render(abc)) }
     }
 }
