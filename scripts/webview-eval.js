@@ -4,7 +4,7 @@
  * emulator through the DevTools protocol and prints the result as JSON.
  *
  * Needs a debug build and a forwarded port:
- *   PID=$(adb -s emulator-5554 shell pidof io.github.conorryan.whistletabber | tr -d '\r')
+ *   PID=$(adb -s emulator-5554 shell pidof io.github.conorryan.whistletabber.debug | tr -d '\r')
  *   adb -s emulator-5554 forward tcp:9222 localabstract:webview_devtools_remote_$PID
  * Run: node scripts/webview-eval.js "document.title"
  */
