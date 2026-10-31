@@ -169,7 +169,7 @@
     <string name="tap_write">Écrire avec les doigtés</string>
     <string name="action_edit_abc">Modifier l\'ABC</string>
     <string name="tap_whistle">Whistle pour lequel l\'air est écrit</string>
-    <string name="tap_empty">Touchez un doigté ci-dessous pour ajouter une note. Pour l\'instant toutes les notes ont la même durée, quatre par mesure.</string>
+    <string name="tap_empty">Touchez un doigté ci-dessous pour ajouter une note. Toutes les notes ont la même durée, quatre par mesure, jusqu\'à ce que vous tapiez le rythme.</string>
     <string name="tap_octave_low">Grave</string>
     <string name="tap_octave_high">Aigu (+)</string>
     <string name="tap_octave_highest">Suraigu (++)</string>
@@ -180,5 +180,33 @@
     <string name="tap_cursor_left">Vers la gauche</string>
     <string name="tap_cursor_right">Vers la droite</string>
     <string name="tap_unsupported">Cet air a été modifié en texte\u00A0: il ne peut plus être modifié avec les doigtés. Utilisez plutôt Modifier l\'ABC.</string>
+    <string name="tap_rhythm">Taper le rythme</string>
+    <string name="tap_remove_rhythm">Supprimer le rythme</string>
+    <string name="rhythm_tempo">Tempo\u00A0: %1$d temps par minute</string>
+    <string name="rhythm_meter">Mesure</string>
+    <string name="rhythm_grid">Note la plus courte</string>
+    <string name="rhythm_grid_eighth">Croche</string>
+    <string name="rhythm_grid_sixteenth">Double croche</string>
+    <string name="rhythm_hint">Après une mesure de clics, maintenez le pavé appuyé pour chaque note, en rythme, et relâchez entre les notes. En 6/8, 9/8 et 12/8, le temps est une noire pointée.</string>
+    <string name="rhythm_start">Commencer</string>
+    <string name="rhythm_pad">Maintenez pour chaque note</string>
+    <string name="rhythm_progress">Note %1$d sur %2$d</string>
+    <string name="rhythm_count_in">Décompte\u00A0: %1$d</string>
+    <string name="rhythm_beat">Temps %1$d</string>
+    <string name="rhythm_stop">Arrêter</string>
+    <string name="rhythm_done">Rythme ajouté. Écoutez l\'aperçu, puis gardez-le ou recommencez.</string>
+    <string name="rhythm_keep">Garder</string>
+    <string name="rhythm_retry">Recommencer</string>
+    <string name="rhythm_pad_sound">Son du pavé</string>
+    <string name="pad_note">Note</string>
+    <string name="pad_tick">Tic</string>
+    <string name="pad_silent">Muet</string>
+    <string name="rhythm_latency">Délai audio\u00A0: environ %1$d ms</string>
+    <string name="rhythm_latency_warning">Délai audio élevé\u00A0: environ %1$d ms, les touches peuvent sembler tardives</string>
+    <string name="rhythm_audio_info">Tampon de %1$d trames (par %2$d) à %3$d Hz, %4$s, %5$d sous-alimentations</string>
+    <string name="rhythm_path_fast">AudioTrack, chemin basse latence</string>
+    <string name="rhythm_path_normal">AudioTrack, chemin normal</string>
+    <string name="rhythm_path_aaudio_exclusive">AAudio, exclusif</string>
+    <string name="rhythm_path_aaudio_shared">AAudio, partagé</string>
 
 </resources>

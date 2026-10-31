@@ -1,17 +1,28 @@
 package io.github.conorryan.whistletabber.ui.tap
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.performTouchInput
+import io.github.conorryan.whistletabber.audio.OutputPath
+import io.github.conorryan.whistletabber.audio.PadSound
+import io.github.conorryan.whistletabber.audio.TapAudio
+import io.github.conorryan.whistletabber.music.Meter
+import io.github.conorryan.whistletabber.music.RhythmSetup
 import io.github.conorryan.whistletabber.music.TapDraft
+import io.github.conorryan.whistletabber.music.TapTiming
 import io.github.conorryan.whistletabber.music.WhistleKey
 import io.github.conorryan.whistletabber.ui.theme.WhistleTabberTheme
 import org.junit.Assert.assertEquals
@@ -102,5 +113,106 @@ class TapEditorContentTest {
     fun `a tune changed as text says so`() {
         compose.setContent { WhistleTabberTheme { TapEditorContent(TapEditorUiState(unsupported = true), isNew = false) } }
         compose.onNodeWithTag("unsupported").assertExists()
+    }
+
+    private val notes = TapEditorUiState(draft = TapDraft("T", WhistleKey.D, listOf(0, null, 2)), cursor = 3)
+
+    @Test
+    fun `the rhythm tapper replaces the palette and sets up the tapping`() {
+        var state by mutableStateOf(notes)
+        val setups = mutableListOf<RhythmSetup>()
+        val pads = mutableListOf<PadSound>()
+        var started = false
+        compose.setContent {
+            WhistleTabberTheme {
+                TapEditorContent(
+                    state,
+                    isNew = false,
+                    onOpenRhythm = { state = state.copy(rhythm = RhythmPanel(RhythmSetup(), total = 2)) },
+                    onRhythmSetup = { setups += it },
+                    onPadSound = { pads += it },
+                    onStartTapping = { started = true },
+                )
+            }
+        }
+        compose.onNodeWithTag("rhythmPanel").assertDoesNotExist()
+        compose.onNodeWithTag("openRhythm").performScrollTo().performClick()
+        // The setup opens in a bottom sheet; the editor, palette included, stays underneath.
+        compose.onNodeWithTag("rhythmPanel").assertExists()
+        compose.onNodeWithTag("rest").assertExists()
+        compose.onNodeWithTag("openRhythm").assertIsNotEnabled()
+        compose.onNodeWithText("Tempo: 100 beats a minute").assertExists()
+        compose.onNodeWithTag("meter-6/8").performScrollTo().performClick()
+        compose.onNodeWithTag("pad-TICK").performScrollTo().performClick()
+        compose.onNodeWithTag("rhythmStart").performScrollTo().performClick()
+        assertEquals(listOf(RhythmSetup(meter = Meter.SIX_EIGHT)), setups)
+        assertEquals(listOf(PadSound.TICK), pads)
+        assertTrue(started)
+    }
+
+    @Test
+    fun `the pad reports presses and releases and the strip shows the next note`() {
+        val events = mutableListOf<String>()
+        val tapping = notes.copy(rhythm = RhythmPanel(RhythmSetup(), phase = RhythmPhase.TAPPING, next = 1, total = 2))
+        compose.setContent {
+            WhistleTabberTheme {
+                TapEditorContent(
+                    tapping,
+                    isNew = false,
+                    beat = -3,
+                    latencyMs = 42,
+                    audioInfo = TapAudio.Info(bufferFrames = 192, burstFrames = 96, rate = 48_000, path = OutputPath.AAUDIO_EXCLUSIVE, underruns = 0),
+                    onPress = { events += "down" }, onRelease = { events += "up" })
+            }
+        }
+        compose.onNodeWithText("Count-in: 2").assertExists()
+        compose.onNodeWithText("Note 2 of 2").assertExists()
+        compose.onNodeWithText("Audio delay: about 42 ms").assertExists()
+        compose.onNodeWithText("Buffer 192 frames (bursts of 96) at 48000 Hz, AAudio, exclusive, 0 underruns").assertExists()
+        compose.onNodeWithTag("note-2").assertIsSelected() // the second sounding note
+        compose.onNodeWithTag("note-0").assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.Selected))
+        compose.onNodeWithTag("rhythmPad").performTouchInput {
+            down(center)
+            up()
+        }
+        assertEquals(listOf("down", "up"), events)
+        // The next finger lands before the last lifts: a press, and the earlier lift is ignored.
+        events.clear()
+        compose.onNodeWithTag("rhythmPad").performTouchInput {
+            down(0, center)
+            down(1, centerLeft)
+            up(0)
+            up(1)
+        }
+        assertEquals(listOf("down", "down", "up"), events)
+    }
+
+    @Test
+    fun `a tapped rhythm can be kept or tapped again`() {
+        var kept = false
+        var retried = false
+        val timed = TapDraft("T", WhistleKey.D, listOf(0, null, 2), timing = TapTiming(RhythmSetup(), listOf(2, 4, 2), 8))
+        val done = TapEditorUiState(draft = timed, cursor = 3, rhythm = RhythmPanel(RhythmSetup(), phase = RhythmPhase.DONE, next = 2, total = 2))
+        compose.setContent {
+            WhistleTabberTheme { TapEditorContent(done, isNew = false, onKeepRhythm = { kept = true }, onRetryRhythm = { retried = true }) }
+        }
+        compose.onNodeWithTag("rhythmRetry").performClick()
+        compose.onNodeWithTag("rhythmKeep").performClick()
+        assertTrue(kept && retried)
+    }
+
+    @Test
+    fun `a timed strip shows bar gaps from the lengths, a mark per note, and can drop the rhythm`() {
+        val timing = TapTiming(RhythmSetup(bpm = 120, meter = Meter.FOUR_FOUR), listOf(2, 2, 2, 2, 2), 8)
+        val state = TapEditorUiState(draft = TapDraft("T", WhistleKey.D, listOf(0, 2, 4, 5, 7), timing = timing), cursor = 5)
+        var removed = false
+        compose.setContent {
+            WhistleTabberTheme { TapEditorContent(state, isNew = false, onRemoveRhythm = { removed = true }) }
+        }
+        compose.onNodeWithTag("barGap-0").assertDoesNotExist()
+        compose.onNodeWithTag("barGap-4").performScrollTo().assertExists()
+        compose.onNodeWithTag("length-4", useUnmergedTree = true).assertExists()
+        compose.onNodeWithTag("removeRhythm").performScrollTo().performClick()
+        assertTrue(removed)
     }
 }

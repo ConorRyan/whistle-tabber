@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug builds only: the release icon with a "D" badge in the middle, the whistle cut back around it. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group>
+        <clip-path android:pathData="M0,0 H108 V108 H0 Z M54,38 A16,16 0 1 0 54,70 A16,16 0 1 0 54,38 Z" />
+        <group
+            android:rotation="-45"
+            android:pivotX="54"
+            android:pivotY="54">
+            <group
+                android:scaleX="0.8"
+                android:scaleY="0.8"
+                android:pivotX="54"
+                android:pivotY="54">
+                <path
+                    android:fillColor="#F6863C"
+                    android:pathData="M48,36 V18 A3,3 0 0 1 51,15 H57 A3,3 0 0 1 60,18 V36 Z" />
+                <path
+                    android:fillColor="#FFFFFF"
+                    android:pathData="M49,34 H59 A2,2 0 0 1 61,36 V91 A2,2 0 0 1 59,93 H49 A2,2 0 0 1 47,91 V36 A2,2 0 0 1 49,34 Z" />
+                <path
+                    android:fillColor="#181565"
+                    android:pathData="M50.5,37 H57.5 V41 H50.5 Z" />
+                <path
+                    android:fillColor="#181565"
+                    android:pathData="M51.2,48 A2.8,2.8 0 1 0 56.8,48 A2.8,2.8 0 1 0 51.2,48 Z M51.2,55 A2.8,2.8 0 1 0 56.8,55 A2.8,2.8 0 1 0 51.2,55 Z M51.2,62 A2.8,2.8 0 1 0 56.8,62 A2.8,2.8 0 1 0 51.2,62 Z M51.2,71 A2.8,2.8 0 1 0 56.8,71 A2.8,2.8 0 1 0 51.2,71 Z M51.2,78 A2.8,2.8 0 1 0 56.8,78 A2.8,2.8 0 1 0 51.2,78 Z M51.2,85 A2.8,2.8 0 1 0 56.8,85 A2.8,2.8 0 1 0 51.2,85 Z" />
+            </group>
+        </group>
+    </group>
+    <path
+        android:fillColor="#F6863C"
+        android:pathData="M54,40 A14,14 0 1 1 54,68 A14,14 0 1 1 54,40 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M47,45 H52 A9,9 0 0 1 52,63 H47 Z M50.2,48.2 H52 A5.8,5.8 0 0 1 52,59.8 H50.2 Z" />
+</vector>

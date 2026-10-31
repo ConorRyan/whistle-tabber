@@ -24,9 +24,11 @@
   use `node scripts/webview-eval.js "<expr>"` (see the script header). AVD:
   `~/Android/Sdk/emulator/emulator -avd Medium_Phone_API_37.0 -no-snapshot-save -no-window`.
 - Build with `./gradlew assembleDebug`; release with `./gradlew assembleRelease`.
-  Requires JDK 21 and Android SDK platform 37.
+  Requires JDK 21, Android SDK platform 37, NDK `29.0.14206865` and CMake
+  3.22.1 (pinned in `app/build.gradle.kts`; Gradle fetches them into the SDK
+  if missing).
   Debug builds install as `<applicationId>.debug` ("… Debug" in the
-  launcher, `app/src/debug/res/`), beside the release-signed app; target
+  launcher, a "D" badge on the icon, `app/src/debug/res/`), beside the release-signed app; target
   that package in adb. Never sign debug builds with the release key.
 - Match existing style: 4-space indent, trailing commas, explicit types only
   where the codebase already uses them. Prefer pure, testable functions over
@@ -116,10 +118,23 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     its transposer by letter); `parseBar` reads the standard way; `name`
     gives "F♯"/"Fa♯".
   - `TapTune` + `TapDraft`: a tune written by tapping fingerings, stored as
-    `FingeringEngine` offsets (null = rest) for a whistle. `toAbc`: equal
-    quarter notes, `M:4/4`, 4 per bar, 4 bars per line, the whistle's major
-    key and `%whistle_tab_key`; other header lines kept. `parse` reads only
-    that form back (else null), which is what makes a tune tap-editable.
+    `FingeringEngine` offsets (null = rest) for a whistle, plus an optional
+    `TapTiming` (the `RhythmSetup`, one length in grid units per note, and
+    the first bar's length) for a tapped rhythm. `toAbc`: without timing,
+    equal quarter notes, `M:4/4`, 4 per bar, 4 bars per line; with it, the
+    setup's meter, grid unit and `Q:`, ties across bar lines and for lengths
+    one note can't have. Either way the whistle's major key and
+    `%whistle_tab_key`; other header lines kept. `parse` reads only these two
+    forms back (else null), which is what makes a tune tap-editable — a saved
+    timed tune included. `inserted`/`removed` keep the timing (a new note is
+    as long as the one before it); `normalized` merges adjacent rests and
+    caps the first bar, so a draft always writes and reads the same.
+  - `RhythmFit`: rhythm tapped over written notes. `fit`
+    turns `Press`es (ms from the first downbeat after the count-in) and a
+    `RhythmSetup` (bpm, `Meter`, `RhythmGrid`) into a `Rhythm` (note/rest
+    lengths in grid units, a short first bar for a pickup): latency removed,
+    onsets snapped by position, gaps under a beat legato. `TapDraft.withRhythm`
+    applies it to a draft.
 - `scan/` — reading whistle tab from images, pure Kotlin except the loader.
   - `GrayImage`: luma per pixel (0 black–255 white), bicubic `scaled`.
   - `TabReader.read` → `TabReading` (lines of `TabColumn`: six `Hole`s,
@@ -136,6 +151,19 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     (`L:1/4`, `M:none`), one ABC line per tab line, the whistle's major key,
     `%whistle_tab_key`, unknown fingerings as `"^?"z`.
   - `TabImageLoader`: picked image → `GrayImage` (longest side ≤ 2400).
+- `audio/` — the tap editor's low-latency sound. `TapAudio` is the screen's
+  one engine, open while it is resumed (`resume` + `open` off the main
+  thread; `close` on pause frees the stream): it feeds one `PcmOutput` one
+  burst at a time from the pure `TapMixer` (voices, the old one fading as a
+  new one starts, plus metronome clicks between `startClicks` and
+  `stopClicks`; every call only queues a command). Palette taps and the
+  pad's notes are samples rendered ahead at the output's rate; touch times
+  become ms from the downbeat with the output's own timestamps. `openOutput` picks native AAudio
+  (`AAudioOutput` over `NativeTapStream`, the JNI side of
+  `app/src/main/cpp/tap_audio.c`, the app's only native code: it opens a
+  low-latency, exclusive stream and writes chunks; all mixing stays in
+  Kotlin) on Android 8.1+, else `AudioTrackOutput`. The writer thread owns
+  the output once started and closes it.
 - `data/settings/` — `TabSettingsStore` (DataStore, injected; enums stored by
   name, unknown names fall back to defaults); `SettingsDataStores` owns the
   process-wide instance. `AppGraph` in `WhistleTabberApplication.kt` is the
@@ -214,9 +242,23 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     title, a strip of the tapped diagrams with a cursor, live preview with
     diagrams and playback, the written-for whistle, and a palette of
     fingerings (octave chips, the scale plus C natural, half-hole notes under
-    "More"), rest, delete and cursor keys. A tap also sounds the note natively
-    (`NotePlayer`, `AudioTrack`). Draft in `SavedStateHandle`; saves
-    `TapTune.toAbc`. The tune screen's Edit opens it when
+    "More"), rest, delete and cursor keys. A tap also sounds the note through
+    `audio/TapAudio`. Draft (rhythm included) in `SavedStateHandle`; saves
+    `TapTune.toAbc`. "Tap the rhythm" opens the rhythm
+    tapper (`RhythmPanel`: the setup in a bottom sheet with a `PadSound` of
+    note, tick or silent, then a press-and-hold pad over a metronome with a
+    count-in bar, then keep or try again; files `RhythmPanel.kt`,
+    `NoteStrip.kt`, `Palette.kt`). A pass of tapping is a pure `RhythmSession`
+    (presses, the held one, a press while one is held ends it there); sound
+    comes from `audio/`. While tapping, touches are delivered unbuffered
+    (`Modifier.rhythmPad`): each finger that lands is a press, and only the
+    newest finger's lift is a release. The kept rhythm becomes the draft's
+    `TapTiming` (Cancel and Try again restore the draft from before the
+    tapper opened; "Remove rhythm" drops it), renders and saves with it, so a
+    timed tune stays tap-editable. The note strip shows bar gaps from the
+    note lengths and a mark of each note's length. The audio diagnostics show
+    in debug builds only; a release build warns when the delay is over 60 ms.
+    The tune screen's Edit opens it when
     `TuneUiState.tapEditable` (`TapTune.parse` succeeds), with "Edit ABC" for
     the text editor; other tunes go straight to the text editor.
   - `findtunes/`: "Find tunes online", links (`TUNE_SITES`) opened in the

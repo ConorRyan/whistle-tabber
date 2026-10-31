@@ -36,7 +36,18 @@ object WhistleSynth {
 
     fun frequency(midi: Int): Double = 440.0 * 2.0.pow((midi - 69) / 12.0)
 
-    fun renderPcm(midi: Int, sampleRate: Int = SAMPLE_RATE, seconds: Double = SECONDS): ShortArray {
+    /**
+     * [midi] as 16-bit PCM. The defaults are abcjs's playback samples; the
+     * rhythm pad asks for a near-instant [attackSeconds] and no [chiff], so
+     * the note is heard the moment it starts.
+     */
+    fun renderPcm(
+        midi: Int,
+        sampleRate: Int = SAMPLE_RATE,
+        seconds: Double = SECONDS,
+        attackSeconds: Double = 0.025,
+        chiff: Boolean = true,
+    ): ShortArray {
         val f = frequency(midi)
         val count = (sampleRate * seconds).toInt()
         val noise = Random(midi)
@@ -45,7 +56,7 @@ object WhistleSynth {
         var lowPassed = 0.0
         for (i in 0 until count) {
             val t = i.toDouble() / sampleRate
-            val attack = min(1.0, t / 0.025)
+            val attack = min(1.0, t / attackSeconds)
             val vibratoDepth = 0.004 * min(1.0, maxOf(0.0, t - 0.35) / 0.6)
             val vibrato = 1.0 + vibratoDepth * sin(2 * PI * 5.5 * t)
             phase += 2 * PI * f * vibrato / sampleRate
@@ -53,7 +64,7 @@ object WhistleSynth {
             // Breath "chiff": low-passed noise that decays over the first 60 ms,
             // plus a faint constant breath under the tone.
             lowPassed += 0.25 * (noise.nextDouble(-1.0, 1.0) - lowPassed)
-            val breath = lowPassed * (0.35 * exp(-t / 0.06) + 0.02)
+            val breath = lowPassed * ((if (chiff) 0.35 * exp(-t / 0.06) else 0.0) + 0.02)
             val sample = 0.6 * attack * tone + breath
             out[i] = (sample.coerceIn(-1.0, 1.0) * Short.MAX_VALUE).toInt().toShort()
         }

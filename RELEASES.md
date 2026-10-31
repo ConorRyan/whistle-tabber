@@ -10,7 +10,8 @@ setup is already done for 1.0.0: the release keystore exists.
   `whistletabber`) with its password in
   `~/.local/share/keystores/whistle-tabber-release.password`. Back this up offline; losing
   it breaks updates for every installed user. Never commit it to any repo.
-- Android SDK + JDK 21, with `apksigner` from the build-tools
+- Android SDK + JDK 21, with `apksigner` from the build-tools, plus NDK
+  29.0.14206865 and CMake 3.22.1 (fetched by Gradle on the first build)
   (`~/Android/Sdk/build-tools/<version>/apksigner`).
 
 ## Per release

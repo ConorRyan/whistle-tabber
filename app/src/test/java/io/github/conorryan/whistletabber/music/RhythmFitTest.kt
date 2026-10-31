@@ -1,0 +1,95 @@
+package io.github.conorryan.whistletabber.music
+
+import org.junit.Assert.assertEquals
+import org.junit.Test
+
+class RhythmFitTest {
+
+    /** 4/4 at 120: a beat is 500 ms, an eighth 250 ms. */
+    private val common = RhythmSetup(bpm = 120, meter = Meter.FOUR_FOUR)
+
+    private fun note(i: Int, units: Int) = Rhythm.Event(i, units)
+    private fun rest(units: Int) = Rhythm.Event(null, units)
+
+    /** Presses starting at [downs] ms, each held [hold] ms. */
+    private fun presses(downs: List<Long>, hold: Long = 400) = downs.map { Press(it, it + hold) }
+
+    @Test
+    fun `presses on the beat are quarter notes`() {
+        val r = RhythmFit.fit(presses(listOf(0, 500, 1000, 1500)), 4, common)
+        assertEquals(listOf(note(0, 2), note(1, 2), note(2, 2), note(3, 2)), r.events)
+        assertEquals(8, r.firstBarUnits)
+    }
+
+    @Test
+    fun `small timing errors snap to the grid`() {
+        val jitter = listOf(35L, -40, 20, -25, 40, -10)
+        val downs = jitter.mapIndexed { i, j -> i * 500L + j }
+        val r = RhythmFit.fit(presses(downs), 6, common)
+        assertEquals(List(6) { note(it, 2) }, r.events)
+    }
+
+    @Test
+    fun `a constant delay is taken off before snapping`() {
+        // 110 ms late is almost half an eighth; with ±30 ms of jitter some would round the wrong way.
+        val jitter = listOf(30L, -30, 25, 30, -20, 30, -30, 30)
+        val downs = jitter.mapIndexed { i, j -> i * 250L + 110 + j }
+        val r = RhythmFit.fit(presses(downs, hold = 200), 8, common)
+        assertEquals(List(8) { note(it, 1) }, r.events)
+        assertEquals(8, r.firstBarUnits)
+    }
+
+    @Test
+    fun `letting go early isn't a rest`() {
+        val r = RhythmFit.fit(presses(listOf(0, 500, 1000), hold = 150), 3, common)
+        assertEquals(listOf(note(0, 2), note(1, 2), note(2, 1)), r.events)
+    }
+
+    @Test
+    fun `a long gap is a rest`() {
+        val r = RhythmFit.fit(listOf(Press(0, 400), Press(1500, 2400)), 2, common)
+        assertEquals(listOf(note(0, 2), rest(4), note(1, 4)), r.events)
+    }
+
+    @Test
+    fun `a tune starting off the downbeat has a pickup bar`() {
+        val onBeatFour = RhythmFit.fit(presses(listOf(1500, 2000)), 2, common)
+        assertEquals(2, onBeatFour.firstBarUnits)
+        // A pickup tapped during the count-in counts too.
+        val inCountIn = RhythmFit.fit(presses(listOf(-500, 0)), 2, common)
+        assertEquals(2, inCountIn.firstBarUnits)
+        assertEquals(listOf(note(0, 2), note(1, 2)), inCountIn.events)
+    }
+
+    @Test
+    fun `two presses on the same slot keep their order`() {
+        val r = RhythmFit.fit(listOf(Press(0, 40), Press(60, 400), Press(500, 900)), 3, common)
+        assertEquals(listOf(note(0, 1), note(1, 1), note(2, 2)), r.events)
+    }
+
+    @Test
+    fun `a jig counts dotted quarters`() {
+        val jig = RhythmSetup(bpm = 120, meter = Meter.SIX_EIGHT)
+        val eighth = 500.0 / 3
+        val downs = (0 until 6).map { (it * eighth).toLong() }
+        val r = RhythmFit.fit(presses(downs, hold = 120), 6, jig)
+        assertEquals(List(6) { note(it, 1) }, r.events)
+        assertEquals(6, r.firstBarUnits)
+    }
+
+    @Test
+    fun `the sixteenth grid catches dotted rhythms`() {
+        // 4/4 at 60: a beat is 1000 ms, a sixteenth 250 ms. Dotted eighth, sixteenth, quarter.
+        val slow = RhythmSetup(bpm = 60, meter = Meter.FOUR_FOUR, grid = RhythmGrid.SIXTEENTH)
+        val r = RhythmFit.fit(listOf(Press(0, 700), Press(750, 950), Press(1000, 1900)), 3, slow)
+        assertEquals(listOf(note(0, 3), note(1, 1), note(2, 4)), r.events)
+        assertEquals(16, r.firstBarUnits)
+    }
+
+    @Test
+    fun `notes not reached get a beat each`() {
+        val r = RhythmFit.fit(presses(listOf(0, 250)), 4, common)
+        assertEquals(listOf(note(0, 1), note(1, 2), note(2, 2), note(3, 2)), r.events)
+        assertEquals(listOf(note(0, 2), note(1, 2)), RhythmFit.fit(emptyList(), 2, common).events)
+    }
+}

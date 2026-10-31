@@ -8,6 +8,8 @@ plugins {
 android {
     namespace = "io.github.conorryan.whistletabber"
     compileSdk = 37
+    // The rhythm tapper's low-latency audio (app/src/main/cpp) is built with these.
+    ndkVersion = "29.0.14206865"
 
     defaultConfig {
         applicationId = "io.github.conorryan.whistletabber"
@@ -37,6 +39,13 @@ android {
         }
     }
 
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -50,6 +59,8 @@ android {
 
     buildFeatures {
         compose = true
+        // RhythmPanel shows the audio diagnostics in debug builds only.
+        buildConfig = true
     }
 
     // F-Droid: no Google-encrypted dependency metadata blob in the APK.

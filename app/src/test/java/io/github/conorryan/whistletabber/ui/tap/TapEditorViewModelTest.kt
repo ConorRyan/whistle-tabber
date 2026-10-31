@@ -2,6 +2,11 @@ package io.github.conorryan.whistletabber.ui.tap
 
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
+import io.github.conorryan.whistletabber.audio.PadSound
+import io.github.conorryan.whistletabber.music.Meter
+import io.github.conorryan.whistletabber.music.Press
+import io.github.conorryan.whistletabber.music.RhythmFit
+import io.github.conorryan.whistletabber.music.RhythmSetup
 import io.github.conorryan.whistletabber.music.TabSettings
 import io.github.conorryan.whistletabber.music.TapDraft
 import io.github.conorryan.whistletabber.music.TapTune
@@ -25,6 +30,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -198,5 +204,251 @@ class TapEditorViewModelTest {
         page.emit(BridgeEvent.Rendered(listOf(NoteEvent(0, 0, 1, 62, 0, 0.0, 0.25, false)), emptyList()))
         val diagrams = page.sent.filterIsInstance<BridgeCommand.Diagrams>().last().diagrams
         assertEquals("CCCCCC", diagrams.single()!!.holes)
+    }
+
+    private val reel = RhythmSetup(bpm = 120, meter = Meter.FOUR_FOUR)
+
+    /** A loaded editor with notes [offsets] and the rhythm tapper open at [reel]. */
+    private suspend fun tapper(vararg offsets: Int, page: FakeTunePage = FakeTunePage()): TapEditorViewModel {
+        val vm = vm()
+        vm.bindPage(page)
+        vm.loaded()
+        vm.setTitle("Timed")
+        offsets.forEach { vm.tap(it) }
+        vm.openRhythm()
+        vm.setRhythmSetup(reel)
+        vm.startTapping()
+        return vm
+    }
+
+    private fun TapEditorViewModel.hold(down: Long, up: Long): Int? = press(down).also { release(up) }
+
+    @Test
+    fun `tapping every note gives the preview a rhythm, and saving writes it`() = runTest {
+        val page = FakeTunePage()
+        val vm = tapper(0, 2, 4, page = page)
+        val untimed = vm.state.value.draft!!
+        assertEquals(RhythmPhase.TAPPING, vm.state.value.rhythm!!.phase)
+        assertEquals(0, vm.hold(0, 900))
+        assertEquals(1, vm.state.value.rhythm!!.next)
+        assertEquals(2, vm.hold(1000, 1400))
+        assertEquals(4, vm.hold(1500, 1900))
+        val s = vm.state.value
+        assertEquals(RhythmPhase.DONE, s.rhythm!!.phase)
+        assertTrue(s.timed)
+        assertTrue(s.dirty)
+
+        val presses = listOf(Press(0, 900), Press(1000, 1400), Press(1500, 1900))
+        val expected = TapTune.toAbc(untimed.withRhythm(RhythmFit.fit(presses, 3, reel), reel))
+        assertTrue(expected, "C4 D2 E2 |]" in expected)
+        assertEquals(expected, page.sent.filterIsInstance<BridgeCommand.Render>().last().abc)
+        assertEquals(s.draft, TapTune.parse(expected))
+
+        vm.keepRhythm()
+        assertNull(vm.state.value.rhythm)
+        val id = vm.effects.let { effects ->
+            var id = 0L
+            effects.test {
+                vm.save()
+                id = (awaitItem() as TapEditorEffect.Saved).id
+            }
+            id
+        }
+        val abc = graph.repository.get(id)!!.abc
+        assertEquals(expected, abc)
+        // A saved timed tune stays tap-editable: it reads back exactly.
+        assertEquals(vm.state.value.draft, TapTune.parse(abc))
+        assertFalse(vm.state.value.dirty)
+        vm.setTitle("Timed again")
+        assertTrue(vm.state.value.timed) // a title isn't a change of notes
+    }
+
+    @Test
+    fun `tapping in a timed tune inserts a note as long as the one before it`() = runTest {
+        val vm = tapper(0, 2)
+        vm.hold(0, 400)
+        vm.hold(500, 900)
+        vm.keepRhythm()
+        assertTrue(vm.state.value.timed)
+        val before = vm.state.value.draft!!
+        val beforeTiming = before.timing!!
+        vm.moveCursor(1)
+        vm.tap(7)
+        val draft = vm.state.value.draft!!
+        val timing = draft.timing!!
+        assertEquals(before.notes.toMutableList().apply { add(1, 7) }, draft.notes)
+        assertEquals(beforeTiming.lengths.toMutableList().apply { add(1, beforeTiming.lengths[0]) }, timing.lengths)
+        assertEquals(beforeTiming.setup, timing.setup)
+    }
+
+    @Test
+    fun `deleting a note in a timed tune takes its length with it`() = runTest {
+        val vm = tapper(0, 2, 4)
+        vm.hold(0, 400)
+        vm.hold(500, 900)
+        vm.hold(1000, 1400)
+        vm.keepRhythm()
+        val before = vm.state.value.draft!!
+        val beforeTiming = before.timing!!
+        vm.moveCursor(2)
+        vm.deleteBack()
+        val draft = vm.state.value.draft!!
+        assertEquals(before.notes.toMutableList().apply { removeAt(1) }, draft.notes)
+        assertEquals(beforeTiming.lengths.toMutableList().apply { removeAt(1) }, draft.timing!!.lengths)
+    }
+
+    @Test
+    fun `removing the rhythm makes every note a quarter again`() = runTest {
+        val page = FakeTunePage()
+        val vm = tapper(0, 2, page = page)
+        vm.hold(0, 400)
+        vm.hold(500, 900)
+        vm.keepRhythm()
+        assertTrue(vm.state.value.timed)
+        vm.removeRhythm()
+        val s = vm.state.value
+        val draft = s.draft!!
+        assertFalse(s.timed)
+        assertNull(draft.timing)
+        assertEquals(TapTune.toAbc(draft), page.sent.filterIsInstance<BridgeCommand.Render>().last().abc)
+        assertTrue(s.dirty)
+    }
+
+    @Test
+    fun `cancel and try again restore the draft from before the tapper opened`() = runTest {
+        val page = FakeTunePage()
+        val vm = tapper(0, 2, page = page)
+        vm.hold(0, 400)
+        vm.hold(500, 900)
+        vm.keepRhythm()
+        val timed = vm.state.value.draft!!
+
+        vm.openRhythm() // tap the rhythm again
+        vm.startTapping()
+        vm.hold(0, 2000) // a different rhythm
+        vm.closeRhythm() // cancel
+        assertEquals(timed, vm.state.value.draft)
+        assertEquals(TapTune.toAbc(timed), page.sent.filterIsInstance<BridgeCommand.Render>().last().abc)
+
+        vm.openRhythm()
+        vm.startTapping()
+        vm.hold(0, 2000)
+        vm.stopTapping() // finishes with the new rhythm
+        assertEquals(RhythmPhase.DONE, vm.state.value.rhythm!!.phase)
+        assertTrue(vm.state.value.draft != timed)
+        vm.retryRhythm() // try again
+        assertEquals(timed, vm.state.value.draft)
+        assertEquals(RhythmPhase.SETUP, vm.state.value.rhythm!!.phase)
+        assertEquals(TapTune.toAbc(timed), page.sent.filterIsInstance<BridgeCommand.Render>().last().abc)
+    }
+
+    @Test
+    fun `the rhythm survives in the saved state`() = runTest {
+        val saved = SavedStateHandle()
+        val vm = vm(saved = saved)
+        vm.loaded()
+        vm.setTitle("Timed")
+        vm.tap(0)
+        vm.tap(2)
+        vm.openRhythm()
+        vm.setRhythmSetup(reel)
+        vm.startTapping()
+        vm.hold(0, 400)
+        vm.hold(500, 900)
+        vm.keepRhythm()
+        val expected = vm.state.value.draft!!
+        assertTrue(expected.timing != null)
+
+        val again = vm(saved = saved)
+        val s = again.loaded()
+        assertEquals(expected, s.draft)
+        assertTrue(s.timed)
+        assertTrue(s.dirty)
+    }
+
+    @Test
+    fun `stopping early times the rest a beat each, with nothing tapped it's back to the setup`() = runTest {
+        val page = FakeTunePage()
+        val vm = tapper(0, 2, 4, page = page)
+        vm.stopTapping()
+        assertEquals(RhythmPhase.SETUP, vm.state.value.rhythm!!.phase)
+        vm.startTapping()
+        vm.hold(0, 2000)
+        vm.stopTapping()
+        assertEquals(RhythmPhase.DONE, vm.state.value.rhythm!!.phase)
+        assertTrue(page.sent.filterIsInstance<BridgeCommand.Render>().last().abc.contains("C8 | D2 E2 |]"))
+    }
+
+    @Test
+    fun `a press while one is held ends it there, and only while tapping`() = runTest {
+        val page = FakeTunePage()
+        val vm = tapper(0, 2, 4, page = page)
+        assertEquals(0, vm.press(0))
+        assertEquals(2, vm.press(500)) // the next finger landed first
+        vm.release(600) // the first finger's lift isn't sent, this is the second's
+        assertEquals(2, vm.state.value.rhythm!!.next)
+        assertEquals(4, vm.press(1000))
+        vm.release(1400)
+        assertEquals(RhythmPhase.DONE, vm.state.value.rhythm!!.phase)
+        assertTrue(page.sent.filterIsInstance<BridgeCommand.Render>().last().abc.contains("C2 D2 E2 |]"))
+        vm.retryRhythm()
+        assertEquals(RhythmPhase.SETUP, vm.state.value.rhythm!!.phase)
+        assertNull(vm.press(0))
+    }
+
+    @Test
+    fun `closing the tapper leaves the tune as it was`() = runTest {
+        val page = FakeTunePage()
+        val vm = tapper(0, 2, page = page)
+        vm.hold(0, 400)
+        vm.hold(500, 900)
+        assertTrue(vm.state.value.timed)
+        vm.closeRhythm()
+        val s = vm.state.value
+        assertNull(s.rhythm)
+        assertFalse(s.timed)
+        assertEquals(TapTune.toAbc(s.draft!!), page.sent.filterIsInstance<BridgeCommand.Render>().last().abc)
+    }
+
+    @Test
+    fun `the tapper needs notes, and remembers its setup`() = runTest {
+        val saved = SavedStateHandle()
+        val empty = vm(saved = saved)
+        empty.loaded()
+        empty.openRhythm()
+        assertNull(empty.state.value.rhythm)
+        empty.rest()
+        empty.openRhythm()
+        assertNull(empty.state.value.rhythm) // a rest has nothing to tap
+        empty.tap(0)
+        empty.openRhythm()
+        empty.setRhythmSetup(RhythmSetup(bpm = 999, meter = Meter.SIX_EIGHT))
+        assertEquals(RhythmSetup(bpm = RhythmSetup.MAX_BPM, meter = Meter.SIX_EIGHT), empty.state.value.rhythm!!.setup)
+        assertEquals(1, empty.state.value.rhythm!!.total)
+
+        val again = vm(saved = saved)
+        again.loaded()
+        again.openRhythm()
+        assertEquals(RhythmSetup(bpm = RhythmSetup.MAX_BPM, meter = Meter.SIX_EIGHT), again.state.value.rhythm!!.setup)
+    }
+
+    @Test
+    fun `the pad sound is part of the setup and remembered`() = runTest {
+        val saved = SavedStateHandle()
+        val vm = vm(saved = saved)
+        vm.loaded()
+        vm.tap(0)
+        vm.openRhythm()
+        assertEquals(PadSound.NOTE, vm.state.value.rhythm!!.padSound)
+        vm.setPadSound(PadSound.TICK)
+        assertEquals(PadSound.TICK, vm.state.value.rhythm!!.padSound)
+        vm.startTapping()
+        vm.setPadSound(PadSound.SILENT) // not while tapping
+        assertEquals(PadSound.TICK, vm.state.value.rhythm!!.padSound)
+
+        val again = vm(saved = saved)
+        again.loaded()
+        again.openRhythm()
+        assertEquals(PadSound.TICK, again.state.value.rhythm!!.padSound)
     }
 }

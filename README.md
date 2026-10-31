@@ -7,7 +7,8 @@ Status: early development (see `docs/ROADMAP.md`). Planned for F-Droid.
 
 ## Building
 
-Requires JDK 21 and Android SDK platform 37.
+Requires JDK 21, Android SDK platform 37, NDK 29.0.14206865 and CMake 3.22.1
+(Gradle downloads the NDK and CMake into the SDK on the first build).
 
 ```bash
 ./gradlew assembleDebug

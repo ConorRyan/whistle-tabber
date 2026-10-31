@@ -105,4 +105,27 @@ class WhistleSynthTest {
         }
         return crossings * WhistleSynth.SAMPLE_RATE.toDouble() / (to - from)
     }
+
+    /** A checksum of [pcm], to pin samples without storing them. */
+    private fun checksum(pcm: ShortArray): Long = pcm.fold(17L) { h, x -> h * 31 + x }
+
+    @Test
+    fun `playback samples are unchanged by the pad options`() {
+        assertEquals(PINNED_D5, checksum(WhistleSynth.renderPcm(74, seconds = 0.5)))
+    }
+
+    @Test
+    fun `a sharp attack without chiff is at full level within 4 ms`() {
+        val rate = 48_000
+        val sharp = WhistleSynth.renderPcm(74, sampleRate = rate, seconds = 0.2, attackSeconds = 0.003, chiff = false)
+        val soft = WhistleSynth.renderPcm(74, sampleRate = rate, seconds = 0.2)
+        fun peak(pcm: ShortArray, fromMs: Int, toMs: Int) = (rate * fromMs / 1000 until rate * toMs / 1000).maxOf { abs(pcm[it].toInt()) }
+        val full = peak(sharp, 100, 200)
+        assertTrue(peak(sharp, 3, 5) > 0.9 * full)
+        assertTrue(peak(soft, 3, 5) < 0.5 * full)
+    }
+
+    private companion object {
+        const val PINNED_D5 = -5131094901008005929L
+    }
 }

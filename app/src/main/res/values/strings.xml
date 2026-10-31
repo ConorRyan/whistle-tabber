@@ -161,7 +161,7 @@
     <string name="tap_write">Write with fingerings</string>
     <string name="action_edit_abc">Edit ABC</string>
     <string name="tap_whistle">Whistle the tune is written for</string>
-    <string name="tap_empty">Tap a fingering below to add a note. For now every note is the same length, four to a bar.</string>
+    <string name="tap_empty">Tap a fingering below to add a note. Every note is the same length, four to a bar, until you tap the rhythm.</string>
     <string name="tap_octave_low">Low</string>
     <string name="tap_octave_high">High (+)</string>
     <string name="tap_octave_highest">Highest (++)</string>
@@ -172,5 +172,33 @@
     <string name="tap_cursor_left">Move left</string>
     <string name="tap_cursor_right">Move right</string>
     <string name="tap_unsupported">This tune was changed as text, so it can\'t be edited with fingerings any more. Use Edit ABC instead.</string>
+    <string name="tap_rhythm">Tap the rhythm</string>
+    <string name="tap_remove_rhythm">Remove rhythm</string>
+    <string name="rhythm_tempo">Tempo: %1$d beats a minute</string>
+    <string name="rhythm_meter">Time signature</string>
+    <string name="rhythm_grid">Shortest note</string>
+    <string name="rhythm_grid_eighth">Eighth</string>
+    <string name="rhythm_grid_sixteenth">Sixteenth</string>
+    <string name="rhythm_hint">After one bar of clicks, press and hold the pad for each note, in time, and let go between notes. In 6/8, 9/8 and 12/8 the beat is a dotted quarter.</string>
+    <string name="rhythm_start">Start</string>
+    <string name="rhythm_pad">Hold for each note</string>
+    <string name="rhythm_progress">Note %1$d of %2$d</string>
+    <string name="rhythm_count_in">Count-in: %1$d</string>
+    <string name="rhythm_beat">Beat %1$d</string>
+    <string name="rhythm_stop">Stop</string>
+    <string name="rhythm_done">Rhythm added. Listen to the preview, then keep it or try again.</string>
+    <string name="rhythm_keep">Keep</string>
+    <string name="rhythm_retry">Try again</string>
+    <string name="rhythm_pad_sound">Pad sound</string>
+    <string name="pad_note">Note</string>
+    <string name="pad_tick">Tick</string>
+    <string name="pad_silent">Silent</string>
+    <string name="rhythm_latency">Audio delay: about %1$d ms</string>
+    <string name="rhythm_latency_warning">Audio delay is high: about %1$d ms, so taps may sound late</string>
+    <string name="rhythm_audio_info">Buffer %1$d frames (bursts of %2$d) at %3$d Hz, %4$s, %5$d underruns</string>
+    <string name="rhythm_path_fast">AudioTrack, low-latency path</string>
+    <string name="rhythm_path_normal">AudioTrack, normal path</string>
+    <string name="rhythm_path_aaudio_exclusive">AAudio, exclusive</string>
+    <string name="rhythm_path_aaudio_shared">AAudio, shared</string>
 
 </resources>
