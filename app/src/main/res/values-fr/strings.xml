@@ -28,6 +28,7 @@
     <string name="action_import">Importer des fichiers .abc</string>
     <string name="action_export_all">Exporter la bibliothèque</string>
     <string name="action_new_tune">Nouvel air</string>
+    <string name="write_abc_by_hand">Écrire à la main</string>
     <string name="action_settings">Réglages</string>
     <string name="star">Ajouter aux favoris</string>
     <string name="unstar">Retirer des favoris</string>

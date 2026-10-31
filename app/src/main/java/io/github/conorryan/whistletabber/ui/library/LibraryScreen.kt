@@ -4,9 +4,16 @@ import android.content.res.Resources
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,11 +30,16 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DocumentScanner
+import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.material.icons.filled.TravelExplore
+import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
@@ -44,10 +56,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -60,6 +74,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -174,7 +190,9 @@ fun LibraryContent(
     onExport: () -> Unit = {},
 ) {
     var menuOpen by remember { mutableStateOf(false) }
-    BackHandler(enabled = state.selecting, onBack = onClearSelection)
+    var addOpen by remember { mutableStateOf(false) }
+    BackHandler(enabled = state.selecting || addOpen) { if (addOpen) addOpen = false else onClearSelection() }
+    LaunchedEffect(state.selecting) { if (state.selecting) addOpen = false }
     Scaffold(
         topBar = {
             if (state.selecting) {
@@ -191,26 +209,6 @@ fun LibraryContent(
                         }
                         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.action_import)) },
-                                onClick = { menuOpen = false; onImport() },
-                                modifier = Modifier.testTag("menuImport"),
-                            )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.find_tunes)) },
-                                onClick = { menuOpen = false; onFindTunes() },
-                                modifier = Modifier.testTag("menuFindTunes"),
-                            )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.tap_write)) },
-                                onClick = { menuOpen = false; onWriteTaps() },
-                                modifier = Modifier.testTag("menuWriteTaps"),
-                            )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.scan_tab)) },
-                                onClick = { menuOpen = false; onScanTab() },
-                                modifier = Modifier.testTag("menuScanTab"),
-                            )
-                            DropdownMenuItem(
                                 text = { Text(stringResource(R.string.action_export_all)) },
                                 onClick = { menuOpen = false; onExport() },
                                 enabled = !state.libraryEmpty,
@@ -223,9 +221,17 @@ fun LibraryContent(
         },
         floatingActionButton = {
             if (!state.selecting) {
-                FloatingActionButton(onClick = onNewTune, modifier = Modifier.testTag("newTune")) {
-                    Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.action_new_tune))
-                }
+                AddTuneMenu(
+                    open = addOpen,
+                    onOpen = { addOpen = it },
+                    actions = listOf(
+                        AddTuneAction(R.string.write_abc_by_hand, Icons.Filled.EditNote, "addWriteText", onNewTune),
+                        AddTuneAction(R.string.tap_write, Icons.Filled.TouchApp, "addWriteTaps", onWriteTaps),
+                        AddTuneAction(R.string.scan_tab, Icons.Filled.DocumentScanner, "addScanTab", onScanTab),
+                        AddTuneAction(R.string.action_import, Icons.Filled.UploadFile, "addImport", onImport),
+                        AddTuneAction(R.string.find_tunes, Icons.Filled.TravelExplore, "addFindTunes", onFindTunes),
+                    ),
+                )
             }
         },
         snackbarHost = { SnackbarHost(snackbar) },
@@ -240,20 +246,70 @@ fun LibraryContent(
                     if (state.tunes.isEmpty()) {
                         NoMatches(onClearFilters)
                     } else {
-                        LazyColumn(Modifier.fillMaxSize().testTag("tuneList"), contentPadding = PaddingValues(bottom = 88.dp)) {
-                            items(state.tunes, key = { it.id }, contentType = { "tune" }) { tune ->
-                                TuneRow(
-                                    tune,
-                                    selected = if (state.selecting) tune.id in state.selected else null,
-                                    onClick = { if (state.selecting) onToggleSelected(tune.id) else onOpenTune(tune.id) },
-                                    onLongClick = { onToggleSelected(tune.id) },
-                                    onStar = { onStar(tune, !tune.starred) },
-                                )
+                        Box {
+                            LazyColumn(Modifier.fillMaxSize().testTag("tuneList"), contentPadding = PaddingValues(bottom = 88.dp)) {
+                                items(state.tunes, key = { it.id }, contentType = { "tune" }) { tune ->
+                                    TuneRow(
+                                        tune,
+                                        selected = if (state.selecting) tune.id in state.selected else null,
+                                        onClick = { if (state.selecting) onToggleSelected(tune.id) else onOpenTune(tune.id) },
+                                        onLongClick = { onToggleSelected(tune.id) },
+                                        onStar = { onStar(tune, !tune.starred) },
+                                    )
+                                }
+                            }
+                            // Tapping the list outside the expanded dial dismisses it.
+                            if (addOpen) {
+                                Box(Modifier.matchParentSize().clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = { addOpen = false }).testTag("addScrim"))
                             }
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+/** One way to add a tune: its label, icon, test tag and destination. */
+private data class AddTuneAction(
+    val label: Int,
+    val icon: ImageVector,
+    val tag: String,
+    val onClick: () -> Unit,
+)
+
+/**
+ * The "+" button, expanded into a stack of labelled mini buttons above it (a
+ * speed dial): write ABC, write fingerings, read tab from an image, import
+ * files, find tunes online. The button itself rotates to ×; a tap on the scrim
+ * or back closes it again. Every action closes it first, so navigating away
+ * never leaves it open.
+ */
+@Composable
+private fun AddTuneMenu(open: Boolean, onOpen: (Boolean) -> Unit, actions: List<AddTuneAction>) {
+    Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        actions.forEach { action ->
+            AnimatedVisibility(visible = open, enter = fadeIn() + slideInVertically { it / 2 }, exit = fadeOut() + slideOutVertically { it / 2 }) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surface, tonalElevation = 4.dp) {
+                        Text(stringResource(action.label), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                    }
+                    SmallFloatingActionButton(
+                        onClick = { onOpen(false); action.onClick() },
+                        modifier = Modifier.testTag(action.tag),
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    ) {
+                        Icon(action.icon, contentDescription = stringResource(action.label))
+                    }
+                }
+            }
+        }
+        val rotation by animateFloatAsState(if (open) 45f else 0f)
+        FloatingActionButton(
+            onClick = { onOpen(!open) },
+            modifier = Modifier.testTag("newTune").rotate(rotation),
+        ) {
+            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.action_new_tune))
         }
     }
 }

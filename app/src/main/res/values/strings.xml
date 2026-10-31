@@ -27,6 +27,7 @@
     <string name="action_import">Import .abc files</string>
     <string name="action_export_all">Export library</string>
     <string name="action_new_tune">New tune</string>
+    <string name="write_abc_by_hand">Write manually</string>
     <string name="action_settings">Settings</string>
     <string name="star">Star</string>
     <string name="unstar">Unstar</string>

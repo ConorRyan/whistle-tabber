@@ -88,7 +88,7 @@ class LibraryContentTest {
     }
 
     @Test
-    fun `find tunes is in the menu and on the empty library`() {
+    fun `find tunes is in the add menu and on the empty library`() {
         var found = 0
         compose.setContent {
             WhistleTabberTheme {
@@ -96,23 +96,72 @@ class LibraryContentTest {
             }
         }
         compose.onNodeWithTag("findTunes").performClick()
-        compose.onNodeWithTag("menu").performClick()
-        compose.onNodeWithTag("menuFindTunes").performClick()
+        compose.onNodeWithTag("newTune").performClick()
+        compose.onNodeWithTag("addFindTunes").performClick()
         assertEquals(2, found)
     }
 
     @Test
-    fun `reading tab from an image is in the menu`() {
+    fun `the add menu expands and its actions close it and navigate`() {
+        var wrote = 0
+        var taps = 0
         var scans = 0
+        var imports = 0
         compose.setContent {
             WhistleTabberTheme {
-                LibraryContent(LibraryUiState(loaded = true, libraryEmpty = true), onScanTab = { scans++ })
+                LibraryContent(
+                    LibraryUiState(tunes = listOf(tune(1, "A")), loaded = true),
+                    onNewTune = { wrote++ },
+                    onWriteTaps = { taps++ },
+                    onScanTab = { scans++ },
+                    onImport = { imports++ },
+                )
+            }
+        }
+        compose.onNodeWithTag("addWriteText").assertDoesNotExist()
+        compose.onNodeWithTag("newTune").performClick()
+        compose.onNodeWithTag("addWriteText").assertIsDisplayed()
+        compose.onNodeWithTag("addWriteTaps").performClick()
+        assertEquals(1, taps)
+        compose.onNodeWithTag("addWriteText").assertDoesNotExist()
+
+        compose.onNodeWithTag("newTune").performClick()
+        compose.onNodeWithTag("addWriteText").performClick()
+        assertEquals(1, wrote)
+
+        compose.onNodeWithTag("newTune").performClick()
+        compose.onNodeWithTag("addScanTab").performClick()
+        assertEquals(1, scans)
+
+        compose.onNodeWithTag("newTune").performClick()
+        compose.onNodeWithTag("addImport").performClick()
+        assertEquals(1, imports)
+    }
+
+    @Test
+    fun `a tap on the scrim closes the add menu`() {
+        compose.setContent {
+            WhistleTabberTheme {
+                LibraryContent(LibraryUiState(tunes = listOf(tune(1, "A")), loaded = true))
+            }
+        }
+        compose.onNodeWithTag("newTune").performClick()
+        compose.onNodeWithTag("addWriteText").assertIsDisplayed()
+        compose.onNodeWithTag("addScrim").performClick()
+        compose.onNodeWithTag("addWriteText").assertDoesNotExist()
+    }
+
+    @Test
+    fun `export is in the overflow menu`() {
+        var exported = false
+        compose.setContent {
+            WhistleTabberTheme {
+                LibraryContent(LibraryUiState(tunes = listOf(tune(1, "A")), loaded = true), onExport = { exported = true })
             }
         }
         compose.onNodeWithTag("menu").performClick()
-        compose.onNodeWithText("Read tab from an image").assertIsDisplayed()
-        compose.onNodeWithTag("menuScanTab").performClick()
-        assertEquals(1, scans)
+        compose.onNodeWithTag("menuExport").performClick()
+        assertTrue(exported)
     }
 
     @Test
