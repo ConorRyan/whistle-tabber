@@ -1,7 +1,15 @@
 package io.github.conorryan.whistletabber.ui.tune
 
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,12 +23,16 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -29,6 +41,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -36,6 +49,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -52,6 +66,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -90,6 +105,8 @@ fun TuneScreen(
     var menuOpen by remember { mutableStateOf(false) }
     var writtenForSheet by remember { mutableStateOf(false) }
     var keyDialog by remember { mutableStateOf(false) }
+    var editOpen by remember { mutableStateOf(false) }
+    BackHandler(enabled = editOpen) { editOpen = false }
 
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
         if (uri != null) vm.export(uri)
@@ -137,18 +154,6 @@ fun TuneScreen(
                             }
                             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                                 DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.action_edit)) },
-                                    onClick = { menuOpen = false; if (state.tapEditable) onEditTaps() else onEdit() },
-                                    modifier = Modifier.testTag("menuEdit"),
-                                )
-                                if (state.tapEditable) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.action_edit_abc)) },
-                                        onClick = { menuOpen = false; onEdit() },
-                                        modifier = Modifier.testTag("menuEditAbc"),
-                                    )
-                                }
-                                DropdownMenuItem(
                                     text = { Text(stringResource(R.string.action_change_key)) },
                                     onClick = { menuOpen = false; keyDialog = true },
                                     enabled = KeyChange.steps(tune.key, "C") != null,
@@ -175,6 +180,28 @@ fun TuneScreen(
                 },
             )
         },
+        bottomBar = {
+            if (tune != null) {
+                PlaybackBar(
+                    state = renderState,
+                    onTogglePlay = vm::togglePlay,
+                    onRestart = vm::restart,
+                    onTempo = vm::setTempo,
+                    onDismissError = vm::dismissError,
+                )
+            }
+        },
+        floatingActionButton = {
+            if (tune != null) {
+                EditTuneMenu(
+                    open = editOpen,
+                    onOpen = { editOpen = it },
+                    tapEditable = state.tapEditable,
+                    onEdit = onEdit,
+                    onEditTaps = onEditTaps,
+                )
+            }
+        },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
@@ -190,14 +217,18 @@ fun TuneScreen(
                     onCancel = vm::cancelPreview,
                 )
             }
-            TuneWebViewHost(controller, Modifier.fillMaxWidth().weight(1f).testTag("tuneWebView"))
-            PlaybackBar(
-                state = renderState,
-                onTogglePlay = vm::togglePlay,
-                onRestart = vm::restart,
-                onTempo = vm::setTempo,
-                onDismissError = vm::dismissError,
-            )
+            Box(Modifier.fillMaxWidth().weight(1f)) {
+                TuneWebViewHost(controller, Modifier.fillMaxSize().testTag("tuneWebView"))
+                // Tapping the page outside the expanded dial dismisses it.
+                if (editOpen) {
+                    Box(
+                        Modifier
+                            .matchParentSize()
+                            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = { editOpen = false })
+                            .testTag("editScrim"),
+                    )
+                }
+            }
         }
     }
 
@@ -234,6 +265,59 @@ private fun WrittenForSection(tune: Tune, onSelect: (WhistleKey?) -> Unit) {
     )
     WhistleChips(explicit, onSelect = { onSelect(it) }, tagPrefix = "tuneWhistle")
     Text(stringResource(R.string.written_for_help), style = MaterialTheme.typography.bodySmall)
+}
+
+/** One way to edit the tune: its label, icon, test tag and destination. */
+private data class EditTuneAction(
+    val label: Int,
+    val icon: ImageVector,
+    val tag: String,
+    val onClick: () -> Unit,
+)
+
+/**
+ * The tune screen's pen button, expanded into a stack of labelled mini
+ * buttons above it: edit the fingerings (the tap editor) or edit the ABC.
+ * A tune that isn't tap-editable has only one edit, so the button goes
+ * straight there. The pen becomes ×; a tap on the scrim or back closes it.
+ */
+@Composable
+internal fun EditTuneMenu(open: Boolean, onOpen: (Boolean) -> Unit, tapEditable: Boolean, onEdit: () -> Unit, onEditTaps: () -> Unit) {
+    val actions = if (tapEditable) {
+        listOf(
+            EditTuneAction(R.string.action_edit, Icons.Filled.TouchApp, "editTaps", onEditTaps),
+            EditTuneAction(R.string.action_edit_abc, Icons.Filled.EditNote, "editAbc", onEdit),
+        )
+    } else {
+        emptyList()
+    }
+    Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        actions.forEach { action ->
+            AnimatedVisibility(visible = open, enter = fadeIn() + slideInVertically { it / 2 }, exit = fadeOut() + slideOutVertically { it / 2 }) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surface, tonalElevation = 4.dp) {
+                        Text(stringResource(action.label), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                    }
+                    SmallFloatingActionButton(
+                        onClick = { onOpen(false); action.onClick() },
+                        modifier = Modifier.testTag(action.tag),
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    ) {
+                        Icon(action.icon, contentDescription = stringResource(action.label))
+                    }
+                }
+            }
+        }
+        FloatingActionButton(
+            onClick = { if (tapEditable) onOpen(!open) else onEdit() },
+            modifier = Modifier.testTag("edit"),
+        ) {
+            Icon(
+                if (open) Icons.Filled.Close else Icons.Filled.Edit,
+                contentDescription = stringResource(R.string.action_edit),
+            )
+        }
+    }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
