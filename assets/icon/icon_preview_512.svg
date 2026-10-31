@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="512" height="512">
   <defs><clipPath id="m"><rect width="108" height="108" rx="30"/></clipPath></defs>
   <g clip-path="url(#m)">
-    <rect width="108" height="108" fill="#3346C4"/>
+    <rect width="108" height="108" fill="#168A5B"/>
     <g transform="rotate(-45 54 54) translate(54 0) scale(0.75 1) translate(-54 0)">
       <path d="M48.7 40H59.3A1.2 1.2 0 0 1 60.5 41.2V85.8A1.2 1.2 0 0 1 59.3 87H48.7A1.2 1.2 0 0 1 47.5 85.8V41.2A1.2 1.2 0 0 1 48.7 40Z" fill="#E9EBF0"/>
       <rect x="49.5" y="40" width="2.2" height="47" fill="#FFFFFF"/>
