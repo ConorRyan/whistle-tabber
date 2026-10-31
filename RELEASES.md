@@ -6,9 +6,9 @@ setup is already done for 1.0.0: the release keystore exists.
 
 ## Prerequisites (once per machine)
 
-- The release keystore: `~/keystores/whistle-tabber-release.jks` (alias
+- The release keystore: `~/.local/share/keystores/whistle-tabber-release.jks` (alias
   `whistletabber`) with its password in
-  `~/keystores/whistle-tabber-release.password`. Back this up offline; losing
+  `~/.local/share/keystores/whistle-tabber-release.password`. Back this up offline; losing
   it breaks updates for every installed user. Never commit it to any repo.
 - Android SDK + JDK 21, with `apksigner` from the build-tools
   (`~/Android/Sdk/build-tools/<version>/apksigner`).
@@ -49,8 +49,8 @@ setup is already done for 1.0.0: the release keystore exists.
 
    ```bash
    ~/Android/Sdk/build-tools/<version>/apksigner sign \
-     --ks ~/keystores/whistle-tabber-release.jks \
-     --ks-pass "file:$HOME/keystores/whistle-tabber-release.password" \
+     --ks ~/.local/share/keystores/whistle-tabber-release.jks \
+     --ks-pass "file:$HOME/.local/share/keystores/whistle-tabber-release.password" \
      --ks-key-alias whistletabber \
      --v1-signing-enabled false \
      --alignment-preserved true \
