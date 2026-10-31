@@ -4,7 +4,6 @@ import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.PI
-import kotlin.math.exp
 import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.sin
@@ -13,9 +12,11 @@ import kotlin.random.Random
 /**
  * Synthesises the per-note samples abcjs plays back, so the app ships no
  * soundfont. A tin whistle is close to a pure tone: a sine with a little 2nd
- * and 3rd harmonic, a short breathy onset, and vibrato that fades in. abcjs
- * cuts each sample at the note's end and fades it out, so samples only need
- * an attack and a long sustain.
+ * and 3rd harmonic, a faint breath under the tone, and vibrato that fades
+ * in. There is deliberately no noise burst at the start: abcjs plays one
+ * sample per note, so a transient there sounded like a drum hit on every
+ * note. abcjs cuts each sample at the note's end and fades it out, so
+ * samples only need an attack and a long sustain.
  *
  * Output is deterministic (fixed noise seed) so builds and tests are stable.
  */
@@ -38,15 +39,14 @@ object WhistleSynth {
 
     /**
      * [midi] as 16-bit PCM. The defaults are abcjs's playback samples; the
-     * rhythm pad asks for a near-instant [attackSeconds] and no [chiff], so
-     * the note is heard the moment it starts.
+     * rhythm pad asks for a near-instant [attackSeconds], so the note is
+     * heard the moment it starts.
      */
     fun renderPcm(
         midi: Int,
         sampleRate: Int = SAMPLE_RATE,
         seconds: Double = SECONDS,
         attackSeconds: Double = 0.025,
-        chiff: Boolean = true,
     ): ShortArray {
         val f = frequency(midi)
         val count = (sampleRate * seconds).toInt()
@@ -61,10 +61,9 @@ object WhistleSynth {
             val vibrato = 1.0 + vibratoDepth * sin(2 * PI * 5.5 * t)
             phase += 2 * PI * f * vibrato / sampleRate
             val tone = sin(phase) + 0.12 * sin(2 * phase) + 0.05 * sin(3 * phase)
-            // Breath "chiff": low-passed noise that decays over the first 60 ms,
-            // plus a faint constant breath under the tone.
+            // A faint constant breath under the tone.
             lowPassed += 0.25 * (noise.nextDouble(-1.0, 1.0) - lowPassed)
-            val breath = lowPassed * ((if (chiff) 0.35 * exp(-t / 0.06) else 0.0) + 0.02)
+            val breath = lowPassed * 0.02
             val sample = 0.6 * attack * tone + breath
             out[i] = (sample.coerceIn(-1.0, 1.0) * Short.MAX_VALUE).toInt().toShort()
         }

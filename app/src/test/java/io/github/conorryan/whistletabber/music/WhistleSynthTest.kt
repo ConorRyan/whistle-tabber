@@ -87,6 +87,20 @@ class WhistleSynthTest {
         assertTrue("sustain peak $sustain", sustain < Short.MAX_VALUE)
     }
 
+    /**
+     * The note must open with the tone's own attack alone: abcjs plays one
+     * sample per note, and a noise burst at the start sounded like a drum
+     * hit on every note.
+     */
+    @Test
+    fun `the attack has no transient above the sustained tone`() {
+        val rate = WhistleSynth.SAMPLE_RATE
+        val pcm = WhistleSynth.renderPcm(74, seconds = 0.5)
+        val attack = (0 until rate * 60 / 1000).maxOf { abs(pcm[it].toInt()) }
+        val sustain = (rate * 300 / 1000 until pcm.size).maxOf { abs(pcm[it].toInt()) }
+        assertTrue("attack peak $attack over sustain $sustain", attack <= sustain * 1.05)
+    }
+
     @Test
     fun `output is deterministic`() {
         assertArrayEquals(WhistleSynth.renderPcm(79), WhistleSynth.renderPcm(79))
@@ -115,9 +129,9 @@ class WhistleSynthTest {
     }
 
     @Test
-    fun `a sharp attack without chiff is at full level within 4 ms`() {
+    fun `a sharp attack is at full level within 4 ms`() {
         val rate = 48_000
-        val sharp = WhistleSynth.renderPcm(74, sampleRate = rate, seconds = 0.2, attackSeconds = 0.003, chiff = false)
+        val sharp = WhistleSynth.renderPcm(74, sampleRate = rate, seconds = 0.2, attackSeconds = 0.003)
         val soft = WhistleSynth.renderPcm(74, sampleRate = rate, seconds = 0.2)
         fun peak(pcm: ShortArray, fromMs: Int, toMs: Int) = (rate * fromMs / 1000 until rate * toMs / 1000).maxOf { abs(pcm[it].toInt()) }
         val full = peak(sharp, 100, 200)
@@ -126,6 +140,6 @@ class WhistleSynthTest {
     }
 
     private companion object {
-        const val PINNED_D5 = -5131094901008005929L
+        const val PINNED_D5 = -6668077930466166014L
     }
 }

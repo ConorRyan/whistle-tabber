@@ -171,7 +171,7 @@ class TapAudio(
     /** A whistle note with a near-instant, tongued start (a short tick mixed in), at [volume]. */
     private fun note(midi: Int, seconds: Double, volume: Float): ShortArray {
         val tone = TapMixer.faded(
-            WhistleSynth.renderPcm(midi, sampleRate = rate, seconds = seconds, attackSeconds = NOTE_ATTACK, chiff = false),
+            WhistleSynth.renderPcm(midi, sampleRate = rate, seconds = seconds, attackSeconds = NOTE_ATTACK),
             sampleRate = rate,
         )
         val onset = TapMixer.click(rate, TapMixer.TICK_HZ, TapMixer.ONSET_SECONDS)
