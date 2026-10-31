@@ -114,8 +114,11 @@ fun TapEditorScreen(vm: TapEditorViewModel, isNew: Boolean, onClose: () -> Unit,
         }
         val draft = state.draft ?: return@LaunchedEffect
         val sounding = draft.notes.filterNotNull().map { draft.whistle.writtenTonic + draft.whistle.soundingShift + it }.toSet()
-        audio.prepare(sounding, panel.padSound)
+        // The metronome first, then the samples: rendering them can take a
+        // second or two on a phone, and the count-in covers it.
+        audio.open()
         audio.startMetronome(panel.setup.bpm, panel.setup.meter.beatsPerBar)
+        audio.prepare(sounding, panel.padSound)
         var lastReopen = 0L
         while (true) {
             withFrameMillis { }
@@ -132,6 +135,14 @@ fun TapEditorScreen(vm: TapEditorViewModel, isNew: Boolean, onClose: () -> Unit,
             latency = audio.latencyMs()
             audioInfo = audio.info()
         }
+    }
+    // The pad's samples render while the setup sheet is up (the user is
+    // picking a tempo for seconds), so Start doesn't wait for them.
+    LaunchedEffect(state.rhythm?.phase, state.rhythm?.padSound, state.draft?.notes, state.draft?.whistle) {
+        val sheet = state.rhythm?.takeIf { it.phase == RhythmPhase.SETUP } ?: return@LaunchedEffect
+        val draft = state.draft ?: return@LaunchedEffect
+        val sounding = draft.notes.filterNotNull().map { draft.whistle.writtenTonic + draft.whistle.soundingShift + it }.toSet()
+        audio.prepare(sounding, sheet.padSound)
     }
     LaunchedEffect(vm) {
         vm.effects.collect { effect ->

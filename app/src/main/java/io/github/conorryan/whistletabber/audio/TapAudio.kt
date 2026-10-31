@@ -159,11 +159,13 @@ class TapAudio(
     suspend fun prepare(midis: Set<Int>, sound: PadSound) = withContext(Dispatchers.Default) {
         openNow()
         this@TapAudio.sound = sound
+        val started = SystemClock.uptimeMillis()
         when (sound) {
             PadSound.NOTE -> for (midi in midis) padNotes.getOrPut(midi) { note(midi, NOTE_SECONDS, TapMixer.NOTE_VOLUME) }
             PadSound.TICK -> if (tick == null) tick = TapMixer.click(rate, TapMixer.TICK_HZ, TapMixer.TICK_SECONDS)
             PadSound.SILENT -> Unit
         }
+        if (logging) Log.d(TAG, "prepared ${midis.size} pad samples (${sound.name}) in ${SystemClock.uptimeMillis() - started} ms")
     }
 
     /** A whistle note with a near-instant, tongued start (a short tick mixed in), at [volume]. */
@@ -179,7 +181,9 @@ class TapAudio(
     /** Renders the palette taps of sounding pitches [midis] ahead, at the open output's rate. */
     suspend fun prepareTaps(midis: Set<Int>) = withContext(Dispatchers.Default) {
         if (output == null) return@withContext
+        val started = SystemClock.uptimeMillis()
         for (midi in midis) tapNote(midi)
+        if (logging) Log.d(TAG, "prepared ${midis.size} tap samples in ${SystemClock.uptimeMillis() - started} ms")
     }
 
     private fun tapNote(midi: Int): ShortArray = tapNotes.getOrPut(midi) { note(midi, TapMixer.TAP_SECONDS, TAP_VOLUME) }

@@ -160,7 +160,9 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
   exclusive AAudio stream is disconnected whenever anything else plays, the
   preview's WebView included — the writer thread clears the engine (`alive`
   goes false) and the next `open` starts a fresh stream, so a tapper Start
-  always gets a live one. Palette taps and the
+  always gets a live one. The pad's samples render while the setup sheet is
+  up and the metronome starts before any rendering left, so Start is
+  instant. Palette taps and the
   pad's notes are samples rendered ahead at the output's rate; touch times
   become ms from the downbeat with the output's own timestamps. `openOutput` picks native AAudio
   (`AAudioOutput` over `NativeTapStream`, the JNI side of
