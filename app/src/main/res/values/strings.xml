@@ -25,6 +25,8 @@
     <string name="search_hint">Search titles</string>
     <string name="filter_starred">Starred</string>
     <string name="action_import">Import .abc files</string>
+    <string name="action_paste">Paste from clipboard</string>
+    <string name="paste_empty">The clipboard has no tunes or images</string>
     <string name="action_export_all">Export library</string>
     <string name="action_new_tune">New tune</string>
     <string name="write_abc_by_hand">Write manually</string>
@@ -142,6 +144,8 @@
     <string name="scan_howto">Pick a picture of whistle tab: a screenshot, a scan or a straight-on photo. Only the fingering diagrams are read. Every note comes out the same length; add the rhythm in the editor. A tab spread over several screenshots can be picked all at once, or one after another.</string>
     <string name="scan_choose">Choose image</string>
     <string name="scan_add">Add another image</string>
+    <string name="scan_paste">Paste image from clipboard</string>
+    <string name="paste_no_image">The clipboard has no image</string>
     <string name="scan_start_over">Start over</string>
     <string name="scan_reading">Reading the image…</string>
     <string name="scan_unreadable">That image couldn\'t be opened.</string>

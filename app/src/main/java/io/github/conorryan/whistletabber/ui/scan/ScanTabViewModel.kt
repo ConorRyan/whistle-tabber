@@ -31,6 +31,8 @@ data class ScanTabUiState(
     val busy: Boolean = false,
     /** At least one of the images just picked could not be decoded. */
     val unreadable: Boolean = false,
+    /** The last paste found no image on the clipboard. */
+    val pasteEmpty: Boolean = false,
     /** The whistle the tab is written for; starts as my whistle. */
     val whistle: WhistleKey = WhistleKey.DEFAULT,
     val title: String = "",
@@ -74,7 +76,7 @@ class ScanTabViewModel(
     fun add(uris: List<Uri>) {
         if (uris.isEmpty()) return
         job?.cancel()
-        _state.update { it.copy(busy = true, unreadable = false) }
+        _state.update { it.copy(busy = true, unreadable = false, pasteEmpty = false) }
         job = viewModelScope.launch {
             val scanned = uris.mapNotNull { uri ->
                 loadImage(uri)?.let { image -> ScannedImage(image, withContext(readDispatcher) { TabReader.read(image) }) }
@@ -89,9 +91,12 @@ class ScanTabViewModel(
         }
     }
 
+    /** A paste found no image on the clipboard. */
+    fun pasteFailed() = _state.update { it.copy(busy = false, unreadable = false, pasteEmpty = true) }
+
     fun startOver() {
         job?.cancel()
-        _state.update { it.copy(busy = false, unreadable = false, images = emptyList()) }
+        _state.update { it.copy(busy = false, unreadable = false, pasteEmpty = false, images = emptyList()) }
     }
 
     fun setWhistle(whistle: WhistleKey) = _state.update { it.copy(whistle = whistle) }

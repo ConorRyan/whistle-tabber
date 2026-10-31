@@ -1,6 +1,8 @@
 package io.github.conorryan.whistletabber.ui.scan
 
+import android.content.ClipboardManager
 import android.graphics.Bitmap
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -43,12 +45,14 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.conorryan.whistletabber.R
+import io.github.conorryan.whistletabber.data.tunes.PastedTunes
 import io.github.conorryan.whistletabber.music.CNatural
 import io.github.conorryan.whistletabber.music.WhistleKey
 import io.github.conorryan.whistletabber.scan.GrayImage
@@ -56,26 +60,36 @@ import io.github.conorryan.whistletabber.scan.TabReading
 import io.github.conorryan.whistletabber.scan.TabTune
 import io.github.conorryan.whistletabber.ui.settings.WhistleChips
 
-/** Picks images of whistle tab, reads them, and hands the tune to the editor as [onOpenInEditor]'s ABC. */
+/**
+ * Picks images of whistle tab, reads them, and hands the tune to the editor as
+ * [onOpenInEditor]'s ABC. [image], a clipboard URI from the library's Paste,
+ * is read on entry instead of opening the picker; a paste can add more.
+ */
 @Composable
-fun ScanTabScreen(vm: ScanTabViewModel, onBack: () -> Unit, onOpenInEditor: (String) -> Unit) {
+fun ScanTabScreen(vm: ScanTabViewModel, onBack: () -> Unit, onOpenInEditor: (String) -> Unit, image: String? = null) {
     val state by vm.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia()) { uris ->
         vm.add(uris)
     }
     val choose = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+    val paste = {
+        val pasted = PastedTunes.from(context.getSystemService(ClipboardManager::class.java)?.primaryClip)?.image
+        if (pasted != null) vm.add(listOf(pasted)) else vm.pasteFailed()
+    }
     // Open the picker straight away the first time; back from it leaves the explanation.
     var offered by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         if (!offered) {
             offered = true
-            choose()
+            image?.let { vm.add(listOf(Uri.parse(it))) } ?: choose()
         }
     }
     ScanTabContent(
         state = state,
         onBack = onBack,
         onChoose = choose,
+        onPaste = paste,
         onStartOver = vm::startOver,
         onWhistle = vm::setWhistle,
         onTitle = vm::setTitle,
@@ -90,6 +104,7 @@ fun ScanTabContent(
     state: ScanTabUiState,
     onBack: () -> Unit = {},
     onChoose: () -> Unit = {},
+    onPaste: () -> Unit = {},
     onStartOver: () -> Unit = {},
     onWhistle: (WhistleKey) -> Unit = {},
     onTitle: (String) -> Unit = {},
@@ -116,12 +131,16 @@ fun ScanTabContent(
             OutlinedButton(onClick = onChoose, enabled = !state.busy, modifier = Modifier.testTag("choose")) {
                 Text(stringResource(if (state.images.isEmpty()) R.string.scan_choose else R.string.scan_add))
             }
+            OutlinedButton(onClick = onPaste, enabled = !state.busy, modifier = Modifier.testTag("paste")) {
+                Text(stringResource(R.string.scan_paste))
+            }
             when {
                 state.busy -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     CircularProgressIndicator(Modifier.size(24.dp))
                     Text(stringResource(R.string.scan_reading))
                 }
                 state.unreadable -> ErrorText(stringResource(R.string.scan_unreadable), "unreadable")
+                state.pasteEmpty -> ErrorText(stringResource(R.string.paste_no_image), "pasteEmpty")
                 state.images.isNotEmpty() && !read -> ErrorText(stringResource(R.string.scan_none), "none")
             }
             if (state.images.isNotEmpty()) TextButton(

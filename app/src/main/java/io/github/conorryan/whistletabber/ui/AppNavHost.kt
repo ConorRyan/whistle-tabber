@@ -49,8 +49,9 @@ data object SettingsRoute
 @Serializable
 data object FindTunesRoute
 
+/** The scan screen; [image]: a URI pasted from the clipboard, read on entry instead of opening the picker. */
 @Serializable
-data object ScanTabRoute
+data class ScanTabRoute(val image: String? = null)
 
 @Composable
 fun AppNavHost(graph: AppGraph) {
@@ -79,7 +80,8 @@ fun AppNavHost(graph: AppGraph) {
                 onNewTune = { nav.navigate(EditorRoute()) },
                 onSettings = { nav.navigate(SettingsRoute) },
                 onFindTunes = { nav.navigate(FindTunesRoute) },
-                onScanTab = { nav.navigate(ScanTabRoute) },
+                onScanTab = { nav.navigate(ScanTabRoute()) },
+                onScanTabImage = { nav.navigate(ScanTabRoute(image = it.toString())) },
                 onWriteTaps = { nav.navigate(TapEditorRoute()) },
             )
         }
@@ -155,7 +157,8 @@ fun AppNavHost(graph: AppGraph) {
         composable<FindTunesRoute> {
             FindTunesScreen(onBack = { nav.popBackStack() })
         }
-        composable<ScanTabRoute> {
+        composable<ScanTabRoute> { entry ->
+            val route = entry.toRoute<ScanTabRoute>()
             val defaultTitle = stringResource(R.string.scan_default_title)
             val vm: ScanTabViewModel = viewModel(
                 factory = viewModelFactory {
@@ -164,6 +167,7 @@ fun AppNavHost(graph: AppGraph) {
             )
             ScanTabScreen(
                 vm = vm,
+                image = route.image,
                 onBack = { nav.popBackStack() },
                 onOpenInEditor = { abc ->
                     nav.navigate(EditorRoute(draft = abc)) { popUpTo<ScanTabRoute> { inclusive = true } }

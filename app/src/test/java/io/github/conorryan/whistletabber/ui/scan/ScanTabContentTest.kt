@@ -53,6 +53,20 @@ class ScanTabContentTest {
     }
 
     @Test
+    fun `a paste reaches its callback`() {
+        var pasted = false
+        compose.setContent { WhistleTabberTheme { ScanTabContent(ScanTabUiState(), onPaste = { pasted = true }) } }
+        compose.onNodeWithTag("paste").performClick()
+        assertTrue(pasted)
+    }
+
+    @Test
+    fun `a paste that finds no image says so`() {
+        compose.setContent { WhistleTabberTheme { ScanTabContent(ScanTabUiState(pasteEmpty = true)) } }
+        compose.onNodeWithTag("pasteEmpty").assertIsDisplayed()
+    }
+
+    @Test
     fun `a reading shows the count, the unknown diagrams and the image`() {
         compose.setContent { WhistleTabberTheme { ScanTabContent(read) } }
         compose.onNodeWithText("3 notes found").assertIsDisplayed()

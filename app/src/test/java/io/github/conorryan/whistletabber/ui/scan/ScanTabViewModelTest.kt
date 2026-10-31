@@ -173,4 +173,19 @@ class ScanTabViewModelTest {
         assertTrue(s.images.isEmpty())
         assertNull(s.abc())
     }
+
+    @Test
+    fun `a paste without an image says so, and adding clears it`() = runTest {
+        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        val vm = vm()
+        vm.pasteFailed()
+        assertTrue(vm.state.value.pasteEmpty)
+        vm.startOver()
+        assertFalse(vm.state.value.pasteEmpty)
+        vm.pasteFailed()
+        vm.add(listOf(uri))
+        val s = vm.state.value
+        assertFalse(s.pasteEmpty)
+        assertEquals(3, s.found)
+    }
 }

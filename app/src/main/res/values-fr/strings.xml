@@ -26,6 +26,8 @@
     <string name="search_hint">Rechercher un titre</string>
     <string name="filter_starred">Favoris</string>
     <string name="action_import">Importer des fichiers .abc</string>
+    <string name="action_paste">Coller depuis le presse-papiers</string>
+    <string name="paste_empty">Le presse-papiers ne contient ni air ni image</string>
     <string name="action_export_all">Exporter la bibliothèque</string>
     <string name="action_new_tune">Nouvel air</string>
     <string name="write_abc_by_hand">Écrire à la main</string>
@@ -150,6 +152,8 @@
     <string name="scan_howto">Choisissez une image de tablature pour whistle\u00A0: capture d\'écran, scan ou photo prise bien de face. Seuls les diagrammes de doigtés sont lus. Toutes les notes ont la même durée\u00A0; ajoutez le rythme dans l\'éditeur. Une tablature répartie sur plusieurs captures d\'écran peut être choisie d\'un coup, ou l\'une après l\'autre.</string>
     <string name="scan_choose">Choisir une image</string>
     <string name="scan_add">Ajouter une autre image</string>
+    <string name="scan_paste">Coller une image depuis le presse-papiers</string>
+    <string name="paste_no_image">Le presse-papiers ne contient pas d\'image</string>
     <string name="scan_start_over">Recommencer</string>
     <string name="scan_reading">Lecture de l\'image…</string>
     <string name="scan_unreadable">Impossible d\'ouvrir cette image.</string>

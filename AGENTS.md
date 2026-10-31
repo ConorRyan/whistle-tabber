@@ -193,7 +193,10 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
   `VIEW` on `content:` and `SEND`/`SEND_MULTIPLE`) turns the intent into
   `SharedTunes` and calls `receive`; `arrivals` makes `AppNavHost` pop to the
   library (not from the editor), and `LibraryViewModel` reports `result`,
-  then `consume`s it. `RecentlyDeleted` owns delete with undo: `delete(ids)` (or
+  then `consume`s it. `PastedTunes` is the clipboard counterpart of
+  `SharedTunes`: the library's Paste turns the clip into an image (routed to
+  the scan screen), `content:` files and ABC text (imported as one result).
+  `RecentlyDeleted` owns delete with undo: `delete(ids)` (or
   `delete(id)`) removes the rows in one transaction and puts them on `offer`
   as one batch (one batch at a time, newest wins); `undo`/`dismiss` answer
   it, and the restore runs on `appScope`.
@@ -222,7 +225,10 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
   stateless `…Content` composable where Compose tests need one.
   - `library/`: search, rhythm and Starred chips, the starter-set offer on an
     empty library, SAF import (through `TuneImporter`) and export
-    (`data/tunes/AbcFiles`: UTF-8, else Latin-1). Multi-select: a long press
+    (`data/tunes/AbcFiles`: UTF-8, else Latin-1), and Paste from the
+    clipboard in the add-tune speed dial (`PastedTunes`: an image goes to
+    the scan screen, files and text import through `TuneImporter`).
+    Multi-select: a long press
     starts selecting (`LibraryUiState.selected`, only tunes the filters
     show), the top bar offers select all and delete. Deletes from here
     (`deleteSelected`) or the tune screen arrive as `RecentlyDeleted.offer`;
@@ -239,7 +245,9 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     `TuneRenderer` (debounced 400 ms), save blocked without `T:`/`K:`. A new
     tune may start from a given draft (`initialText`, from the scan screen),
     unsaved until the user saves.
-  - `scan/`: "Read tab from an image" (Library menu): the photo picker
+  - `scan/`: "Read tab from an image" (Library menu, `ScanTabRoute(image?)`;
+    a pasted clipboard image is read on entry instead of opening the picker,
+    and a Paste button adds one too): the photo picker
     (multi-select; later picks append), `TabReader` off the main thread,
     each image with its diagrams outlined (unknown fingerings in the error
     colour), title and written-for whistle; "Open in editor" passes

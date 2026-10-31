@@ -148,6 +148,15 @@ class LibraryViewModel(
         if (uris.isNotEmpty()) runImport { importer.importFiles(uris) }
     }
 
+    /** Pasted files and text, imported as one result; an image has already been routed to the scan screen. */
+    fun paste(files: List<Uri>, text: String?) {
+        if (files.isEmpty() && text == null) return
+        runImport {
+            (if (files.isEmpty()) ImportResult.NONE else importer.importFiles(files)) +
+                (text?.let { importer.importText(it) } ?: ImportResult.NONE)
+        }
+    }
+
     fun exportAll(uri: Uri) {
         appScope.launch {
             val message = runCatching {

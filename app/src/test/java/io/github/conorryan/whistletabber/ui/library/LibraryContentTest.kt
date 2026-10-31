@@ -107,6 +107,7 @@ class LibraryContentTest {
         var taps = 0
         var scans = 0
         var imports = 0
+        var pastes = 0
         compose.setContent {
             WhistleTabberTheme {
                 LibraryContent(
@@ -115,6 +116,7 @@ class LibraryContentTest {
                     onWriteTaps = { taps++ },
                     onScanTab = { scans++ },
                     onImport = { imports++ },
+                    onPaste = { pastes++ },
                 )
             }
         }
@@ -136,6 +138,10 @@ class LibraryContentTest {
         compose.onNodeWithTag("newTune").performClick()
         compose.onNodeWithTag("addImport").performClick()
         assertEquals(1, imports)
+
+        compose.onNodeWithTag("newTune").performClick()
+        compose.onNodeWithTag("addPaste").performClick()
+        assertEquals(1, pastes)
     }
 
     @Test

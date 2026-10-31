@@ -123,6 +123,24 @@ class LibraryViewModelTest {
     }
 
     @Test
+    fun `pasting files and text imports both as one result`() = runTest {
+        File(graph.context.cacheDir, "a.abc").writeText(tune("One"))
+        val vm = vm()
+        vm.messages.test {
+            vm.paste(listOf(FakeDocumentsProvider.uri("a.abc")), tune("Two"))
+            assertEquals(LibraryMessage.Imported(ImportResult(2, 0, emptyList())), awaitItem())
+        }
+        assertEquals(2, vm.state.first { it.tunes.size == 2 }.tunes.size)
+    }
+
+    @Test
+    fun `pasting nothing reports nothing`() = runTest {
+        val vm = vm()
+        vm.paste(emptyList(), null)
+        vm.messages.test { expectNoEvents() }
+    }
+
+    @Test
     fun `tunes shared from another app are reported once`() = runTest {
         val vm = vm()
         vm.messages.test {

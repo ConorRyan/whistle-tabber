@@ -1,6 +1,8 @@
 package io.github.conorryan.whistletabber.ui.library
 
+import android.content.ClipboardManager
 import android.content.res.Resources
+import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -29,6 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.EditNote
@@ -71,6 +74,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -90,10 +94,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.conorryan.whistletabber.R
 import io.github.conorryan.whistletabber.data.tunes.ExportNames
 import io.github.conorryan.whistletabber.data.tunes.ImportResult
+import io.github.conorryan.whistletabber.data.tunes.PastedTunes
 import io.github.conorryan.whistletabber.data.tunes.Tune
 import io.github.conorryan.whistletabber.ui.components.whistleLabel
 import java.time.LocalDate
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 /** MIME types offered when picking `.abc` files; many file managers report them as octet-stream. */
 val ABC_MIME_TYPES = arrayOf("text/*", "application/octet-stream", "*/*")
@@ -106,17 +112,25 @@ fun LibraryScreen(
     onSettings: () -> Unit,
     onFindTunes: () -> Unit,
     onScanTab: () -> Unit,
+    onScanTabImage: (Uri) -> Unit,
     onWriteTaps: () -> Unit,
 ) {
     val state by vm.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         vm.importFiles(uris)
     }
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
         if (uri != null) vm.exportAll(uri)
+    }
+    val paste: () -> Unit = {
+        when (val pasted = PastedTunes.from(context.getSystemService(ClipboardManager::class.java)?.primaryClip)) {
+            null -> scope.launch { snackbar.showSnackbar(context.getString(R.string.paste_empty)) }
+            else -> pasted.image?.let(onScanTabImage) ?: vm.paste(pasted.files, pasted.text)
+        }
     }
 
     LaunchedEffect(vm) {
@@ -160,6 +174,7 @@ fun LibraryScreen(
         onWriteTaps = onWriteTaps,
         onAddStarterSet = vm::addStarterSet,
         onImport = { importLauncher.launch(ABC_MIME_TYPES) },
+        onPaste = paste,
         onExport = { exportLauncher.launch(ExportNames.library(LocalDate.now())) },
     )
 }
@@ -187,6 +202,7 @@ fun LibraryContent(
     onWriteTaps: () -> Unit = {},
     onAddStarterSet: () -> Unit = {},
     onImport: () -> Unit = {},
+    onPaste: () -> Unit = {},
     onExport: () -> Unit = {},
 ) {
     var menuOpen by remember { mutableStateOf(false) }
@@ -229,6 +245,7 @@ fun LibraryContent(
                         AddTuneAction(R.string.tap_write, Icons.Filled.TouchApp, "addWriteTaps", onWriteTaps),
                         AddTuneAction(R.string.scan_tab, Icons.Filled.DocumentScanner, "addScanTab", onScanTab),
                         AddTuneAction(R.string.action_import, Icons.Filled.UploadFile, "addImport", onImport),
+                        AddTuneAction(R.string.action_paste, Icons.Filled.ContentPaste, "addPaste", onPaste),
                         AddTuneAction(R.string.find_tunes, Icons.Filled.TravelExplore, "addFindTunes", onFindTunes),
                     ),
                 )
@@ -281,7 +298,7 @@ private data class AddTuneAction(
 /**
  * The "+" button, expanded into a stack of labelled mini buttons above it (a
  * speed dial): write ABC, write fingerings, read tab from an image, import
- * files, find tunes online. The button itself rotates to ×; a tap on the scrim
+ * files, paste from the clipboard, find tunes online. The button itself rotates to ×; a tap on the scrim
  * or back closes it again. Every action closes it first, so navigating away
  * never leaves it open.
  */
