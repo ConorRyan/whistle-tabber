@@ -27,6 +27,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -55,12 +56,12 @@ import io.github.conorryan.whistletabber.scan.TabReading
 import io.github.conorryan.whistletabber.scan.TabTune
 import io.github.conorryan.whistletabber.ui.settings.WhistleChips
 
-/** Picks an image of whistle tab, reads it, and hands the tune to the editor as [onOpenInEditor]'s ABC. */
+/** Picks images of whistle tab, reads them, and hands the tune to the editor as [onOpenInEditor]'s ABC. */
 @Composable
 fun ScanTabScreen(vm: ScanTabViewModel, onBack: () -> Unit, onOpenInEditor: (String) -> Unit) {
     val state by vm.state.collectAsStateWithLifecycle()
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null) vm.pick(uri)
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia()) { uris ->
+        vm.add(uris)
     }
     val choose = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
     // Open the picker straight away the first time; back from it leaves the explanation.
@@ -75,6 +76,7 @@ fun ScanTabScreen(vm: ScanTabViewModel, onBack: () -> Unit, onOpenInEditor: (Str
         state = state,
         onBack = onBack,
         onChoose = choose,
+        onStartOver = vm::startOver,
         onWhistle = vm::setWhistle,
         onTitle = vm::setTitle,
         onOpen = { state.abc()?.let(onOpenInEditor) },
@@ -88,6 +90,7 @@ fun ScanTabContent(
     state: ScanTabUiState,
     onBack: () -> Unit = {},
     onChoose: () -> Unit = {},
+    onStartOver: () -> Unit = {},
     onWhistle: (WhistleKey) -> Unit = {},
     onTitle: (String) -> Unit = {},
     onOpen: () -> Unit = {},
@@ -108,10 +111,10 @@ fun ScanTabContent(
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            val read = state.reading != null && state.found > 0
-            if (!read) Text(stringResource(R.string.scan_howto))
+            val read = state.found > 0
+            if (state.images.isEmpty()) Text(stringResource(R.string.scan_howto))
             OutlinedButton(onClick = onChoose, enabled = !state.busy, modifier = Modifier.testTag("choose")) {
-                Text(stringResource(if (state.image == null) R.string.scan_choose else R.string.scan_other))
+                Text(stringResource(if (state.images.isEmpty()) R.string.scan_choose else R.string.scan_add))
             }
             when {
                 state.busy -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -119,7 +122,14 @@ fun ScanTabContent(
                     Text(stringResource(R.string.scan_reading))
                 }
                 state.unreadable -> ErrorText(stringResource(R.string.scan_unreadable), "unreadable")
-                state.reading != null && !read -> ErrorText(stringResource(R.string.scan_none), "none")
+                state.images.isNotEmpty() && !read -> ErrorText(stringResource(R.string.scan_none), "none")
+            }
+            if (state.images.isNotEmpty()) TextButton(
+                onClick = onStartOver,
+                enabled = !state.busy,
+                modifier = Modifier.testTag("startOver"),
+            ) {
+                Text(stringResource(R.string.scan_start_over))
             }
             if (read) {
                 Text(
@@ -141,7 +151,7 @@ fun ScanTabContent(
                     Text(stringResource(R.string.scan_open_editor))
                 }
             }
-            state.image?.let { image -> ReadImage(image, state.reading, state.cNatural) }
+            state.images.forEach { scanned -> ReadImage(scanned.image, scanned.reading, state.cNatural) }
         }
     }
 }

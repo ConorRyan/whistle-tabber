@@ -45,6 +45,9 @@ object TabTune {
         return AbcBook.withWhistle(abc, whistle)
     }
 
+    /** Several screenshots of one tab, in order, as one reading: the lines follow each other. */
+    fun combine(readings: List<TabReading>): TabReading = TabReading(readings.flatMap { it.lines })
+
     const val UNKNOWN = "\"^?\"z"
 
     const val GROUP = 4

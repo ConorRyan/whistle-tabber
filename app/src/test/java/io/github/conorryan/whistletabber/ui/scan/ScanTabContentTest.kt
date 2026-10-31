@@ -4,6 +4,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -37,8 +38,7 @@ class ScanTabContentTest {
     private val image = GrayImage(40, 40, IntArray(1600) { 255 })
 
     private val read = ScanTabUiState(
-        image = image,
-        reading = TabReading(listOf(listOf(column("XXX XXX"), column("XXX OOO"), column("OXO XOX")))),
+        images = listOf(ScannedImage(image, TabReading(listOf(listOf(column("XXX XXX"), column("XXX OOO"), column("OXO XOX")))))),
         title = "Tune from an image",
     )
 
@@ -48,6 +48,7 @@ class ScanTabContentTest {
         compose.setContent { WhistleTabberTheme { ScanTabContent(ScanTabUiState(), onChoose = { chose = true }) } }
         compose.onNodeWithText("Only the fingering diagrams are read", substring = true).assertIsDisplayed()
         compose.onNodeWithText("Choose image").performClick()
+        assertTrue(compose.onAllNodesWithTag("startOver").fetchSemanticsNodes().isEmpty())
         assertTrue(chose)
     }
 
@@ -56,8 +57,25 @@ class ScanTabContentTest {
         compose.setContent { WhistleTabberTheme { ScanTabContent(read) } }
         compose.onNodeWithText("3 notes found").assertIsDisplayed()
         compose.onNodeWithText("1 diagram not recognised, marked ? in the tune").assertIsDisplayed()
-        compose.onNodeWithText("Choose another image").assertIsDisplayed()
+        compose.onNodeWithText("Add another image").assertIsDisplayed()
         compose.onNodeWithTag("image").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun `several images are all shown and start over reaches its callback`() {
+        var started = false
+        compose.setContent {
+            WhistleTabberTheme {
+                ScanTabContent(
+                    read.copy(images = read.images + ScannedImage(image, TabReading(listOf(listOf(column("XXX OOO")))))),
+                    onStartOver = { started = true },
+                )
+            }
+        }
+        compose.onNodeWithText("4 notes found").assertIsDisplayed()
+        assertEquals(2, compose.onAllNodesWithTag("image").fetchSemanticsNodes().size)
+        compose.onNodeWithTag("startOver").performClick()
+        assertTrue(started)
     }
 
     @Test
@@ -99,9 +117,10 @@ class ScanTabContentTest {
 
     @Test
     fun `an image without tab`() {
-        compose.setContent { WhistleTabberTheme { ScanTabContent(ScanTabUiState(image = image, reading = TabReading(emptyList()))) } }
+        compose.setContent {
+            WhistleTabberTheme { ScanTabContent(ScanTabUiState(images = listOf(ScannedImage(image, TabReading(emptyList()))))) }
+        }
         compose.onNodeWithTag("none").assertIsDisplayed()
-        compose.onNodeWithText("Only the fingering diagrams are read", substring = true).assertIsDisplayed()
     }
 
     @Test

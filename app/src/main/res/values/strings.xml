@@ -139,9 +139,10 @@
     <string name="licence_libraries">AndroidX, Jetpack Compose and the Kotlin libraries: Apache License 2.0.</string>
 
     <string name="scan_tab">Read tab from an image</string>
-    <string name="scan_howto">Pick a picture of whistle tab: a screenshot, a scan or a straight-on photo. Only the fingering diagrams are read. Every note comes out the same length; add the rhythm in the editor.</string>
+    <string name="scan_howto">Pick a picture of whistle tab: a screenshot, a scan or a straight-on photo. Only the fingering diagrams are read. Every note comes out the same length; add the rhythm in the editor. A tab spread over several screenshots can be picked all at once, or one after another.</string>
     <string name="scan_choose">Choose image</string>
-    <string name="scan_other">Choose another image</string>
+    <string name="scan_add">Add another image</string>
+    <string name="scan_start_over">Start over</string>
     <string name="scan_reading">Reading the image…</string>
     <string name="scan_unreadable">That image couldn\'t be opened.</string>
     <string name="scan_none">No fingering diagrams found. Try a sharper or larger image.</string>

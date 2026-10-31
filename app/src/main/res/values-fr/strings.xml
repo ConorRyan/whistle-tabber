@@ -147,9 +147,10 @@
     <string name="licence_libraries">AndroidX, Jetpack Compose et les bibliothèques Kotlin\u00A0: licence Apache 2.0.</string>
 
     <string name="scan_tab">Lire une tablature depuis une image</string>
-    <string name="scan_howto">Choisissez une image de tablature pour whistle\u00A0: capture d\'écran, scan ou photo prise bien de face. Seuls les diagrammes de doigtés sont lus. Toutes les notes ont la même durée\u00A0; ajoutez le rythme dans l\'éditeur.</string>
+    <string name="scan_howto">Choisissez une image de tablature pour whistle\u00A0: capture d\'écran, scan ou photo prise bien de face. Seuls les diagrammes de doigtés sont lus. Toutes les notes ont la même durée\u00A0; ajoutez le rythme dans l\'éditeur. Une tablature répartie sur plusieurs captures d\'écran peut être choisie d\'un coup, ou l\'une après l\'autre.</string>
     <string name="scan_choose">Choisir une image</string>
-    <string name="scan_other">Choisir une autre image</string>
+    <string name="scan_add">Ajouter une autre image</string>
+    <string name="scan_start_over">Recommencer</string>
     <string name="scan_reading">Lecture de l\'image…</string>
     <string name="scan_unreadable">Impossible d\'ouvrir cette image.</string>
     <string name="scan_none">Aucun diagramme de doigté trouvé. Essayez une image plus nette ou plus grande.</string>

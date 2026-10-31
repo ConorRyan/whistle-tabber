@@ -33,10 +33,16 @@ class ScanTabViewModelTest {
     fun tearDown() = Dispatchers.resetMain()
 
     private val uri: Uri = Uri.parse("content://images/1")
+    private val otherUri: Uri = Uri.parse("content://images/2")
 
     /** D, G, then an unknown fingering. */
     private val chart: GrayImage = TabPainter(1100, 160).apply {
         listOf("XXX XXX", "XXX OOO", "OXO XOX").forEachIndexed { i, n -> column(40.0 + i * 50, 10.0, n, 8.0) }
+    }.image()
+
+    /** F, a fingering on its own image. */
+    private val otherChart: GrayImage = TabPainter(1100, 160).apply {
+        column(40.0, 10.0, "XXX XOO", 8.0)
     }.image()
 
     private fun vm(
@@ -51,7 +57,7 @@ class ScanTabViewModelTest {
         assertEquals(WhistleKey.LOW_D, s.whistle)
         assertEquals(CNatural.HALF_TOP, s.cNatural)
         assertEquals("Tune from an image", s.title)
-        assertNull(s.reading)
+        assertTrue(s.images.isEmpty())
         assertFalse(s.canOpen)
         assertNull(s.abc())
     }
@@ -60,7 +66,7 @@ class ScanTabViewModelTest {
     fun `a picked image is read into ABC`() = runTest {
         Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
         val vm = vm()
-        vm.pick(uri)
+        vm.add(listOf(uri))
         val s = vm.state.value
         assertFalse(s.busy)
         assertEquals(3, s.found)
@@ -73,10 +79,37 @@ class ScanTabViewModelTest {
     }
 
     @Test
+    fun `a later image appends its notes in order`() = runTest {
+        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        val vm = vm(load = { if (it == otherUri) otherChart else chart })
+        vm.add(listOf(uri))
+        vm.add(listOf(otherUri))
+        val s = vm.state.value
+        assertEquals(2, s.images.size)
+        assertEquals(chart, s.images[0].image)
+        assertEquals(otherChart, s.images[1].image)
+        assertEquals(4, s.found)
+        val abc = s.abc()!!
+        assertTrue(abc, abc.endsWith("D G \"^?\"z |\nF |]\n"))
+    }
+
+    @Test
+    fun `several images picked at once append in order`() = runTest {
+        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        val vm = vm(load = { if (it == otherUri) otherChart else chart })
+        vm.add(listOf(uri, otherUri))
+        val s = vm.state.value
+        assertEquals(2, s.images.size)
+        assertEquals(4, s.found)
+        val abc = s.abc()!!
+        assertTrue(abc, abc.endsWith("D G \"^?\"z |\nF |]\n"))
+    }
+
+    @Test
     fun `whistle and title change the ABC, a blank title can't open`() = runTest {
         Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
         val vm = vm()
-        vm.pick(uri)
+        vm.add(listOf(uri))
         vm.setWhistle(WhistleKey.C)
         vm.setTitle("  My Tune ")
         val abc = vm.state.value.abc()!!
@@ -90,31 +123,54 @@ class ScanTabViewModelTest {
         Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
         val gate = CompletableDeferred<GrayImage?>()
         val vm = vm(load = { gate.await() })
-        vm.pick(uri)
+        vm.add(listOf(uri))
         assertTrue(vm.state.value.busy)
         assertFalse(vm.state.value.canOpen)
         gate.complete(chart)
         assertFalse(vm.state.value.busy)
-        assertEquals(chart, vm.state.value.image)
+        assertEquals(chart, vm.state.value.images.single().image)
     }
 
     @Test
     fun `an image that can't be opened says so`() = runTest {
         Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
         val vm = vm(load = { null })
-        vm.pick(uri)
+        vm.add(listOf(uri))
         assertTrue(vm.state.value.unreadable)
         assertFalse(vm.state.value.busy)
-        assertNull(vm.state.value.image)
+        assertTrue(vm.state.value.images.isEmpty())
+    }
+
+    @Test
+    fun `a batch with one unreadable image appends the readable one`() = runTest {
+        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        val vm = vm(load = { if (it == otherUri) null else chart })
+        vm.add(listOf(uri, otherUri))
+        val s = vm.state.value
+        assertTrue(s.unreadable)
+        assertEquals(1, s.images.size)
+        assertEquals(3, s.found)
     }
 
     @Test
     fun `an image without tab reads as nothing found`() = runTest {
         Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
         val vm = vm(load = { GrayImage(100, 50, IntArray(5000) { 255 }) })
-        vm.pick(uri)
+        vm.add(listOf(uri))
         assertEquals(0, vm.state.value.found)
         assertFalse(vm.state.value.canOpen)
         assertNull(vm.state.value.abc())
+    }
+
+    @Test
+    fun `start over empties the images`() = runTest {
+        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        val vm = vm()
+        vm.add(listOf(uri))
+        vm.startOver()
+        val s = vm.state.value
+        assertFalse(s.busy)
+        assertTrue(s.images.isEmpty())
+        assertNull(s.abc())
     }
 }

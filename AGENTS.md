@@ -239,11 +239,12 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     `TuneRenderer` (debounced 400 ms), save blocked without `T:`/`K:`. A new
     tune may start from a given draft (`initialText`, from the scan screen),
     unsaved until the user saves.
-  - `scan/`: "Read tab from an image" (Library menu): the photo picker,
-    `TabReader` off the main thread, the image with each diagram outlined
-    (unknown fingerings in the error colour), title and written-for whistle;
-    "Open in editor" passes `TabTune.toAbc` as the editor's draft. Nothing
-    is saved on this screen.
+  - `scan/`: "Read tab from an image" (Library menu): the photo picker
+    (multi-select; later picks append), `TabReader` off the main thread,
+    each image with its diagrams outlined (unknown fingerings in the error
+    colour), title and written-for whistle; "Open in editor" passes
+    `TabTune.toAbc` of the images' combined reading (`TabTune.combine`) as
+    the editor's draft. Nothing is saved on this screen.
   - `tap/`: "Write with fingerings" (Library menu, `TapEditorRoute(id?)`):
     title, a strip of the tapped diagrams with a cursor, live preview with
     diagrams and playback, the written-for whistle, and a palette of

@@ -22,29 +22,34 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+/** One picked image and what was read from it, in pick order. */
+data class ScannedImage(val image: GrayImage, val reading: TabReading)
+
 data class ScanTabUiState(
-    val image: GrayImage? = null,
-    /** Null until an image has been read. */
-    val reading: TabReading? = null,
+    /** Every image picked so far, in order; their notes append. */
+    val images: List<ScannedImage> = emptyList(),
     val busy: Boolean = false,
-    /** The picked image could not be decoded. */
+    /** At least one of the images just picked could not be decoded. */
     val unreadable: Boolean = false,
     /** The whistle the tab is written for; starts as my whistle. */
     val whistle: WhistleKey = WhistleKey.DEFAULT,
     val title: String = "",
     val cNatural: CNatural = CNatural.DEFAULT,
 ) {
-    val found: Int get() = reading?.columns?.size ?: 0
-    val unknown: Int get() = reading?.columns?.count { TabTune.offsetOf(it, cNatural) == null } ?: 0
+    val found: Int get() = images.sumOf { it.reading.columns.size }
+    val unknown: Int get() = images.sumOf { r -> r.reading.columns.count { TabTune.offsetOf(it, cNatural) == null } }
     val canOpen: Boolean get() = !busy && found > 0 && title.isNotBlank()
 
     /** The tune to open in the editor, or null before anything was read. */
-    fun abc(): String? = reading?.takeIf { found > 0 }?.let { TabTune.toAbc(it, whistle, title.trim(), cNatural) }
+    fun abc(): String? = images.takeIf { found > 0 }?.let {
+        TabTune.toAbc(TabTune.combine(it.map { s -> s.reading }), whistle, title.trim(), cNatural)
+    }
 }
 
 /**
- * Reads whistle tab from a picked image ([TabReader]) and turns it into ABC
- * ([TabTune]) for the editor; nothing is saved here.
+ * Reads whistle tab from picked images ([TabReader]) and turns it into ABC
+ * ([TabTune]) for the editor; nothing is saved here. Notes from several
+ * screenshots of one tab append, in pick order.
  */
 class ScanTabViewModel(
     private val loadImage: suspend (Uri) -> GrayImage?,
@@ -65,19 +70,28 @@ class ScanTabViewModel(
         }
     }
 
-    fun pick(uri: Uri) {
+    /** Appends the picked images' notes to what is already there, in order. */
+    fun add(uris: List<Uri>) {
+        if (uris.isEmpty()) return
         job?.cancel()
-        _state.update { it.copy(busy = true, unreadable = false, image = null, reading = null) }
+        _state.update { it.copy(busy = true, unreadable = false) }
         job = viewModelScope.launch {
-            val image = loadImage(uri)
-            if (image == null) {
-                _state.update { it.copy(busy = false, unreadable = true) }
-                return@launch
+            val scanned = uris.mapNotNull { uri ->
+                loadImage(uri)?.let { image -> ScannedImage(image, withContext(readDispatcher) { TabReader.read(image) }) }
             }
-            _state.update { it.copy(image = image) }
-            val reading = withContext(readDispatcher) { TabReader.read(image) }
-            _state.update { it.copy(busy = false, reading = reading) }
+            _state.update { s ->
+                s.copy(
+                    busy = false,
+                    unreadable = scanned.size < uris.size,
+                    images = s.images + scanned,
+                )
+            }
         }
+    }
+
+    fun startOver() {
+        job?.cancel()
+        _state.update { it.copy(busy = false, unreadable = false, images = emptyList()) }
     }
 
     fun setWhistle(whistle: WhistleKey) = _state.update { it.copy(whistle = whistle) }

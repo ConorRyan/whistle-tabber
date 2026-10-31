@@ -70,6 +70,17 @@ class TabTuneTest {
     }
 
     @Test
+    fun `combine appends the readings' lines in order`() {
+        val first = TabReading(listOf(listOf(column("XXX XXX"), column("XXX OOO")), listOf(column("XXX XOO"))))
+        val second = TabReading(listOf(listOf(column("OXX XXX+"))))
+        assertEquals(first.lines + second.lines, TabTune.combine(listOf(first, second)).lines)
+        assertEquals(
+            "X:1\nT:Two\nM:none\nL:1/4\n%whistle_tab_key d\nK:D\nD G |\nF |\nd |]\n",
+            TabTune.toAbc(TabTune.combine(listOf(first, second)), WhistleKey.D, "Two", CNatural.DEFAULT),
+        )
+    }
+
+    @Test
     fun `the whistle sets the key and the pitches`() {
         val reading = TabReading(listOf(listOf(column("XXX XXX"), column("XXX OOO"), column("XXX XXX+"))))
         assertEquals(
