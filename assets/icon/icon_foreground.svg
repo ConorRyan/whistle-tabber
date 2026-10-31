@@ -1,9 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="108" height="108">
-  <!-- A tin whistle, mouthpiece up-left: orange head, white tube, navy window and six holes. -->
-  <g transform="rotate(-45 54 54) translate(54 54) scale(0.8) translate(-54 -54)">
-    <path d="M48 36V18A3 3 0 0 1 51 15H57A3 3 0 0 1 60 18V36Z" fill="#F6863C"/>
-    <rect x="47" y="34" width="14" height="59" rx="2" fill="#FFFFFF"/>
-    <rect x="50.5" y="37" width="7" height="4" fill="#181565"/>
-    <g fill="#181565"><circle cx="54" cy="48" r="2.8"/><circle cx="54" cy="55" r="2.8"/><circle cx="54" cy="62" r="2.8"/><circle cx="54" cy="71" r="2.8"/><circle cx="54" cy="78" r="2.8"/><circle cx="54" cy="85" r="2.8"/></g>
+  <!-- A tin whistle, mouthpiece up-left, slimmed to 0.75 width: black head with window and ramp, nickel tube. -->
+  <g transform="rotate(-45 54 54) translate(54 0) scale(0.75 1) translate(-54 0)">
+    <path d="M48.7 40H59.3A1.2 1.2 0 0 1 60.5 41.2V85.8A1.2 1.2 0 0 1 59.3 87H48.7A1.2 1.2 0 0 1 47.5 85.8V41.2A1.2 1.2 0 0 1 48.7 40Z" fill="#E9EBF0"/>
+    <rect x="49.5" y="40" width="2.2" height="47" fill="#FFFFFF"/>
+    <path d="M57.5 40H60.5V85.8A1.2 1.2 0 0 1 59.3 87H57.5Z" fill="#C3C8D4"/>
+    <path d="M49.5 21H58.5Q61.5 21 61.5 26V44H46.5V26Q46.5 21 49.5 21Z" fill="#26272C"/>
+    <rect x="48.3" y="24" width="1.8" height="17" rx="0.9" fill="#5E6068"/>
+    <path d="M46.5 42.4H61.5V44H46.5Z M50.5 35.5H57.5L56.6 38.5H51.4Z" fill="#0B0B0D"/>
+    <rect x="50.5" y="31" width="7" height="4.5" rx="0.6" fill="#000000"/>
   </g>
 </svg>
