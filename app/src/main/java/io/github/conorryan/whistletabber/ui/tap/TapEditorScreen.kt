@@ -116,8 +116,17 @@ fun TapEditorScreen(vm: TapEditorViewModel, isNew: Boolean, onClose: () -> Unit,
         val sounding = draft.notes.filterNotNull().map { draft.whistle.writtenTonic + draft.whistle.soundingShift + it }.toSet()
         audio.prepare(sounding, panel.padSound)
         audio.startMetronome(panel.setup.bpm, panel.setup.meter.beatsPerBar)
+        var lastReopen = 0L
         while (true) {
             withFrameMillis { }
+            // The output can die under us (an exclusive stream is disconnected
+            // when anything else plays, the preview's WebView included):
+            // reopen it and start the clicks again on the fresh stream.
+            if (!audio.alive && SystemClock.uptimeMillis() - lastReopen >= 500) {
+                lastReopen = SystemClock.uptimeMillis()
+                audio.open()
+                if (audio.alive) audio.startMetronome(panel.setup.bpm, panel.setup.meter.beatsPerBar)
+            }
             val ms = audio.relative(SystemClock.uptimeMillis())
             beat = Math.floorDiv(ms, audio.beatMs.coerceAtLeast(1)).toInt()
             latency = audio.latencyMs()

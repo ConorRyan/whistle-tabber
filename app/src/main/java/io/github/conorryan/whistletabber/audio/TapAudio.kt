@@ -19,7 +19,10 @@ enum class PadSound { NOTE, TICK, SILENT }
  * (native AAudio where it opens, else an `AudioTrack`), fed one burst at a
  * time from a [TapMixer], while the screen is showing: [resume] then [open]
  * (off the main thread) on resume, [close] on pause, which frees the stream
- * for other apps.
+ * for other apps. If the output dies under us — an exclusive stream is
+ * disconnected whenever anything else plays, the WebView's preview
+ * included — the writer thread says so ([alive] goes false) and the next
+ * [open] starts a fresh stream.
  *
  * - [tap] sounds a palette tap ([prepareTaps] renders them ahead).
  * - [prepare] renders the rhythm pad's samples at the output's rate;
@@ -115,18 +118,41 @@ class TapAudio(
             }
         } finally {
             out.release()
+            writerStopped(out)
         }
     }
 
-    /** Stops the output and frees it for other apps, until the next [resume]. */
+    /**
+     * The writer thread ended, because the output failed (an exclusive stream
+     * is disconnected whenever anything else plays, the WebView included) or
+     * because of [close]: forget it, so the next [open] starts a fresh stream
+     * instead of queueing into a dead one.
+     */
     @Synchronized
+    private fun writerStopped(out: PcmOutput) {
+        if (output === out) {
+            running = false
+            output = null
+            mixer = null
+            thread = null
+        }
+    }
+
+    /** True while the output is open and its writer thread is alive. */
+    val alive: Boolean get() = output != null && running
+
+    /** Stops the output and frees it for other apps, until the next [resume]. */
     fun close() {
-        wanted = false
-        running = false
-        thread?.join(1_000)
-        thread = null
-        output = null
-        mixer = null
+        val t: Thread?
+        synchronized(this) {
+            wanted = false
+            running = false
+            t = thread
+            output = null
+            mixer = null
+            thread = null
+        }
+        t?.join(1_000)
     }
 
     /** Renders what the pad will play: each sounding pitch in [midis] for [PadSound.NOTE]. Opens the output if needed. */

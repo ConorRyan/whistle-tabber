@@ -29,12 +29,15 @@ class TapAudioTest {
         var stamp: FrameTime? = null
         var started = false
         @Volatile var releases = 0
+        /** Once true, writes fail, as an AAudio stream disconnected by another app's audio does. */
+        @Volatile var failWrites = false
         val written = mutableListOf<Short>()
         val wrote = CountDownLatch(5)
         var opens = 0
 
         override fun start(): Boolean = true.also { started = true }
         override fun write(chunk: ShortArray): Boolean {
+            if (failWrites) return false
             synchronized(written) { written += chunk.toList() }
             if (glitches > 0) {
                 glitches--
@@ -146,5 +149,33 @@ class TapAudioTest {
         assertEquals(30, out.bufferFrames) // 20 plus one burst, not three
         assertFalse(out.bufferFrames > out.capacityFrames)
         audio.close()
+    }
+
+    @Test
+    fun `an output that dies is forgotten, so the next open plays the metronome on a fresh stream`() = runBlocking {
+        val out = FakeOutput()
+        val audio = audioWith(out)
+        audio.resume()
+        audio.open()
+        assertTrue(out.wrote.await(2, TimeUnit.SECONDS))
+        assertTrue(audio.alive)
+
+        out.failWrites = true // disconnected, as when the WebView's preview or another app plays
+        waitFor { !audio.alive }
+        assertEquals(1, out.releases)
+        assertNull(audio.info())
+        audio.startMetronome(bpm = 60, beatsPerBar = 4) // no mixer: queued nowhere
+
+        // What prepare does when tapping starts: open again (a fresh stream
+        // isn't disconnected), and the metronome plays.
+        out.failWrites = false
+        audio.prepare(setOf(74), PadSound.NOTE)
+        assertEquals(2, out.opens)
+        assertTrue(audio.alive)
+        audio.startMetronome(bpm = 60, beatsPerBar = 4)
+        val from = out.size()
+        waitFor { out.peakSince(from) > 10_000 }
+        audio.close()
+        waitFor { out.releases == 2 }
     }
 }

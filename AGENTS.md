@@ -156,7 +156,11 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
   thread; `close` on pause frees the stream): it feeds one `PcmOutput` one
   burst at a time from the pure `TapMixer` (voices, the old one fading as a
   new one starts, plus metronome clicks between `startClicks` and
-  `stopClicks`; every call only queues a command). Palette taps and the
+  `stopClicks`; every call only queues a command). When the output dies — an
+  exclusive AAudio stream is disconnected whenever anything else plays, the
+  preview's WebView included — the writer thread clears the engine (`alive`
+  goes false) and the next `open` starts a fresh stream, so a tapper Start
+  always gets a live one. Palette taps and the
   pad's notes are samples rendered ahead at the output's rate; touch times
   become ms from the downbeat with the output's own timestamps. `openOutput` picks native AAudio
   (`AAudioOutput` over `NativeTapStream`, the JNI side of
