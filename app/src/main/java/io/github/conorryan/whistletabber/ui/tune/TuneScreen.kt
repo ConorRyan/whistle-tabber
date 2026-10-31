@@ -19,8 +19,8 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -29,7 +29,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -67,7 +66,6 @@ import io.github.conorryan.whistletabber.music.AbcBook
 import io.github.conorryan.whistletabber.music.KeyChange
 import io.github.conorryan.whistletabber.music.WhistleKey
 import io.github.conorryan.whistletabber.ui.components.whistleLabel
-import io.github.conorryan.whistletabber.ui.settings.TabSettingsContent
 import io.github.conorryan.whistletabber.ui.settings.WhistleChips
 import io.github.conorryan.whistletabber.render.TuneRenderer
 import io.github.conorryan.whistletabber.web.TuneWebController
@@ -82,6 +80,7 @@ fun TuneScreen(
     onEdit: () -> Unit,
     onEditTaps: () -> Unit,
     onOpenTune: (Long) -> Unit,
+    onSettings: () -> Unit,
 ) {
     val context = LocalContext.current
     val state by vm.state.collectAsStateWithLifecycle()
@@ -89,7 +88,7 @@ fun TuneScreen(
     val controller = remember { TuneWebController(context) }
     val snackbar = remember { SnackbarHostState() }
     var menuOpen by remember { mutableStateOf(false) }
-    var whistleSheet by remember { mutableStateOf(false) }
+    var writtenForSheet by remember { mutableStateOf(false) }
     var keyDialog by remember { mutableStateOf(false) }
 
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
@@ -129,8 +128,8 @@ fun TuneScreen(
                                 contentDescription = stringResource(if (tune.starred) R.string.unstar else R.string.star),
                             )
                         }
-                        IconButton(onClick = { whistleSheet = true }, modifier = Modifier.testTag("openWhistle")) {
-                            Icon(Icons.Filled.Tune, contentDescription = stringResource(R.string.settings_title))
+                        IconButton(onClick = onSettings, modifier = Modifier.testTag("settings")) {
+                            Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.action_settings))
                         }
                         Box {
                             IconButton(onClick = { menuOpen = true }, modifier = Modifier.testTag("menu")) {
@@ -154,6 +153,11 @@ fun TuneScreen(
                                     onClick = { menuOpen = false; keyDialog = true },
                                     enabled = KeyChange.steps(tune.key, "C") != null,
                                     modifier = Modifier.testTag("menuKey"),
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.written_for)) },
+                                    onClick = { menuOpen = false; writtenForSheet = true },
+                                    modifier = Modifier.testTag("menuWhistle"),
                                 )
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.action_export_tune)) },
@@ -197,22 +201,12 @@ fun TuneScreen(
         }
     }
 
-    if (whistleSheet && tune != null) {
-        ModalBottomSheet(onDismissRequest = { whistleSheet = false }) {
+    if (writtenForSheet && tune != null) {
+        ModalBottomSheet(onDismissRequest = { writtenForSheet = false }) {
             Column(
                 Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 WrittenForSection(tune, vm::setTuneWhistle)
-                HorizontalDivider()
-                TabSettingsContent(
-                    settings = state.settings,
-                    onWhistle = vm.settingsEditor::setWhistle,
-                    onCNatural = vm.settingsEditor::setCNatural,
-                    onFold = vm.settingsEditor::setFoldOutOfRange,
-                    onMode = vm.settingsEditor::setMode,
-                    onNoteNames = vm.settingsEditor::setNoteNames,
-                )
             }
         }
     }

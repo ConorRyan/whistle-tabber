@@ -100,6 +100,7 @@ fun AppNavHost(graph: AppGraph) {
                 onOpenTune = { newId ->
                     nav.navigate(TuneRoute(newId)) { popUpTo<TuneRoute> { inclusive = true } }
                 },
+                onSettings = { nav.navigate(SettingsRoute) },
             )
         }
         composable<EditorRoute> { entry ->
