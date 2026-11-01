@@ -1,0 +1,7 @@
+Un habillage vert bouteille & laiton : des cartes, des titres plus
+présents, des formes arrondies, une barre de lecture sombre sur l'écran
+d'air et des cartes groupées dans les réglages. Le whistle pour lequel un
+air est écrit se choisit où on l'édite : l'écran d'air l'affiche dans son
+en-tête, l'éditeur de doigtés le choisit dans la même pastille, et les
+deux éditeurs s'allègent de leur aperçu en portée. Dans l'éditeur de
+doigtés, les notes sont juste au-dessus du clavier.

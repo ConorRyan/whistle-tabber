@@ -1,0 +1,6 @@
+A bottle green & brass redesign: card layouts, heavy titles, rounder
+shapes, a dark player bar on the tune page and grouped cards in Settings.
+The whistle a tune is written for is chosen where you edit: the tune page
+shows it in its header, the fingering editor picks it from the same kind
+of chip, and both editors are simpler without their sheet-music previews.
+In the fingering editor the notes sit just above the keyboard.
