@@ -15,11 +15,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -39,11 +37,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.conorryan.whistletabber.music.AbcProblem
-import io.github.conorryan.whistletabber.music.WhistleKey
 import io.github.conorryan.whistletabber.R
-import io.github.conorryan.whistletabber.ui.components.HeaderChip
-import io.github.conorryan.whistletabber.ui.components.whistleLabel
-import io.github.conorryan.whistletabber.ui.settings.WhistleChips
 
 @Composable
 fun EditorScreen(vm: EditorViewModel, isNew: Boolean, onClose: () -> Unit, onSaved: (Long) -> Unit) {
@@ -61,7 +55,6 @@ fun EditorScreen(vm: EditorViewModel, isNew: Boolean, onClose: () -> Unit, onSav
         state = state,
         isNew = isNew,
         onText = vm::setText,
-        onWhistle = vm::setWhistle,
         onSave = vm::save,
         onClose = onClose,
     )
@@ -74,12 +67,10 @@ fun EditorContent(
     state: EditorUiState,
     isNew: Boolean,
     onText: (String) -> Unit = {},
-    onWhistle: (WhistleKey?) -> Unit = {},
     onSave: () -> Unit = {},
     onClose: () -> Unit = {},
 ) {
     var confirmDiscard by remember { mutableStateOf(false) }
-    var whistleSheet by remember { mutableStateOf(false) }
     val close = { if (state.dirty) confirmDiscard = true else onClose() }
     BackHandler(onBack = close)
 
@@ -110,16 +101,6 @@ fun EditorContent(
                 Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                // The same chip and sheet as the tune screen: a pick writes the
-                // %whistle_tab_key directive into the text being edited.
-                HeaderChip(
-                    text = stringResource(R.string.written_for_chip, whistleLabel(state.whistle)),
-                    onClick = { whistleSheet = true },
-                    container = MaterialTheme.colorScheme.surfaceContainerLow,
-                    content = MaterialTheme.colorScheme.onSurface,
-                    border = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.testTag("whistleChip"),
-                )
                 OutlinedTextField(
                     value = text,
                     onValueChange = onText,
@@ -145,20 +126,6 @@ fun EditorContent(
         }
     }
 
-    if (whistleSheet && state.text != null) {
-        ModalBottomSheet(onDismissRequest = { whistleSheet = false }) {
-            Column(
-                Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
-            ) {
-                WrittenForSection(
-                    explicit = state.explicitWhistle,
-                    suggested = state.suggestedWhistle ?: WhistleKey.DEFAULT,
-                    onSelect = onWhistle,
-                )
-            }
-        }
-    }
-
     if (confirmDiscard) {
         AlertDialog(
             onDismissRequest = { confirmDiscard = false },
@@ -173,21 +140,4 @@ fun EditorContent(
             },
         )
     }
-}
-
-/**
- * The tune's own whistle in the editor: an explicit `%whistle_tab_key`
- * directive, or "from the key" ([suggested]). A pick writes it into the text.
- */
-@Composable
-private fun WrittenForSection(explicit: WhistleKey?, suggested: WhistleKey, onSelect: (WhistleKey?) -> Unit) {
-    Text(stringResource(R.string.written_for), style = MaterialTheme.typography.titleMedium)
-    FilterChip(
-        selected = explicit == null,
-        onClick = { onSelect(null) },
-        label = { Text(stringResource(R.string.written_for_auto, whistleLabel(suggested))) },
-        modifier = Modifier.testTag("editorWhistle-auto"),
-    )
-    WhistleChips(explicit, onSelect, "editorWhistle")
-    Text(stringResource(R.string.written_for_help), style = MaterialTheme.typography.bodySmall)
 }

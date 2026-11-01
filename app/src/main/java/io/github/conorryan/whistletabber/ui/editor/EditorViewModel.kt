@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import io.github.conorryan.whistletabber.data.tunes.TuneRepository
 import io.github.conorryan.whistletabber.music.AbcBook
 import io.github.conorryan.whistletabber.music.AbcProblem
-import io.github.conorryan.whistletabber.music.WhistleKey
 import io.github.conorryan.whistletabber.music.problems
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -27,14 +26,7 @@ data class EditorUiState(
     val saving: Boolean = false,
     /** The tune being edited no longer exists. */
     val missing: Boolean = false,
-    /** The tune's own `%whistle_tab_key` directive, if the text has one. */
-    val explicitWhistle: WhistleKey? = null,
-    /** The whistle the text's key suggests, or null when there is no clear choice. */
-    val suggestedWhistle: WhistleKey? = null,
 ) {
-    /** The whistle the tune is written for: its directive, else its key's suggestion. */
-    val whistle: WhistleKey get() = explicitWhistle ?: suggestedWhistle ?: WhistleKey.DEFAULT
-
     val canSave: Boolean get() = text != null && problems.isEmpty() && !saving
 }
 
@@ -75,22 +67,7 @@ class EditorViewModel(
 
     fun setText(text: String) {
         savedState[KEY_DRAFT] = text
-        val headers = AbcBook.headers(text)
-        _state.update {
-            it.copy(
-                text = text,
-                problems = headers.problems(),
-                dirty = text != original,
-                explicitWhistle = headers.whistle,
-                suggestedWhistle = AbcBook.suggestWhistle(headers.key),
-            )
-        }
-    }
-
-    /** Picks the whistle the tune is written for: [whistle] null removes the directive. */
-    fun setWhistle(whistle: WhistleKey?) {
-        val text = _state.value.text ?: return
-        setText(AbcBook.withWhistle(text, whistle))
+        _state.update { it.copy(text = text, problems = problemsOf(text), dirty = text != original) }
     }
 
     fun save() {

@@ -10,13 +10,8 @@ import io.github.conorryan.whistletabber.music.RhythmSetup
 import io.github.conorryan.whistletabber.music.TabSettings
 import io.github.conorryan.whistletabber.music.TapDraft
 import io.github.conorryan.whistletabber.music.TapTune
-import io.github.conorryan.whistletabber.music.TransposeMode
 import io.github.conorryan.whistletabber.music.WhistleKey
-import io.github.conorryan.whistletabber.render.FakeTunePage
 import io.github.conorryan.whistletabber.ui.TestGraph
-import io.github.conorryan.whistletabber.web.BridgeCommand
-import io.github.conorryan.whistletabber.web.BridgeEvent
-import io.github.conorryan.whistletabber.web.NoteEvent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -66,7 +61,7 @@ class TapEditorViewModelTest {
         id: Long? = null,
         saved: SavedStateHandle = SavedStateHandle(),
         settings: Flow<TabSettings> = flowOf(TabSettings(whistle = WhistleKey.C)),
-    ) = TapEditorViewModel(id, saved, graph.repository, settings, debounceMs = 0)
+    ) = TapEditorViewModel(id, saved, graph.repository, settings)
 
     private suspend fun TapEditorViewModel.loaded(): TapEditorUiState = state.first { it.draft != null }
 
@@ -189,29 +184,11 @@ class TapEditorViewModelTest {
         assertTrue(vm(999).state.first { it.missing }.missing)
     }
 
-    @Test
-    fun `the preview shows the tapped fingerings on the tune's whistle, whatever my settings`() = runTest {
-        val page = FakeTunePage()
-        // My whistle is C and I see other whistles' tunes with my fingerings; the editor ignores that.
-        val vm = vm(settings = flowOf(TabSettings(whistle = WhistleKey.C, mode = TransposeMode.SAME_PITCHES)))
-        vm.bindPage(page)
-        vm.loaded()
-        vm.setWhistle(WhistleKey.D)
-        vm.tap(0)
-        val render = page.sent.filterIsInstance<BridgeCommand.Render>().last()
-        assertEquals(TapTune.toAbc(TapDraft("", WhistleKey.D, listOf(0))), render.abc)
-        assertEquals(12, render.midiTranspose)
-        page.emit(BridgeEvent.Rendered(listOf(NoteEvent(0, 0, 1, 62, 0, 0.0, 0.25, false)), emptyList()))
-        val diagrams = page.sent.filterIsInstance<BridgeCommand.Diagrams>().last().diagrams
-        assertEquals("CCCCCC", diagrams.single()!!.holes)
-    }
-
     private val reel = RhythmSetup(bpm = 120, meter = Meter.FOUR_FOUR)
 
     /** A loaded editor with notes [offsets] and the rhythm tapper open at [reel]. */
-    private suspend fun tapper(vararg offsets: Int, page: FakeTunePage = FakeTunePage()): TapEditorViewModel {
+    private suspend fun tapper(vararg offsets: Int): TapEditorViewModel {
         val vm = vm()
-        vm.bindPage(page)
         vm.loaded()
         vm.setTitle("Timed")
         offsets.forEach { vm.tap(it) }
@@ -224,9 +201,8 @@ class TapEditorViewModelTest {
     private fun TapEditorViewModel.hold(down: Long, up: Long): Int? = press(down).also { release(up) }
 
     @Test
-    fun `tapping every note gives the preview a rhythm, and saving writes it`() = runTest {
-        val page = FakeTunePage()
-        val vm = tapper(0, 2, 4, page = page)
+    fun `tapping every note gives the tune a rhythm, and saving writes it`() = runTest {
+        val vm = tapper(0, 2, 4)
         val untimed = vm.state.value.draft!!
         assertEquals(RhythmPhase.TAPPING, vm.state.value.rhythm!!.phase)
         assertEquals(0, vm.hold(0, 900))
@@ -241,7 +217,6 @@ class TapEditorViewModelTest {
         val presses = listOf(Press(0, 900), Press(1000, 1400), Press(1500, 1900))
         val expected = TapTune.toAbc(untimed.withRhythm(RhythmFit.fit(presses, 3, reel), reel))
         assertTrue(expected, "C4 D2 E2 |]" in expected)
-        assertEquals(expected, page.sent.filterIsInstance<BridgeCommand.Render>().last().abc)
         assertEquals(s.draft, TapTune.parse(expected))
 
         vm.keepRhythm()
@@ -299,8 +274,7 @@ class TapEditorViewModelTest {
 
     @Test
     fun `removing the rhythm makes every note a quarter again`() = runTest {
-        val page = FakeTunePage()
-        val vm = tapper(0, 2, page = page)
+        val vm = tapper(0, 2)
         vm.hold(0, 400)
         vm.hold(500, 900)
         vm.keepRhythm()
@@ -310,14 +284,12 @@ class TapEditorViewModelTest {
         val draft = s.draft!!
         assertFalse(s.timed)
         assertNull(draft.timing)
-        assertEquals(TapTune.toAbc(draft), page.sent.filterIsInstance<BridgeCommand.Render>().last().abc)
         assertTrue(s.dirty)
     }
 
     @Test
     fun `cancel and try again restore the draft from before the tapper opened`() = runTest {
-        val page = FakeTunePage()
-        val vm = tapper(0, 2, page = page)
+        val vm = tapper(0, 2)
         vm.hold(0, 400)
         vm.hold(500, 900)
         vm.keepRhythm()
@@ -328,7 +300,6 @@ class TapEditorViewModelTest {
         vm.hold(0, 2000) // a different rhythm
         vm.closeRhythm() // cancel
         assertEquals(timed, vm.state.value.draft)
-        assertEquals(TapTune.toAbc(timed), page.sent.filterIsInstance<BridgeCommand.Render>().last().abc)
 
         vm.openRhythm()
         vm.startTapping()
@@ -339,7 +310,6 @@ class TapEditorViewModelTest {
         vm.retryRhythm() // try again
         assertEquals(timed, vm.state.value.draft)
         assertEquals(RhythmPhase.SETUP, vm.state.value.rhythm!!.phase)
-        assertEquals(TapTune.toAbc(timed), page.sent.filterIsInstance<BridgeCommand.Render>().last().abc)
     }
 
     @Test
@@ -368,21 +338,19 @@ class TapEditorViewModelTest {
 
     @Test
     fun `stopping early times the rest a beat each, with nothing tapped it's back to the setup`() = runTest {
-        val page = FakeTunePage()
-        val vm = tapper(0, 2, 4, page = page)
+        val vm = tapper(0, 2, 4)
         vm.stopTapping()
         assertEquals(RhythmPhase.SETUP, vm.state.value.rhythm!!.phase)
         vm.startTapping()
         vm.hold(0, 2000)
         vm.stopTapping()
         assertEquals(RhythmPhase.DONE, vm.state.value.rhythm!!.phase)
-        assertTrue(page.sent.filterIsInstance<BridgeCommand.Render>().last().abc.contains("C8 | D2 E2 |]"))
+        assertTrue(TapTune.toAbc(vm.state.value.draft!!).contains("C8 | D2 E2 |]"))
     }
 
     @Test
     fun `a press while one is held ends it there, and only while tapping`() = runTest {
-        val page = FakeTunePage()
-        val vm = tapper(0, 2, 4, page = page)
+        val vm = tapper(0, 2, 4)
         assertEquals(0, vm.press(0))
         assertEquals(2, vm.press(500)) // the next finger landed first
         vm.release(600) // the first finger's lift isn't sent, this is the second's
@@ -390,7 +358,7 @@ class TapEditorViewModelTest {
         assertEquals(4, vm.press(1000))
         vm.release(1400)
         assertEquals(RhythmPhase.DONE, vm.state.value.rhythm!!.phase)
-        assertTrue(page.sent.filterIsInstance<BridgeCommand.Render>().last().abc.contains("C2 D2 E2 |]"))
+        assertTrue(TapTune.toAbc(vm.state.value.draft!!).contains("C2 D2 E2 |]"))
         vm.retryRhythm()
         assertEquals(RhythmPhase.SETUP, vm.state.value.rhythm!!.phase)
         assertNull(vm.press(0))
@@ -398,8 +366,7 @@ class TapEditorViewModelTest {
 
     @Test
     fun `closing the tapper leaves the tune as it was`() = runTest {
-        val page = FakeTunePage()
-        val vm = tapper(0, 2, page = page)
+        val vm = tapper(0, 2)
         vm.hold(0, 400)
         vm.hold(500, 900)
         assertTrue(vm.state.value.timed)
@@ -407,7 +374,6 @@ class TapEditorViewModelTest {
         val s = vm.state.value
         assertNull(s.rhythm)
         assertFalse(s.timed)
-        assertEquals(TapTune.toAbc(s.draft!!), page.sent.filterIsInstance<BridgeCommand.Render>().last().abc)
     }
 
     @Test

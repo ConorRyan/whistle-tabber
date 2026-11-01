@@ -14,10 +14,7 @@ import io.github.conorryan.whistletabber.music.TabSettings
 import io.github.conorryan.whistletabber.music.TapDraft
 import io.github.conorryan.whistletabber.music.TapTiming
 import io.github.conorryan.whistletabber.music.TapTune
-import io.github.conorryan.whistletabber.music.TransposeMode
 import io.github.conorryan.whistletabber.music.WhistleKey
-import io.github.conorryan.whistletabber.render.TunePage
-import io.github.conorryan.whistletabber.render.TuneRenderer
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,7 +42,7 @@ data class TapEditorUiState(
     /** The rhythm tapper, shown in place of the palette; null when closed. */
     val rhythm: RhythmPanel? = null,
 ) {
-    /** The notes have a tapped rhythm: the preview and a save use it. */
+    /** The notes have a tapped rhythm: a save writes it. */
     val timed: Boolean get() = draft?.timing != null
 
     val canSave: Boolean get() = draft != null && draft.title.isNotBlank() && draft.notes.any { it != null } && !saving
@@ -69,24 +66,14 @@ sealed interface TapEditorEffect {
 /**
  * Writes a tune by tapping fingerings ([id] null: a new tune for my whistle;
  * else a stored tune [TapTune] can read). The draft lives in
- * [SavedStateHandle]; the preview, with its diagrams, is rendered by the
- * [TuneRenderer] this ViewModel owns. The screen attaches its WebView with
- * [bindPage].
+ * [SavedStateHandle]; the strip of tapped diagrams is its whole display.
  */
 class TapEditorViewModel(
     private val id: Long?,
     private val savedState: SavedStateHandle,
     private val repository: TuneRepository,
     private val settings: Flow<TabSettings>,
-    debounceMs: Long = 300,
 ) : ViewModel() {
-
-    private val renderer = TuneRenderer(viewModelScope, debounceMs)
-
-    /** Playback and page errors for the preview. */
-    val renderState: StateFlow<TuneRenderer.RendererState> = renderer.state
-
-    fun bindPage(page: TunePage) = renderer.attach(page)
 
     private val _state = MutableStateFlow(TapEditorUiState())
     val state: StateFlow<TapEditorUiState> = _state.asStateFlow()
@@ -284,12 +271,6 @@ class TapEditorViewModel(
         )
     }
 
-    fun togglePlay() = renderer.togglePlay()
-
-    fun restart() = renderer.restart()
-
-    fun dismissError() = renderer.dismissError()
-
     fun save() {
         val s = _state.value
         val draft = s.draft ?: return
@@ -326,15 +307,6 @@ class TapEditorViewModel(
             savedState.remove<Int>(KEY_FIRST_BAR)
         }
         _state.update { it.copy(draft = draft, cursor = cursor, dirty = draft != original) }
-        // Diagrams show exactly what was tapped: the tune's own whistle, its own pitches.
-        val shown = _state.value.settings.copy(whistle = draft.whistle, mode = TransposeMode.SAME_PITCHES, foldOutOfRange = false)
-        renderer.show(
-            TuneRenderer.RenderRequest(
-                abc = TapTune.toAbc(draft),
-                midiTranspose = shown.midiTranspose(draft.whistle),
-                fingering = TuneRenderer.FingeringInputs(shown, draft.whistle),
-            ),
-        )
     }
 
     private fun restore(loaded: TapDraft): TapDraft {

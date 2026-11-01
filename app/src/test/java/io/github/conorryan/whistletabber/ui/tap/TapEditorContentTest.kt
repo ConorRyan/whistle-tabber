@@ -115,6 +115,17 @@ class TapEditorContentTest {
         compose.onNodeWithTag("unsupported").assertExists()
     }
 
+    @Test
+    fun `the whistle chip opens the written-for picker`() {
+        var picked: WhistleKey? = null
+        compose.setContent {
+            WhistleTabberTheme { TapEditorContent(empty, isNew = true, onWhistle = { picked = it }) }
+        }
+        compose.onNodeWithTag("whistleChip").performScrollTo().performClick()
+        compose.onNodeWithTag("whistle-C").performClick()
+        assertEquals(WhistleKey.C, picked)
+    }
+
     private val notes = TapEditorUiState(draft = TapDraft("T", WhistleKey.D, listOf(0, null, 2)), cursor = 3)
 
     @Test

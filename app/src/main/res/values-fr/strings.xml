@@ -175,7 +175,6 @@
     <string name="tap_write">Écrire avec les doigtés</string>
     <string name="action_edit_abc">Modifier l\'ABC</string>
     <string name="action_edit_fingerings">Modifier les doigtés</string>
-    <string name="tap_whistle">Whistle pour lequel l\'air est écrit</string>
     <string name="tap_empty">Touchez un doigté ci-dessous pour ajouter une note. Toutes les notes ont la même durée, quatre par mesure, jusqu\'à ce que vous tapiez le rythme.</string>
     <string name="tap_octave_low">Grave</string>
     <string name="tap_octave_high">Aigu (+)</string>

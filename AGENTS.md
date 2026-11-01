@@ -79,7 +79,7 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     render dedupe (same text and transpose only re-draws diagrams), the
     notes → `FingeringEngine` → `DiagramSpec` pipeline, `transposeText`
     request/reply matching (one outstanding request, stale steps dropped),
-    optional debounce (the tap editor), playback mirroring, warnings and errors.
+    optional debounce, playback mirroring, warnings and errors.
     Each ViewModel owns one; a screen `attach`es its controller, and a
     re-attach re-shows the last request to the fresh page.
 - `music/` — pure Kotlin music logic.
@@ -157,8 +157,8 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
   burst at a time from the pure `TapMixer` (voices, the old one fading as a
   new one starts, plus metronome clicks between `startClicks` and
   `stopClicks`; every call only queues a command). When the output dies — an
-  exclusive AAudio stream is disconnected whenever anything else plays, the
-  preview's WebView included — the writer thread clears the engine (`alive`
+  exclusive AAudio stream is disconnected whenever anything else plays —
+  the writer thread clears the engine (`alive`
   goes false) and the next `open` starts a fresh stream, so a tapper Start
   always gets a live one. The pad's samples render while the setup sheet is
   up and the metronome starts before any rendering left, so Start is
@@ -247,10 +247,10 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     preview render → save as a copy (default) or replace.
   - `editor/`: draft in `SavedStateHandle`, save blocked without `T:`/`K:`. A
     new tune may start from a given draft (`initialText`, from the scan
-    screen), unsaved until the user saves. A "For X whistle" chip opens the
-    whistle picker, writing the tune's own `%whistle_tab_key` directive into
-    the text (the tune screen only shows the whistle). No page preview: the
-    editor is text only.
+    screen), unsaved until the user saves. The tune's own
+    `%whistle_tab_key` directive is just text the user can type (the tune
+    screen shows the whistle it names). No page preview: the editor is text
+    only.
   - `scan/`: "Read tab from an image" (Library menu, `ScanTabRoute(image?)`;
     a pasted clipboard image is read on entry instead of opening the picker,
     and a Paste button adds one too): the photo picker
@@ -260,11 +260,12 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     `TabTune.toAbc` of the images' combined reading (`TabTune.combine`) as
     the editor's draft. Nothing is saved on this screen.
   - `tap/`: "Write with fingerings" (Library menu, `TapEditorRoute(id?)`):
-    title, a strip of the tapped diagrams with a cursor, live preview with
-    diagrams and playback, the written-for whistle, and a palette of
-    fingerings (octave chips, the scale plus C natural, half-hole notes under
-    "More"), rest, delete and cursor keys. A tap also sounds the note through
-    `audio/TapAudio`. Draft (rhythm included) in `SavedStateHandle`; saves
+    title, a strip of the tapped diagrams with a cursor, the written-for
+    whistle (a "For X whistle" chip like the tune screen's, picked in a
+    sheet), and a palette of fingerings (octave chips, the scale plus C
+    natural, half-hole notes under "More"), rest, delete and cursor keys. No
+    staff preview: the strip is the whole display, and a tap sounds the note
+    through `audio/TapAudio`. Draft (rhythm included) in `SavedStateHandle`; saves
     `TapTune.toAbc`. "Tap the rhythm" opens the rhythm
     tapper (`RhythmPanel`: the setup in a bottom sheet with a `PadSound` of
     note, tick or silent, then a press-and-hold pad over a metronome with a
@@ -275,7 +276,7 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     (`Modifier.rhythmPad`): each finger that lands is a press, and only the
     newest finger's lift is a release. The kept rhythm becomes the draft's
     `TapTiming` (Cancel and Try again restore the draft from before the
-    tapper opened; "Remove rhythm" drops it), renders and saves with it, so a
+    tapper opened; "Remove rhythm" drops it), saves with it, so a
     timed tune stays tap-editable. The note strip shows bar gaps from the
     note lengths and a mark of each note's length. The audio diagnostics show
     in debug builds only; a release build warns when the delay is over 60 ms.
@@ -288,8 +289,8 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
   - `settings/`: `TabSettingsContent` (shared with the tune screen's sheet),
     `TabSettingsEditor` (one owner for tab-settings writes; injected from
     `AppGraph`, exposed by both ViewModels), starter set, licences.
-  Each screen with a WebView owns one `TuneWebController`, attaches it to its
-  ViewModel's `TuneRenderer`, and destroys it on dispose.
+  The tune screen owns the one remaining `TuneWebController`, attaches it to
+  its ViewModel's `TuneRenderer`, and destroys it on dispose.
 
 Data flow for diagrams: page `rendered(notes)` → `TuneRenderer` →
 `FingeringEngine.forNotes` → `DiagramSpec` list → `diagrams` command → page

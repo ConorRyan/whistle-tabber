@@ -167,7 +167,6 @@
     <string name="tap_write">Write with fingerings</string>
     <string name="action_edit_abc">Edit ABC</string>
     <string name="action_edit_fingerings">Edit fingerings</string>
-    <string name="tap_whistle">Whistle the tune is written for</string>
     <string name="tap_empty">Tap a fingering below to add a note. Every note is the same length, four to a bar, until you tap the rhythm.</string>
     <string name="tap_octave_low">Low</string>
     <string name="tap_octave_high">High (+)</string>

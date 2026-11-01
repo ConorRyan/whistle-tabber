@@ -5,14 +5,12 @@ import android.os.SystemClock
 import android.view.InputDevice
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,15 +18,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -53,7 +47,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
@@ -68,25 +61,17 @@ import io.github.conorryan.whistletabber.audio.PadSound
 import io.github.conorryan.whistletabber.audio.TapAudio
 import io.github.conorryan.whistletabber.music.RhythmSetup
 import io.github.conorryan.whistletabber.music.WhistleKey
-import io.github.conorryan.whistletabber.render.TuneRenderer
+import io.github.conorryan.whistletabber.ui.components.HeaderChip
 import io.github.conorryan.whistletabber.ui.components.SectionCard
+import io.github.conorryan.whistletabber.ui.components.whistleLabel
 import io.github.conorryan.whistletabber.ui.settings.WhistleChips
-import io.github.conorryan.whistletabber.web.TuneWebController
-import io.github.conorryan.whistletabber.web.TuneWebViewHost
 import kotlinx.coroutines.launch
 
 @Composable
 fun TapEditorScreen(vm: TapEditorViewModel, isNew: Boolean, onClose: () -> Unit, onSaved: (Long) -> Unit) {
     val context = LocalContext.current
     val state by vm.state.collectAsStateWithLifecycle()
-    val renderState by vm.renderState.collectAsStateWithLifecycle()
-    val controller = remember { TuneWebController(context) }
     val audio = remember { TapAudio(context) }
-
-    DisposableEffect(controller) {
-        vm.bindPage(controller)
-        onDispose { controller.destroy() }
-    }
     // The sound engine runs while the screen shows; leaving it ends a pass of tapping.
     val scope = rememberCoroutineScope()
     LifecycleResumeEffect(audio) {
@@ -134,8 +119,8 @@ fun TapEditorScreen(vm: TapEditorViewModel, isNew: Boolean, onClose: () -> Unit,
         while (true) {
             withFrameMillis { }
             // The output can die under us (an exclusive stream is disconnected
-            // when anything else plays, the preview's WebView included):
-            // reopen it and start the clicks again on the fresh stream.
+            // when anything else plays): reopen it and start the clicks
+            // again on the fresh stream.
             if (!audio.alive && SystemClock.uptimeMillis() - lastReopen >= 500) {
                 lastReopen = SystemClock.uptimeMillis()
                 audio.open()
@@ -165,7 +150,6 @@ fun TapEditorScreen(vm: TapEditorViewModel, isNew: Boolean, onClose: () -> Unit,
 
     TapEditorContent(
         state = state,
-        renderState = renderState,
         isNew = isNew,
         onTitle = vm::setTitle,
         onWhistle = vm::setWhistle,
@@ -177,8 +161,6 @@ fun TapEditorScreen(vm: TapEditorViewModel, isNew: Boolean, onClose: () -> Unit,
         onDelete = vm::deleteBack,
         onCursor = vm::moveCursor,
         onOctave = vm::setOctave,
-        onTogglePlay = vm::togglePlay,
-        onRestart = vm::restart,
         onSave = vm::save,
         onClose = onClose,
         beat = beat,
@@ -202,16 +184,14 @@ fun TapEditorScreen(vm: TapEditorViewModel, isNew: Boolean, onClose: () -> Unit,
         onRetryRhythm = vm::retryRhythm,
         onKeepRhythm = vm::keepRhythm,
         onCloseRhythm = vm::closeRhythm,
-        preview = { modifier -> TuneWebViewHost(controller, modifier) },
     )
 }
 
-/** Stateless tap editor; [preview] draws the rendered tune (a WebView in the app). */
+/** Stateless tap editor. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TapEditorContent(
     state: TapEditorUiState,
-    renderState: TuneRenderer.RendererState = TuneRenderer.RendererState(),
     isNew: Boolean,
     onTitle: (String) -> Unit = {},
     onWhistle: (WhistleKey) -> Unit = {},
@@ -220,8 +200,6 @@ fun TapEditorContent(
     onDelete: () -> Unit = {},
     onCursor: (Int) -> Unit = {},
     onOctave: (Int) -> Unit = {},
-    onTogglePlay: () -> Unit = {},
-    onRestart: () -> Unit = {},
     onSave: () -> Unit = {},
     onClose: () -> Unit = {},
     /** While tapping, the metronome's beat: negative in the count-in, 0 the first downbeat. */
@@ -242,9 +220,9 @@ fun TapEditorContent(
     onRetryRhythm: () -> Unit = {},
     onKeepRhythm: () -> Unit = {},
     onCloseRhythm: () -> Unit = {},
-    preview: @Composable (Modifier) -> Unit = {},
 ) {
     var confirmDiscard by remember { mutableStateOf(false) }
+    var whistleSheet by remember { mutableStateOf(false) }
     val close = { if (state.dirty) confirmDiscard = true else onClose() }
     BackHandler(onBack = close)
     BackHandler(enabled = state.rhythm != null, onBack = onCloseRhythm)
@@ -308,25 +286,7 @@ fun TapEditorContent(
                         NoteStrip(draft.notes, state.cursor, state.settings.cNatural, onCursor, highlight, draft.timing)
                     }
                 }
-                val previewShape = MaterialTheme.shapes.large
-                preview(
-                    Modifier
-                        .fillMaxWidth()
-                        .height(220.dp)
-                        .clip(previewShape)
-                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, previewShape)
-                        .testTag("previewWebView"),
-                )
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilledIconButton(onClick = onTogglePlay, enabled = draft.notes.isNotEmpty(), modifier = Modifier.testTag("play")) {
-                        Icon(
-                            if (renderState.playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                            contentDescription = stringResource(if (renderState.playing) R.string.pause else R.string.play),
-                        )
-                    }
-                    IconButton(onClick = onRestart, modifier = Modifier.testTag("restart")) {
-                        Icon(Icons.Filled.Replay, contentDescription = stringResource(R.string.restart))
-                    }
                     FilledTonalButton(
                         onClick = onOpenRhythm,
                         enabled = state.rhythm == null && draft.notes.any { it != null },
@@ -348,12 +308,16 @@ fun TapEditorContent(
                             Text(stringResource(R.string.tap_remove_rhythm))
                         }
                     }
-                    renderState.error?.let {
-                        Text(stringResource(R.string.page_error, it), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                    }
                 }
-                Text(stringResource(R.string.tap_whistle), style = MaterialTheme.typography.labelLarge)
-                WhistleChips(selected = draft.whistle, onSelect = onWhistle)
+                // The tune's whistle: a chip like the tune screen's, picked in a sheet.
+                HeaderChip(
+                    text = stringResource(R.string.written_for_chip, whistleLabel(draft.whistle)),
+                    onClick = { whistleSheet = true },
+                    container = MaterialTheme.colorScheme.surfaceContainerLow,
+                    content = MaterialTheme.colorScheme.onSurface,
+                    border = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.testTag("whistleChip"),
+                )
             }
             val panel = state.rhythm
             // The palette or the rhythm pad sits in a sheet-like panel at the bottom.
@@ -395,7 +359,7 @@ fun TapEditorContent(
                 }
             }
         }
-        // The setup opens in a bottom sheet, so the preview keeps its room.
+        // The setup opens in a bottom sheet, over the editor.
         val sheet = state.rhythm?.takeIf { it.phase == RhythmPhase.SETUP }
         if (sheet != null) {
             ModalBottomSheet(
@@ -409,6 +373,20 @@ fun TapEditorContent(
                     onStart = onStartTapping,
                     onClose = onCloseRhythm,
                 )
+            }
+        }
+    }
+
+    if (whistleSheet && state.draft != null) {
+        ModalBottomSheet(onDismissRequest = { whistleSheet = false }) {
+            Column(
+                Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                val draft = state.draft!!
+                Text(stringResource(R.string.written_for), style = MaterialTheme.typography.titleMedium)
+                WhistleChips(selected = draft.whistle, onSelect = onWhistle)
+                Text(stringResource(R.string.written_for_help), style = MaterialTheme.typography.bodySmall)
             }
         }
     }
