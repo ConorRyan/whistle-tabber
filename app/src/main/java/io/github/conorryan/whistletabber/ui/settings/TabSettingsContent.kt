@@ -47,6 +47,29 @@ fun WhistleChips(selected: WhistleKey?, onSelect: (WhistleKey) -> Unit, tagPrefi
 }
 
 /**
+ * The tune's own whistle: an explicit directive, or "from the key"
+ * ([suggested]). The same picker on the tune and editor screens; a pick
+ * saves the `%whistle_tab_key` directive in the tune's ABC.
+ */
+@Composable
+fun WrittenForSection(
+    explicit: WhistleKey?,
+    suggested: WhistleKey,
+    onSelect: (WhistleKey?) -> Unit,
+    tagPrefix: String = "tuneWhistle",
+) {
+    Text(stringResource(R.string.written_for), style = MaterialTheme.typography.titleMedium)
+    FilterChip(
+        selected = explicit == null,
+        onClick = { onSelect(null) },
+        label = { Text(stringResource(R.string.written_for_auto, whistleLabel(suggested))) },
+        modifier = Modifier.testTag("$tagPrefix-auto"),
+    )
+    WhistleChips(explicit, onSelect, tagPrefix)
+    Text(stringResource(R.string.written_for_help), style = MaterialTheme.typography.bodySmall)
+}
+
+/**
  * The tab settings that apply to every tune: my whistle, transpose mode,
  * C natural, folding and note names. Shown in Settings and in the tune screen's sheet.
  */

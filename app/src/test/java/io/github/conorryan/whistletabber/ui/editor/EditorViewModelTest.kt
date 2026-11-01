@@ -3,7 +3,9 @@ package io.github.conorryan.whistletabber.ui.editor
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import io.github.conorryan.whistletabber.render.FakeTunePage
+import io.github.conorryan.whistletabber.music.AbcBook
 import io.github.conorryan.whistletabber.music.AbcProblem
+import io.github.conorryan.whistletabber.music.WhistleKey
 import io.github.conorryan.whistletabber.ui.TestGraph
 import io.github.conorryan.whistletabber.web.BridgeCommand
 import io.github.conorryan.whistletabber.web.BridgeEvent
@@ -21,6 +23,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -176,5 +179,27 @@ class EditorViewModelTest {
     fun `a missing tune says so`() = runTest {
         Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
         assertTrue(vm(999).state.first { it.missing }.missing)
+    }
+
+    @Test
+    fun `picking a whistle writes the directive into the text, auto removes it`() = runTest {
+        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
+        val vm = vm(null)
+        vm.state.first { it.text != null }
+        // The template has no directive, so its K:D suggests a D whistle.
+        assertNull(vm.state.value.explicitWhistle)
+        assertEquals(WhistleKey.D, vm.state.value.suggestedWhistle)
+        assertEquals(WhistleKey.D, vm.state.value.whistle)
+        vm.setWhistle(WhistleKey.C)
+        val withDirective = vm.state.value.text!!
+        assertEquals(WhistleKey.C, AbcBook.whistleOf(withDirective))
+        assertEquals(WhistleKey.C, vm.state.value.explicitWhistle)
+        assertEquals(WhistleKey.C, vm.state.value.whistle)
+        assertTrue(vm.state.value.dirty)
+        vm.setWhistle(null)
+        val withoutDirective = vm.state.value.text!!
+        assertNull(AbcBook.whistleOf(withoutDirective))
+        assertNull(vm.state.value.explicitWhistle)
+        assertEquals(WhistleKey.D, vm.state.value.whistle) // back to the key's suggestion
     }
 }

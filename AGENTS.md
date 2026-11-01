@@ -248,7 +248,8 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
   - `editor/`: draft in `SavedStateHandle`, preview rendered by its
     `TuneRenderer` (debounced 400 ms), save blocked without `T:`/`K:`. A new
     tune may start from a given draft (`initialText`, from the scan screen),
-    unsaved until the user saves.
+    unsaved until the user saves. A "For X whistle" chip (the tune screen's
+    picker) writes the tune's own `%whistle_tab_key` directive into the text.
   - `scan/`: "Read tab from an image" (Library menu, `ScanTabRoute(image?)`;
     a pasted clipboard image is read on entry instead of opening the picker,
     and a Paste button adds one too): the photo picker
@@ -284,8 +285,9 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     browser with `ACTION_VIEW`; downloads come back through `IncomingTunes`.
     Never list TheSession.org (a test checks).
   - `settings/`: `TabSettingsContent` (shared with the tune screen's sheet),
-    `TabSettingsEditor` (one owner for tab-settings writes; injected from
-    `AppGraph`, exposed by both ViewModels), starter set, licences.
+    `WrittenForSection` (the tune's own whistle picker, shared by the tune and
+    editor screens), `TabSettingsEditor` (one owner for tab-settings writes;
+    injected from `AppGraph`, exposed by both ViewModels), starter set, licences.
   Each screen with a WebView owns one `TuneWebController`, attaches it to its
   ViewModel's `TuneRenderer`, and destroys it on dispose.
 

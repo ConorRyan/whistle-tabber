@@ -18,6 +18,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -39,7 +40,11 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.conorryan.whistletabber.music.AbcProblem
+import io.github.conorryan.whistletabber.music.WhistleKey
 import io.github.conorryan.whistletabber.R
+import io.github.conorryan.whistletabber.ui.components.HeaderChip
+import io.github.conorryan.whistletabber.ui.components.whistleLabel
+import io.github.conorryan.whistletabber.ui.settings.WrittenForSection
 import io.github.conorryan.whistletabber.web.TuneWebController
 import io.github.conorryan.whistletabber.web.TuneWebViewHost
 
@@ -67,6 +72,7 @@ fun EditorScreen(vm: EditorViewModel, isNew: Boolean, onClose: () -> Unit, onSav
         warnings = renderState.warnings,
         isNew = isNew,
         onText = vm::setText,
+        onWhistle = vm::setWhistle,
         onSave = vm::save,
         onClose = onClose,
         preview = { modifier -> TuneWebViewHost(controller, modifier) },
@@ -81,11 +87,13 @@ fun EditorContent(
     warnings: List<String> = emptyList(),
     isNew: Boolean,
     onText: (String) -> Unit = {},
+    onWhistle: (WhistleKey?) -> Unit = {},
     onSave: () -> Unit = {},
     onClose: () -> Unit = {},
     preview: @Composable (Modifier) -> Unit = {},
 ) {
     var confirmDiscard by remember { mutableStateOf(false) }
+    var whistleSheet by remember { mutableStateOf(false) }
     val close = { if (state.dirty) confirmDiscard = true else onClose() }
     BackHandler(onBack = close)
 
@@ -116,6 +124,16 @@ fun EditorContent(
                 Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
+                // The same chip and sheet as the tune screen: a pick writes the
+                // %whistle_tab_key directive into the text being edited.
+                HeaderChip(
+                    text = stringResource(R.string.written_for_chip, whistleLabel(state.whistle)),
+                    onClick = { whistleSheet = true },
+                    container = MaterialTheme.colorScheme.surfaceContainerLow,
+                    content = MaterialTheme.colorScheme.onSurface,
+                    border = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.testTag("whistleChip"),
+                )
                 OutlinedTextField(
                     value = text,
                     onValueChange = onText,
@@ -152,6 +170,21 @@ fun EditorContent(
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
             preview(Modifier.fillMaxWidth().weight(1f).testTag("previewWebView"))
+        }
+    }
+
+    if (whistleSheet && state.text != null) {
+        ModalBottomSheet(onDismissRequest = { whistleSheet = false }) {
+            Column(
+                Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
+            ) {
+                WrittenForSection(
+                    explicit = state.explicitWhistle,
+                    suggested = state.suggestedWhistle ?: WhistleKey.DEFAULT,
+                    onSelect = onWhistle,
+                    tagPrefix = "editorWhistle",
+                )
+            }
         }
     }
 

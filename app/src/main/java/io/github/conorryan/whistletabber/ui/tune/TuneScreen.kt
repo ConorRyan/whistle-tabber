@@ -2,7 +2,6 @@ package io.github.conorryan.whistletabber.ui.tune
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -20,7 +19,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EditNote
@@ -67,7 +65,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -81,9 +78,10 @@ import io.github.conorryan.whistletabber.music.AbcBook
 import io.github.conorryan.whistletabber.music.KeyChange
 import io.github.conorryan.whistletabber.music.WhistleKey
 import io.github.conorryan.whistletabber.render.TuneRenderer
+import io.github.conorryan.whistletabber.ui.components.HeaderChip
 import io.github.conorryan.whistletabber.ui.components.ScreenTitle
 import io.github.conorryan.whistletabber.ui.components.whistleLabel
-import io.github.conorryan.whistletabber.ui.settings.WhistleChips
+import io.github.conorryan.whistletabber.ui.settings.WrittenForSection
 import io.github.conorryan.whistletabber.ui.theme.LocalWhistleColors
 import io.github.conorryan.whistletabber.web.TuneWebController
 import io.github.conorryan.whistletabber.web.TuneWebViewHost
@@ -220,7 +218,11 @@ fun TuneScreen(
             Column(
                 Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
             ) {
-                WrittenForSection(tune, vm::setTuneWhistle)
+                WrittenForSection(
+                    explicit = tune.explicitWhistle,
+                    suggested = AbcBook.suggestWhistle(tune.key) ?: WhistleKey.DEFAULT,
+                    onSelect = vm::setTuneWhistle,
+                )
             }
         }
     }
@@ -287,53 +289,6 @@ private fun TuneHeader(
             )
         }
     }
-}
-
-/** A small button in the tune header: a label and a drop-down arrow. */
-@Composable
-private fun HeaderChip(
-    text: String,
-    onClick: () -> Unit,
-    container: Color,
-    content: Color,
-    border: Color,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-) {
-    Surface(
-        onClick = onClick,
-        enabled = enabled,
-        shape = MaterialTheme.shapes.extraSmall,
-        color = container,
-        contentColor = content,
-        border = BorderStroke(1.dp, border),
-        modifier = modifier,
-    ) {
-        Row(
-            Modifier.padding(start = 10.dp, end = 6.dp, top = 5.dp, bottom = 5.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            Text(text, style = MaterialTheme.typography.labelLarge)
-            if (enabled) Icon(Icons.Filled.ArrowDropDown, contentDescription = null, modifier = Modifier.size(18.dp))
-        }
-    }
-}
-
-/** The tune's own whistle: an explicit directive, or "from the key". */
-@Composable
-private fun WrittenForSection(tune: Tune, onSelect: (WhistleKey?) -> Unit) {
-    val explicit = tune.explicitWhistle
-    val suggested = tune.whistle ?: WhistleKey.DEFAULT
-    Text(stringResource(R.string.written_for), style = MaterialTheme.typography.titleMedium)
-    FilterChip(
-        selected = explicit == null,
-        onClick = { onSelect(null) },
-        label = { Text(stringResource(R.string.written_for_auto, whistleLabel(suggested))) },
-        modifier = Modifier.testTag("tuneWhistle-auto"),
-    )
-    WhistleChips(explicit, onSelect = { onSelect(it) }, tagPrefix = "tuneWhistle")
-    Text(stringResource(R.string.written_for_help), style = MaterialTheme.typography.bodySmall)
 }
 
 /**

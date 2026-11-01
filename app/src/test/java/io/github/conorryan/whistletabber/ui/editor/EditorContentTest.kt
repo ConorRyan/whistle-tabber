@@ -8,7 +8,10 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import io.github.conorryan.whistletabber.music.WhistleKey
 import io.github.conorryan.whistletabber.ui.theme.WhistleTabberTheme
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -68,5 +71,25 @@ class EditorContentTest {
         compose.onNode(hasContentDescription("Back")).performClick()
         compose.onNodeWithTag("discard").performClick()
         assertTrue(closed)
+    }
+
+    @Test
+    fun `the whistle chip opens the written-for picker`() {
+        var picked: WhistleKey? = WhistleKey.D
+        compose.setContent {
+            WhistleTabberTheme {
+                EditorContent(
+                    EditorUiState(text = "X:1\nT:A\nK:D\n", suggestedWhistle = WhistleKey.D),
+                    isNew = false,
+                    onWhistle = { picked = it },
+                )
+            }
+        }
+        compose.onNodeWithTag("whistleChip").performClick()
+        compose.onNodeWithTag("editorWhistle-auto").assertIsDisplayed()
+        compose.onNodeWithTag("editorWhistle-C").performClick()
+        assertEquals(WhistleKey.C, picked)
+        compose.onNodeWithTag("editorWhistle-auto").performClick()
+        assertNull(picked)
     }
 }
