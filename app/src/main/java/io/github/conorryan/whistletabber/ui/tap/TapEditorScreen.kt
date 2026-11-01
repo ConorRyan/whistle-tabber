@@ -4,13 +4,18 @@ import android.os.Build
 import android.os.SystemClock
 import android.view.InputDevice
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -19,16 +24,20 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -44,6 +53,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
@@ -59,6 +69,7 @@ import io.github.conorryan.whistletabber.audio.TapAudio
 import io.github.conorryan.whistletabber.music.RhythmSetup
 import io.github.conorryan.whistletabber.music.WhistleKey
 import io.github.conorryan.whistletabber.render.TuneRenderer
+import io.github.conorryan.whistletabber.ui.components.SectionCard
 import io.github.conorryan.whistletabber.ui.settings.WhistleChips
 import io.github.conorryan.whistletabber.web.TuneWebController
 import io.github.conorryan.whistletabber.web.TuneWebViewHost
@@ -248,7 +259,12 @@ fun TapEditorContent(
                     }
                 },
                 actions = {
-                    TextButton(onClick = onSave, enabled = state.canSave, modifier = Modifier.testTag("save")) {
+                    Button(
+                        onClick = onSave,
+                        enabled = state.canSave,
+                        shape = RoundedCornerShape(50),
+                        modifier = Modifier.padding(end = 8.dp).testTag("save"),
+                    ) {
                         Text(stringResource(R.string.save))
                     }
                 },
@@ -276,13 +292,31 @@ fun TapEditorContent(
                     onValueChange = onTitle,
                     label = { Text(stringResource(R.string.scan_title)) },
                     singleLine = true,
+                    shape = MaterialTheme.shapes.small,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    ),
                     modifier = Modifier.fillMaxWidth().testTag("title"),
                 )
                 val highlight = state.rhythm?.takeIf { it.phase == RhythmPhase.TAPPING }?.let { panel ->
                     draft.notes.indices.filter { draft.notes[it] != null }.getOrNull(panel.next)
                 }
-                NoteStrip(draft.notes, state.cursor, state.settings.cNatural, onCursor, highlight, draft.timing)
-                preview(Modifier.fillMaxWidth().height(220.dp).testTag("previewWebView"))
+                SectionCard(Modifier.fillMaxWidth()) {
+                    Box(Modifier.padding(12.dp)) {
+                        NoteStrip(draft.notes, state.cursor, state.settings.cNatural, onCursor, highlight, draft.timing)
+                    }
+                }
+                val previewShape = MaterialTheme.shapes.large
+                preview(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(220.dp)
+                        .clip(previewShape)
+                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, previewShape)
+                        .testTag("previewWebView"),
+                )
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilledIconButton(onClick = onTogglePlay, enabled = draft.notes.isNotEmpty(), modifier = Modifier.testTag("play")) {
                         Icon(
@@ -293,9 +327,14 @@ fun TapEditorContent(
                     IconButton(onClick = onRestart, modifier = Modifier.testTag("restart")) {
                         Icon(Icons.Filled.Replay, contentDescription = stringResource(R.string.restart))
                     }
-                    OutlinedButton(
+                    FilledTonalButton(
                         onClick = onOpenRhythm,
                         enabled = state.rhythm == null && draft.notes.any { it != null },
+                        shape = MaterialTheme.shapes.medium,
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        ),
                         modifier = Modifier.testTag("openRhythm"),
                     ) {
                         Text(stringResource(R.string.tap_rhythm))
@@ -316,35 +355,44 @@ fun TapEditorContent(
                 Text(stringResource(R.string.tap_whistle), style = MaterialTheme.typography.labelLarge)
                 WhistleChips(selected = draft.whistle, onSelect = onWhistle)
             }
-            HorizontalDivider()
             val panel = state.rhythm
-            if (panel != null && panel.phase != RhythmPhase.SETUP) {
-                RhythmPanelContent(
-                    panel = panel,
-                    beat = beat,
-                    latencyMs = latencyMs,
-                    audioInfo = audioInfo,
-                    onPress = onPress,
-                    onRelease = onRelease,
-                    onStop = onStopTapping,
-                    onRetry = onRetryRhythm,
-                    onKeep = onKeepRhythm,
-                )
-            } else {
-                Palette(
-                    whistle = draft.whistle,
-                    octave = state.octave,
-                    cNatural = state.settings.cNatural,
-                    canDelete = state.cursor > 0,
-                    canLeft = state.cursor > 0,
-                    canRight = state.cursor < draft.notes.size,
-                    onOctave = onOctave,
-                    onTap = onTap,
-                    onRest = onRest,
-                    onDelete = onDelete,
-                    onLeft = { onCursor(state.cursor - 1) },
-                    onRight = { onCursor(state.cursor + 1) },
-                )
+            // The palette or the rhythm pad sits in a sheet-like panel at the bottom.
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceContainerLow,
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Box(Modifier.navigationBarsPadding().padding(top = 8.dp)) {
+                    if (panel != null && panel.phase != RhythmPhase.SETUP) {
+                        RhythmPanelContent(
+                            panel = panel,
+                            beat = beat,
+                            latencyMs = latencyMs,
+                            audioInfo = audioInfo,
+                            onPress = onPress,
+                            onRelease = onRelease,
+                            onStop = onStopTapping,
+                            onRetry = onRetryRhythm,
+                            onKeep = onKeepRhythm,
+                        )
+                    } else {
+                        Palette(
+                            whistle = draft.whistle,
+                            octave = state.octave,
+                            cNatural = state.settings.cNatural,
+                            canDelete = state.cursor > 0,
+                            canLeft = state.cursor > 0,
+                            canRight = state.cursor < draft.notes.size,
+                            onOctave = onOctave,
+                            onTap = onTap,
+                            onRest = onRest,
+                            onDelete = onDelete,
+                            onLeft = { onCursor(state.cursor - 1) },
+                            onRight = { onCursor(state.cursor + 1) },
+                        )
+                    }
+                }
             }
         }
         // The setup opens in a bottom sheet, so the preview keeps its room.

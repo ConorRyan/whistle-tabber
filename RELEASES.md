@@ -12,7 +12,7 @@ setup is already done for 1.0.0: the release keystore exists.
   it breaks updates for every installed user. Never commit it to any repo.
 - Android SDK + JDK 21, with `apksigner` from the build-tools, plus NDK
   29.0.14206865 and CMake 3.22.1 (fetched by Gradle on the first build)
-  (`~/Android/Sdk/build-tools/<version>/apksigner`).
+  (`~/.local/share/android-sdk/build-tools/<version>/apksigner`).
 
 ## Per release
 
@@ -49,7 +49,7 @@ setup is already done for 1.0.0: the release keystore exists.
 4. **Sign the APK** with the release key:
 
    ```bash
-   ~/Android/Sdk/build-tools/<version>/apksigner sign \
+   ~/.local/share/android-sdk/build-tools/<version>/apksigner sign \
      --ks ~/.local/share/keystores/whistle-tabber-release.jks \
      --ks-pass "file:$HOME/.local/share/keystores/whistle-tabber-release.password" \
      --ks-key-alias whistletabber \

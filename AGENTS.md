@@ -22,7 +22,7 @@
   destroy their `TuneWebController` in `@After` (Chromium caps live
   AudioContexts). To inspect the page of a debug build, forward DevTools and
   use `node scripts/webview-eval.js "<expr>"` (see the script header). AVD:
-  `~/Android/Sdk/emulator/emulator -avd Medium_Phone_API_37.0 -no-snapshot-save -no-window`.
+  `~/.local/share/android-sdk/emulator/emulator -avd Medium_Phone_API_37.0 -no-snapshot-save -no-window`.
 - Build with `./gradlew assembleDebug`; release with `./gradlew assembleRelease`.
   Requires JDK 21, Android SDK platform 37, NDK `29.0.14206865` and CMake
   3.22.1 (pinned in `app/build.gradle.kts`; Gradle fetches them into the SDK
@@ -216,7 +216,11 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     `staffsep` only counts note pitches). `B:`/`Z:`/`N:` credits go to HTML
     `#credits` below the SVG. `layoutReport()` exists for instrumented tests.
   - `index.html`: strict CSP, local scripts only.
-- `ui/` — `theme/`; `components/` (`FingeringDiagram`, matching the page's
+- `ui/` — `theme/` (the "bottle green & brass" scheme, heavy headline
+  type, rounded shapes, and `LocalWhistleColors` for the star and play
+  colours; `assets/web/whistle.css` mirrors its ink, paper and highlight);
+  `components/` (`Cards.kt`: `SectionCard`, `ScreenTitle`, `GroupLabel`,
+  `PillChip`, the shared building blocks of every screen; `FingeringDiagram`, matching the page's
   diagrams, with `FingeringDiagramGeometryTest` pinning the shared geometry;
   `whistleLabel`, which reads the `LocalNoteNames` composition local that
   `MainActivity` provides from the settings store). `AppNavHost` holds type-safe `@Serializable`

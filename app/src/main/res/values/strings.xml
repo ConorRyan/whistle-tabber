@@ -97,6 +97,7 @@
     <string name="written_for">Written for</string>
     <string name="written_for_help">The whistle this tune\'s fingerings are written for. It is saved in the tune\'s ABC, in the same form as Eskin\'s ABC Tools.</string>
     <string name="written_for_auto">From the key (%1$s)</string>
+    <string name="written_for_chip">For %1$s whistle</string>
     <string name="key_change_help">Rewrites the notes, accidentals, chords and K: line. You can preview the result before saving.</string>
     <string name="preview_in">Preview in %1$s</string>
     <string name="save_copy">Save as copy</string>
@@ -166,6 +167,7 @@
 
     <string name="tap_write">Write with fingerings</string>
     <string name="action_edit_abc">Edit ABC</string>
+    <string name="action_edit_fingerings">Edit fingerings</string>
     <string name="tap_whistle">Whistle the tune is written for</string>
     <string name="tap_empty">Tap a fingering below to add a note. Every note is the same length, four to a bar, until you tap the rhythm.</string>
     <string name="tap_octave_low">Low</string>

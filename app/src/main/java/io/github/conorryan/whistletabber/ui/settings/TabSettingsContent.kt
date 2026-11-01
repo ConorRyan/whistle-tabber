@@ -27,6 +27,7 @@ import io.github.conorryan.whistletabber.music.TabSettings
 import io.github.conorryan.whistletabber.music.TransposeMode
 import io.github.conorryan.whistletabber.music.WhistleKey
 import io.github.conorryan.whistletabber.ui.components.FingeringDiagram
+import io.github.conorryan.whistletabber.ui.components.PillChip
 import io.github.conorryan.whistletabber.ui.components.whistleLabel
 
 /** Chips for picking a whistle; [selected] null selects none. */
@@ -35,7 +36,7 @@ import io.github.conorryan.whistletabber.ui.components.whistleLabel
 fun WhistleChips(selected: WhistleKey?, onSelect: (WhistleKey) -> Unit, tagPrefix: String = "whistle") {
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         WhistleKey.entries.forEach { key ->
-            FilterChip(
+            PillChip(
                 selected = selected == key,
                 onClick = { onSelect(key) },
                 label = { Text(whistleLabel(key)) },

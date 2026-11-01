@@ -1,7 +1,6 @@
 package io.github.conorryan.whistletabber.ui.tap
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,6 +30,7 @@ import io.github.conorryan.whistletabber.music.FingeringEngine
 import io.github.conorryan.whistletabber.music.TapTiming
 import io.github.conorryan.whistletabber.music.TapTune
 import io.github.conorryan.whistletabber.ui.components.FingeringDiagram
+import io.github.conorryan.whistletabber.ui.theme.LocalWhistleColors
 
 /**
  * The tune so far, a diagram per note and the cursor; tap a note to put the
@@ -100,7 +100,7 @@ internal fun NoteStrip(
 
 @Composable
 private fun Cursor() {
-    Box(Modifier.padding(vertical = 2.dp).width(2.dp).height(64.dp).border(1.dp, MaterialTheme.colorScheme.primary).testTag("cursor"))
+    Box(Modifier.padding(horizontal = 2.dp, vertical = 2.dp).width(3.dp).height(64.dp).background(LocalWhistleColors.current.star, RoundedCornerShape(2.dp)).testTag("cursor"))
 }
 
 @Composable

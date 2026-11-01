@@ -7,21 +7,28 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +47,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -58,6 +66,7 @@ import io.github.conorryan.whistletabber.music.WhistleKey
 import io.github.conorryan.whistletabber.scan.GrayImage
 import io.github.conorryan.whistletabber.scan.TabReading
 import io.github.conorryan.whistletabber.scan.TabTune
+import io.github.conorryan.whistletabber.ui.components.SectionCard
 import io.github.conorryan.whistletabber.ui.settings.WhistleChips
 
 /**
@@ -127,12 +136,29 @@ fun ScanTabContent(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             val read = state.found > 0
-            if (state.images.isEmpty()) Text(stringResource(R.string.scan_howto))
-            OutlinedButton(onClick = onChoose, enabled = !state.busy, modifier = Modifier.testTag("choose")) {
-                Text(stringResource(if (state.images.isEmpty()) R.string.scan_choose else R.string.scan_add))
+            if (read) {
+                Text(
+                    pluralStringResource(R.plurals.scan_found, state.found, state.found),
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.testTag("found"),
+                )
+                if (state.unknown > 0) ErrorText(pluralStringResource(R.plurals.scan_unknown, state.unknown, state.unknown), "unknown")
             }
-            OutlinedButton(onClick = onPaste, enabled = !state.busy, modifier = Modifier.testTag("paste")) {
-                Text(stringResource(R.string.scan_paste))
+            if (state.images.isEmpty()) Text(stringResource(R.string.scan_howto), style = MaterialTheme.typography.bodyLarge)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilledTonalButton(
+                    onClick = onChoose,
+                    enabled = !state.busy,
+                    shape = RoundedCornerShape(50),
+                    modifier = Modifier.testTag("choose"),
+                ) {
+                    Icon(Icons.Filled.AddPhotoAlternate, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Text(stringResource(if (state.images.isEmpty()) R.string.scan_choose else R.string.scan_add), Modifier.padding(start = 8.dp))
+                }
+                OutlinedButton(onClick = onPaste, enabled = !state.busy, shape = RoundedCornerShape(50), modifier = Modifier.testTag("paste")) {
+                    Icon(Icons.Filled.ContentPaste, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Text(stringResource(R.string.scan_paste), Modifier.padding(start = 8.dp))
+                }
             }
             when {
                 state.busy -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -151,23 +177,28 @@ fun ScanTabContent(
                 Text(stringResource(R.string.scan_start_over))
             }
             if (read) {
-                Text(
-                    pluralStringResource(R.plurals.scan_found, state.found, state.found),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.testTag("found"),
-                )
-                if (state.unknown > 0) ErrorText(pluralStringResource(R.plurals.scan_unknown, state.unknown, state.unknown), "unknown")
-                OutlinedTextField(
-                    value = state.title,
-                    onValueChange = onTitle,
-                    label = { Text(stringResource(R.string.scan_title)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth().testTag("title"),
-                )
-                Text(stringResource(R.string.scan_whistle), style = MaterialTheme.typography.titleSmall)
-                WhistleChips(state.whistle, onWhistle, tagPrefix = "scanWhistle")
-                Button(onClick = onOpen, enabled = state.canOpen, modifier = Modifier.testTag("open")) {
-                    Text(stringResource(R.string.scan_open_editor))
+                SectionCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        OutlinedTextField(
+                            value = state.title,
+                            onValueChange = onTitle,
+                            label = { Text(stringResource(R.string.scan_title)) },
+                            singleLine = true,
+                            shape = MaterialTheme.shapes.small,
+                            modifier = Modifier.fillMaxWidth().testTag("title"),
+                        )
+                        Text(stringResource(R.string.scan_whistle), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        WhistleChips(state.whistle, onWhistle, tagPrefix = "scanWhistle")
+                    }
+                }
+                Button(
+                    onClick = onOpen,
+                    enabled = state.canOpen,
+                    shape = RoundedCornerShape(50),
+                    modifier = Modifier.fillMaxWidth().height(56.dp).testTag("open"),
+                ) {
+                    Text(stringResource(R.string.scan_open_editor), style = MaterialTheme.typography.titleMedium)
+                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.padding(start = 8.dp).size(20.dp))
                 }
             }
             state.images.forEach { scanned -> ReadImage(scanned.image, scanned.reading, state.cNatural) }
@@ -188,11 +219,14 @@ private fun ReadImage(image: GrayImage, reading: TabReading?, cNatural: CNatural
     }
     val known = MaterialTheme.colorScheme.primary
     val unknown = MaterialTheme.colorScheme.error
+    val shape = MaterialTheme.shapes.large
     Image(
         bitmap = bitmap,
         contentDescription = stringResource(R.string.scan_image_description),
         modifier = Modifier
             .fillMaxWidth()
+            .clip(shape)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape)
             .aspectRatio(image.width.toFloat() / image.height)
             .testTag("image")
             .drawWithContent {

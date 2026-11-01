@@ -1,26 +1,30 @@
 package io.github.conorryan.whistletabber.ui.tap
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material3.FilterChip
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,6 +43,7 @@ import io.github.conorryan.whistletabber.music.CNatural
 import io.github.conorryan.whistletabber.music.FingeringEngine
 import io.github.conorryan.whistletabber.music.WhistleKey
 import io.github.conorryan.whistletabber.ui.components.FingeringDiagram
+import io.github.conorryan.whistletabber.ui.components.PillChip
 import io.github.conorryan.whistletabber.ui.components.LocalNoteNames
 
 /** The fingerings of the palette's main row, as offsets in the bottom octave: the major scale, then C natural. */
@@ -49,7 +54,6 @@ private val CHROMATIC = listOf(1, 3, 6, 8)
 
 /** Every offset the palette can tap, in all three octaves (for rendering their sounds ahead). */
 internal val PALETTE_OFFSETS: List<Int> = (0 until 3).flatMap { octave -> (SCALE + CHROMATIC).map { it + 12 * octave } }
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun Palette(
     whistle: WhistleKey,
@@ -66,32 +70,48 @@ internal fun Palette(
     onRight: () -> Unit,
 ) {
     var more by rememberSaveable { mutableStateOf(false) }
-    Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             listOf(R.string.tap_octave_low, R.string.tap_octave_high, R.string.tap_octave_highest).forEachIndexed { i, label ->
-                FilterChip(
+                PillChip(
                     selected = octave == i,
                     onClick = { onOctave(i) },
-                    label = { Text(stringResource(label)) },
+                    label = { Text(stringResource(label), maxLines = 1) },
                     modifier = Modifier.testTag("octave-$i"),
+                )
+            }
+            Box(Modifier.weight(1f))
+            // An icon, not words, so the octaves keep one line on a narrow phone.
+            IconToggleButton(checked = more, onCheckedChange = { more = it }, modifier = Modifier.testTag("more")) {
+                Icon(
+                    if (more) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                    contentDescription = stringResource(if (more) R.string.tap_fewer else R.string.tap_more),
+                    tint = MaterialTheme.colorScheme.primary,
                 )
             }
         }
         KeyRow(SCALE, whistle, octave, cNatural, onTap)
         if (more) KeyRow(CHROMATIC, whistle, octave, cNatural, onTap)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.Center) {
-            OutlinedButton(onClick = onRest, modifier = Modifier.testTag("rest")) { Text(stringResource(R.string.tap_rest)) }
-            IconButton(onClick = onLeft, enabled = canLeft, modifier = Modifier.testTag("left")) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            val keyShape = MaterialTheme.shapes.medium
+            OutlinedIconButton(onClick = onLeft, enabled = canLeft, shape = keyShape, modifier = Modifier.size(52.dp).testTag("left")) {
                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = stringResource(R.string.tap_cursor_left))
             }
-            IconButton(onClick = onRight, enabled = canRight, modifier = Modifier.testTag("right")) {
+            OutlinedIconButton(onClick = onRight, enabled = canRight, shape = keyShape, modifier = Modifier.size(52.dp).testTag("right")) {
                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = stringResource(R.string.tap_cursor_right))
             }
-            IconButton(onClick = onDelete, enabled = canDelete, modifier = Modifier.testTag("delete")) {
+            OutlinedButton(onClick = onRest, shape = keyShape, modifier = Modifier.weight(1f).height(52.dp).testTag("rest")) { Text(stringResource(R.string.tap_rest)) }
+            FilledIconButton(
+                onClick = onDelete,
+                enabled = canDelete,
+                shape = keyShape,
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.inverseSurface,
+                    contentColor = MaterialTheme.colorScheme.inverseOnSurface,
+                ),
+                modifier = Modifier.width(72.dp).height(52.dp).testTag("delete"),
+            ) {
                 Icon(Icons.AutoMirrored.Filled.Backspace, contentDescription = stringResource(R.string.tap_delete))
-            }
-            TextButton(onClick = { more = !more }, modifier = Modifier.testTag("more")) {
-                Text(stringResource(if (more) R.string.tap_fewer else R.string.tap_more))
             }
         }
     }
@@ -107,16 +127,17 @@ private fun KeyRow(offsets: List<Int>, whistle: WhistleKey, octave: Int, cNatura
     val names = LocalNoteNames.current
     val keys = offsets.map { it + 12 * octave }.mapNotNull { offset -> FingeringEngine.fingeringAt(offset, cNatural)?.let { offset to it } }
     val empty = SCALE.size - keys.size
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         if (empty > 0) Box(Modifier.weight(empty / 2f))
         for ((offset, fingering) in keys) {
             Surface(
                 onClick = { onTap(offset) },
-                shape = RoundedCornerShape(8.dp),
-                tonalElevation = 2.dp,
+                shape = MaterialTheme.shapes.medium,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                 modifier = Modifier.weight(1f).testTag("key-$offset"),
             ) {
-                Column(Modifier.padding(vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(Modifier.padding(vertical = 10.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     FingeringDiagram(fingering, holeSize = 10.dp)
                     Text(
                         AbcNotes.name(whistle.writtenTonic + offset, whistle.letter, names) + "+".repeat(fingering.octave),

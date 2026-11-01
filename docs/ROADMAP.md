@@ -112,7 +112,7 @@ Key design points:
 ## Verification
 - Every session: `./gradlew :app:testDebugUnitTest`, `node --test web-tests/`, `./gradlew assembleDebug`.
 - Emulator only:
-  1. Start it: `~/Android/Sdk/emulator/emulator -avd Medium_Phone_API_37.0 -no-snapshot-save &`
+  1. Start it: `~/.local/share/android-sdk/emulator/emulator -avd Medium_Phone_API_37.0 -no-snapshot-save &`
   2. Wait: `adb -s emulator-5554 wait-for-device`
   3. Run: `ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest`
   - Always check `adb devices` first and pass `-s emulator-5554` to every adb command, so nothing touches the phone.

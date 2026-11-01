@@ -1,7 +1,9 @@
 package io.github.conorryan.whistletabber.ui.library
 
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertTextEquals
@@ -10,6 +12,7 @@ import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performTouchInput
 import io.github.conorryan.whistletabber.data.tunes.Tune
 import io.github.conorryan.whistletabber.music.NoteNames
@@ -50,12 +53,15 @@ class LibraryContentTest {
             }
         }
         compose.onNodeWithText("Drowsy Maggie").assertIsDisplayed()
-        compose.onNodeWithText("Reel · D · D whistle").assertIsDisplayed()
-        compose.onNodeWithText("Jig · D · D whistle").assertIsDisplayed()
+        // The rhythm is a badge of its own; key and whistle share a line.
+        compose.onNodeWithTag("tune-1").assert(hasText("Reel") and hasText("D · D whistle"))
+        compose.onNodeWithTag("tune-2").assert(hasText("Jig") and hasText("D · D whistle"))
         compose.onNodeWithTag("chip-jig").assertIsDisplayed()
 
         compose.onNodeWithTag("tune-2").performClick()
         assertEquals(2L, opened)
+        // Scroll the row clear of the New tune button, as a user would.
+        compose.onNodeWithTag("tuneList").performScrollToIndex(1)
         compose.onNodeWithTag("star-2").performClick()
         assertEquals(2L to false, starred) // already starred: unstar
     }
@@ -70,7 +76,7 @@ class LibraryContentTest {
                 }
             }
         }
-        compose.onNodeWithText("Reel · D · Ré whistle").assertIsDisplayed()
+        compose.onNodeWithText("D · Ré whistle").assertIsDisplayed()
     }
 
     @Test
@@ -158,15 +164,14 @@ class LibraryContentTest {
     }
 
     @Test
-    fun `export is in the overflow menu`() {
+    fun `export is a button in the top bar`() {
         var exported = false
         compose.setContent {
             WhistleTabberTheme {
                 LibraryContent(LibraryUiState(tunes = listOf(tune(1, "A")), loaded = true), onExport = { exported = true })
             }
         }
-        compose.onNodeWithTag("menu").performClick()
-        compose.onNodeWithTag("menuExport").performClick()
+        compose.onNodeWithTag("export").performClick()
         assertTrue(exported)
     }
 

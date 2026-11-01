@@ -13,6 +13,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -24,9 +25,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
@@ -35,7 +39,7 @@ import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.EditNote
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Settings
@@ -46,18 +50,15 @@ import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.SnackbarDuration
@@ -78,6 +79,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -85,10 +87,13 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.toggleableState
 import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.conorryan.whistletabber.R
@@ -96,7 +101,10 @@ import io.github.conorryan.whistletabber.data.tunes.ExportNames
 import io.github.conorryan.whistletabber.data.tunes.ImportResult
 import io.github.conorryan.whistletabber.data.tunes.PastedTunes
 import io.github.conorryan.whistletabber.data.tunes.Tune
+import io.github.conorryan.whistletabber.ui.components.PillChip
 import io.github.conorryan.whistletabber.ui.components.whistleLabel
+import io.github.conorryan.whistletabber.ui.theme.LocalWhistleColors
+import io.github.conorryan.whistletabber.ui.theme.SectionLabel
 import java.time.LocalDate
 import java.util.Locale
 import kotlinx.coroutines.launch
@@ -205,7 +213,6 @@ fun LibraryContent(
     onPaste: () -> Unit = {},
     onExport: () -> Unit = {},
 ) {
-    var menuOpen by remember { mutableStateOf(false) }
     var addOpen by remember { mutableStateOf(false) }
     BackHandler(enabled = state.selecting || addOpen) { if (addOpen) addOpen = false else onClearSelection() }
     LaunchedEffect(state.selecting) { if (state.selecting) addOpen = false }
@@ -213,27 +220,35 @@ fun LibraryContent(
         topBar = {
             if (state.selecting) {
                 SelectionBar(state.selected.size, onClearSelection, onSelectAll, onDeleteSelected)
-            } else TopAppBar(
-                title = { Text(stringResource(R.string.library_title)) },
-                actions = {
-                    IconButton(onClick = onSettings, modifier = Modifier.testTag("settings")) {
-                        Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.action_settings))
-                    }
-                    Box {
-                        IconButton(onClick = { menuOpen = true }, modifier = Modifier.testTag("menu")) {
-                            Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.more))
-                        }
-                        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.action_export_all)) },
-                                onClick = { menuOpen = false; onExport() },
-                                enabled = !state.libraryEmpty,
-                                modifier = Modifier.testTag("menuExport"),
+            } else Row(
+                Modifier.fillMaxWidth().statusBarsPadding().padding(start = 20.dp, end = 8.dp, top = 16.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        stringResource(R.string.app_name).uppercase(),
+                        style = SectionLabel,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(stringResource(R.string.library_title), style = MaterialTheme.typography.headlineLarge)
+                        if (state.loaded && !state.libraryEmpty) {
+                            Text(
+                                state.tunes.size.toString(),
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.padding(bottom = 4.dp).testTag("tuneCount"),
                             )
                         }
                     }
-                },
-            )
+                }
+                IconButton(onClick = onExport, enabled = !state.libraryEmpty, modifier = Modifier.testTag("export")) {
+                    Icon(Icons.Filled.FileUpload, contentDescription = stringResource(R.string.action_export_all))
+                }
+                IconButton(onClick = onSettings, modifier = Modifier.testTag("settings")) {
+                    Icon(Icons.Filled.Settings, contentDescription = stringResource(R.string.action_settings))
+                }
+            }
         },
         floatingActionButton = {
             if (!state.selecting) {
@@ -264,7 +279,11 @@ fun LibraryContent(
                         NoMatches(onClearFilters)
                     } else {
                         Box {
-                            LazyColumn(Modifier.fillMaxSize().testTag("tuneList"), contentPadding = PaddingValues(bottom = 88.dp)) {
+                            LazyColumn(
+                                Modifier.fillMaxSize().testTag("tuneList"),
+                                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 96.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                            ) {
                                 items(state.tunes, key = { it.id }, contentType = { "tune" }) { tune ->
                                     TuneRow(
                                         tune,
@@ -277,7 +296,13 @@ fun LibraryContent(
                             }
                             // Tapping the list outside the expanded dial dismisses it.
                             if (addOpen) {
-                                Box(Modifier.matchParentSize().clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = { addOpen = false }).testTag("addScrim"))
+                                Box(
+                                    Modifier
+                                        .matchParentSize()
+                                        .background(MaterialTheme.colorScheme.background.copy(alpha = 0.85f))
+                                        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = { addOpen = false })
+                                        .testTag("addScrim"),
+                                )
                             }
                         }
                     }
@@ -304,17 +329,20 @@ private data class AddTuneAction(
  */
 @Composable
 private fun AddTuneMenu(open: Boolean, onOpen: (Boolean) -> Unit, actions: List<AddTuneAction>) {
+    val newTune = stringResource(R.string.action_new_tune)
     Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         actions.forEach { action ->
             AnimatedVisibility(visible = open, enter = fadeIn() + slideInVertically { it / 2 }, exit = fadeOut() + slideOutVertically { it / 2 }) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surface, tonalElevation = 4.dp) {
-                        Text(stringResource(action.label), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                    Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.inverseSurface, contentColor = MaterialTheme.colorScheme.inverseOnSurface) {
+                        Text(stringResource(action.label), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
                     }
                     SmallFloatingActionButton(
                         onClick = { onOpen(false); action.onClick() },
                         modifier = Modifier.testTag(action.tag),
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        shape = RoundedCornerShape(50),
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                        contentColor = MaterialTheme.colorScheme.primary,
                     ) {
                         Icon(action.icon, contentDescription = stringResource(action.label))
                     }
@@ -322,12 +350,16 @@ private fun AddTuneMenu(open: Boolean, onOpen: (Boolean) -> Unit, actions: List<
             }
         }
         val rotation by animateFloatAsState(if (open) 45f else 0f)
-        FloatingActionButton(
+        ExtendedFloatingActionButton(
             onClick = { onOpen(!open) },
-            modifier = Modifier.testTag("newTune").rotate(rotation),
-        ) {
-            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.action_new_tune))
-        }
+            expanded = !open,
+            icon = { Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.rotate(rotation)) },
+            text = { Text(stringResource(R.string.action_new_tune)) },
+            shape = RoundedCornerShape(50),
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            modifier = Modifier.testTag("newTune").semantics { contentDescription = newTune },
+        )
     }
 }
 
@@ -351,23 +383,30 @@ private fun Filters(
             }
         },
         singleLine = true,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).testTag("search"),
+        shape = RoundedCornerShape(50),
+        colors = OutlinedTextFieldDefaults.colors(
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+        ),
+        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 12.dp).testTag("search"),
     )
     LazyRow(
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.padding(bottom = 8.dp),
     ) {
         item {
-            FilterChip(
+            PillChip(
                 selected = state.filters.starredOnly,
                 onClick = onStarredOnly,
                 label = { Text(stringResource(R.string.filter_starred)) },
-                leadingIcon = { Icon(Icons.Filled.Star, contentDescription = null) },
+                leadingIcon = { Icon(Icons.Filled.Star, contentDescription = null, tint = if (state.filters.starredOnly) MaterialTheme.colorScheme.onPrimary else LocalWhistleColors.current.star, modifier = Modifier.size(18.dp)) },
                 modifier = Modifier.testTag("chip-starred"),
             )
         }
         items(state.rhythms) { rhythm ->
-            FilterChip(
+            PillChip(
                 selected = state.filters.rhythm == rhythm,
                 onClick = { onRhythm(rhythm) },
                 label = { Text(rhythm.capitalized()) },
@@ -400,67 +439,91 @@ private fun SelectionBar(count: Int, onClear: () -> Unit, onSelectAll: () -> Uni
 }
 
 /**
- * A single line of the tune list. Deliberately plain: no Material3 `ListItem`,
- * no shape or container work, one ripple, so composing a row while scrolling
+ * A tune in the list: a card with the title, a rhythm badge and the key and
+ * whistle. Deliberately plain: no Material3 `ListItem` or `Card`, just a
+ * background, a border and one ripple, so composing a row while scrolling
  * stays cheap (this list is the main screen; debug builds feel every
- * composable). The divider belongs to the row so the list holds one item per
- * tune. [selected] is null outside selection mode; in it, a checkbox replaces
- * the star.
+ * composable). [selected] is null outside selection mode; in it, a checkbox
+ * replaces the star.
  */
 @Composable
 private fun TuneRow(tune: Tune, selected: Boolean?, onClick: () -> Unit, onLongClick: () -> Unit, onStar: () -> Unit) {
     val details = listOfNotNull(
-        tune.rhythm?.capitalized(),
         tune.key,
         tune.whistle?.let { stringResource(R.string.tune_whistle, whistleLabel(it)) },
     ).joinToString(" · ")
+    val colors = MaterialTheme.colorScheme
+    val shape = MaterialTheme.shapes.large
     val selection = when (selected) {
         null -> Modifier
-        true -> Modifier.background(MaterialTheme.colorScheme.secondaryContainer).semantics { toggleableState = ToggleableState.On }
+        true -> Modifier.semantics { toggleableState = ToggleableState.On }
         false -> Modifier.semantics { toggleableState = ToggleableState.Off }
     }
-    Column(
+    Row(
         Modifier
             .fillMaxWidth()
+            .clip(shape)
+            .background(if (selected == true) colors.primaryContainer else colors.surfaceContainerLow)
+            .border(1.dp, if (selected == true) colors.primary else colors.outlineVariant, shape)
             .then(selection)
             .combinedClickable(onLongClick = onLongClick, onClick = onClick)
             .testTag("tune-${tune.id}"),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f).padding(start = 16.dp, top = 12.dp, bottom = 12.dp)) {
-                Text(tune.title, style = MaterialTheme.typography.bodyLarge)
+        Column(
+            Modifier.weight(1f).padding(start = 16.dp, top = 14.dp, bottom = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                tune.title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                tune.rhythm?.let { rhythm ->
+                    Text(
+                        rhythm.capitalized(),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colors.onPrimaryContainer,
+                        modifier = Modifier.background(colors.primaryContainer, RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 2.dp),
+                    )
+                }
                 if (details.isNotEmpty()) {
                     Text(
                         details,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            if (selected != null) {
-                // The row's own click toggles and carries the state; the checkbox only shows it.
-                Checkbox(
-                    checked = selected,
-                    onCheckedChange = null,
-                    modifier = Modifier.minimumInteractiveComponentSize().testTag("select-${tune.id}"),
-                )
-            } else {
-                Box(
-                    Modifier
-                        .minimumInteractiveComponentSize()
-                        .clickable(onClick = onStar, role = Role.Button)
-                        .testTag("star-${tune.id}"),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        if (tune.starred) Icons.Filled.Star else Icons.Outlined.StarOutline,
-                        contentDescription = stringResource(if (tune.starred) R.string.unstar else R.string.star),
-                        tint = if (tune.starred) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = colors.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
         }
-        HorizontalDivider()
+        if (selected != null) {
+            // The row's own click toggles and carries the state; the checkbox only shows it.
+            Checkbox(
+                checked = selected,
+                onCheckedChange = null,
+                modifier = Modifier.minimumInteractiveComponentSize().testTag("select-${tune.id}"),
+            )
+        } else {
+            Box(
+                Modifier
+                    .minimumInteractiveComponentSize()
+                    .clickable(onClick = onStar, role = Role.Button)
+                    .testTag("star-${tune.id}"),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    if (tune.starred) Icons.Filled.Star else Icons.Outlined.StarOutline,
+                    contentDescription = stringResource(if (tune.starred) R.string.unstar else R.string.star),
+                    tint = if (tune.starred) LocalWhistleColors.current.star else colors.outline,
+                )
+            }
+        }
     }
 }
 
@@ -471,7 +534,7 @@ private fun EmptyLibrary(busy: Boolean, onAddStarterSet: () -> Unit, onImport: (
         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(stringResource(R.string.empty_title), style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+        Text(stringResource(R.string.empty_title), style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
         Text(stringResource(R.string.empty_body), style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
         Button(onClick = onAddStarterSet, enabled = !busy, modifier = Modifier.testTag("addStarterSet")) {
             Text(stringResource(R.string.add_starter_set))

@@ -1,17 +1,17 @@
 :root {
     color-scheme: light dark;
-    --ink: #11181c;
+    --ink: #141a16;
     --paper: #ffffff;
-    --highlight: #0a7ea4;
-    --warning: #c0392b;
+    --highlight: #1e8a5c;
+    --warning: #a33a1e;
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
-        --ink: #ecedee;
-        --paper: #151718;
-        --highlight: #1da1ff;
-        --warning: #ff6b5b;
+        --ink: #e8ece8;
+        --paper: #181d1a;
+        --highlight: #3fc48c;
+        --warning: #ff8a70;
     }
 }
 

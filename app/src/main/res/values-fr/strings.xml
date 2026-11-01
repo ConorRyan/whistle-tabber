@@ -105,6 +105,7 @@
     <string name="written_for">Écrit pour</string>
     <string name="written_for_help">Le whistle pour lequel les doigtés de cet air sont écrits. Il est enregistré dans l\'ABC de l\'air, sous la même forme que dans les ABC Tools d\'Eskin.</string>
     <string name="written_for_auto">D\'après la tonalité (%1$s)</string>
+    <string name="written_for_chip">Pour whistle en %1$s</string>
     <string name="key_change_help">Réécrit les notes, les altérations, les accords et la ligne K:. Vous pouvez prévisualiser le résultat avant d\'enregistrer.</string>
     <string name="preview_in">Aperçu en %1$s</string>
     <string name="save_copy">Enregistrer une copie</string>
@@ -174,6 +175,7 @@
 
     <string name="tap_write">Écrire avec les doigtés</string>
     <string name="action_edit_abc">Modifier l\'ABC</string>
+    <string name="action_edit_fingerings">Modifier les doigtés</string>
     <string name="tap_whistle">Whistle pour lequel l\'air est écrit</string>
     <string name="tap_empty">Touchez un doigté ci-dessous pour ajouter une note. Toutes les notes ont la même durée, quatre par mesure, jusqu\'à ce que vous tapiez le rythme.</string>
     <string name="tap_octave_low">Grave</string>
