@@ -260,10 +260,11 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     `TabTune.toAbc` of the images' combined reading (`TabTune.combine`) as
     the editor's draft. Nothing is saved on this screen.
   - `tap/`: "Write with fingerings" (Library menu, `TapEditorRoute(id?)`):
-    title, a strip of the tapped diagrams with a cursor, the written-for
-    whistle (a "For X whistle" chip like the tune screen's, picked in a
-    sheet), and a palette of fingerings (octave chips, the scale plus C
-    natural, half-hole notes under "More"), rest, delete and cursor keys. No
+    the title and the controls (the written-for whistle, a "For X whistle"
+    chip like the tune screen's picked in a sheet, and the rhythm buttons)
+    on top, then the strip of tapped diagrams with its cursor, pinned at the
+    bottom just over the palette of fingerings (octave chips, the scale plus
+    C natural, half-hole notes under "More"), rest, delete and cursor keys. No
     staff preview: the strip is the whole display, and a tap sounds the note
     through `audio/TapAudio`. Draft (rhythm included) in `SavedStateHandle`; saves
     `TapTune.toAbc`. "Tap the rhythm" opens the rhythm

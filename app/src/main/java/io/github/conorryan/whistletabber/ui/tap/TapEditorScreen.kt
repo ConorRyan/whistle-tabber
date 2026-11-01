@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
+
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -278,14 +280,15 @@ fun TapEditorContent(
                     ),
                     modifier = Modifier.fillMaxWidth().testTag("title"),
                 )
-                val highlight = state.rhythm?.takeIf { it.phase == RhythmPhase.TAPPING }?.let { panel ->
-                    draft.notes.indices.filter { draft.notes[it] != null }.getOrNull(panel.next)
-                }
-                SectionCard(Modifier.fillMaxWidth()) {
-                    Box(Modifier.padding(12.dp)) {
-                        NoteStrip(draft.notes, state.cursor, state.settings.cNatural, onCursor, highlight, draft.timing)
-                    }
-                }
+                // The tune's whistle: a chip like the tune screen's, picked in a sheet.
+                HeaderChip(
+                    text = stringResource(R.string.written_for_chip, whistleLabel(draft.whistle)),
+                    onClick = { whistleSheet = true },
+                    container = MaterialTheme.colorScheme.surfaceContainerLow,
+                    content = MaterialTheme.colorScheme.onSurface,
+                    border = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.testTag("whistleChip"),
+                )
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilledTonalButton(
                         onClick = onOpenRhythm,
@@ -309,15 +312,26 @@ fun TapEditorContent(
                         }
                     }
                 }
-                // The tune's whistle: a chip like the tune screen's, picked in a sheet.
-                HeaderChip(
-                    text = stringResource(R.string.written_for_chip, whistleLabel(draft.whistle)),
-                    onClick = { whistleSheet = true },
-                    container = MaterialTheme.colorScheme.surfaceContainerLow,
-                    content = MaterialTheme.colorScheme.onSurface,
-                    border = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.testTag("whistleChip"),
-                )
+            }
+            // The notes sit at the bottom, over the palette: that's where the
+            // fingerings land. A long tune scrolls inside its card.
+            val highlight = state.rhythm?.takeIf { it.phase == RhythmPhase.TAPPING }?.let { panel ->
+                draft.notes.indices.filter { draft.notes[it] != null }.getOrNull(panel.next)
+            }
+            // Weighted like the controls above, so the palette can never
+            // squeeze either of them away on a short screen.
+            SectionCard(
+                Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
+                    .heightIn(max = 220.dp)
+                    .verticalScroll(rememberScrollState())
+                    .testTag("noteStripCard"),
+            ) {
+                Box(Modifier.padding(12.dp)) {
+                    NoteStrip(draft.notes, state.cursor, state.settings.cNatural, onCursor, highlight, draft.timing)
+                }
             }
             val panel = state.rhythm
             // The palette or the rhythm pad sits in a sheet-like panel at the bottom.

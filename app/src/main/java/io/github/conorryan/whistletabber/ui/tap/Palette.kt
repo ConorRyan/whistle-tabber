@@ -84,7 +84,7 @@ internal fun Palette(
             // An icon, not words, so the octaves keep one line on a narrow phone.
             IconToggleButton(checked = more, onCheckedChange = { more = it }, modifier = Modifier.testTag("more")) {
                 Icon(
-                    if (more) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                    if (more) Icons.Filled.ExpandMore else Icons.Filled.ExpandLess,
                     contentDescription = stringResource(if (more) R.string.tap_fewer else R.string.tap_more),
                     tint = MaterialTheme.colorScheme.primary,
                 )
