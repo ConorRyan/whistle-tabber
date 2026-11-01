@@ -19,7 +19,13 @@ setup is already done for 1.0.0: the release keystore exists.
 1. **Bump the version** in `app/build.gradle.kts`: `versionName` (e.g.
    `1.0.1`) and `versionCode` (strictly increasing, e.g. `2`).
 
-2. **Commit, tag, push:**
+2. **Add release notes** at
+   `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` and
+   `fastlane/metadata/android/fr-FR/changelogs/<versionCode>.txt`
+   (max 500 characters each). F-Droid reads the changelog from the source at
+   the tag, keyed by `versionCode`.
+
+3. **Commit, tag, push:**
 
    ```bash
    git add -A && git commit -m "Release <versionName>"
@@ -31,7 +37,7 @@ setup is already done for 1.0.0: the release keystore exists.
    `Binaries:` URL pattern planned for fdroiddata,
    `releases/download/v%v/whistle-tabber.%v.apk`.
 
-3. **Check the build is reproducible.** Two clean builds from the same tree
+4. **Check the build is reproducible.** Two clean builds from the same tree
    must be byte-identical, or F-Droid's signature-copy verification (and any
    future reproducible-build claim) fails:
 
@@ -46,7 +52,7 @@ setup is already done for 1.0.0: the release keystore exists.
    If the two differ, fix determinism before releasing (minification
    configurations and embedded timestamps are the usual culprits).
 
-4. **Sign the APK** with the release key:
+5. **Sign the APK** with the release key:
 
    ```bash
    ~/.local/share/android-sdk/build-tools/<version>/apksigner sign \
@@ -67,16 +73,17 @@ setup is already done for 1.0.0: the release keystore exists.
 
    Verify the signature with `apksigner verify` on the output file.
 
-5. **Create the GitHub release** on the tag and upload
+6. **Create the GitHub release** on the tag and upload
    `whistle-tabber.<versionName>.apk` as a release asset. The filename must
-   follow the pattern exactly: `whistle-tabber.<versionName>.apk`.
+   follow the pattern exactly: `whistle-tabber.<versionName>.apk`. Use the
+   en-US changelog file as the release notes.
 
 ## F-Droid (planned, see docs/ROADMAP.md S6)
 
 When the fdroiddata recipe lands, the recipe gets `Binaries:` +
 `AllowedAPKSigningKeys` and the reference APK must be built by fdroidserver
 (`fdroid build io.github.conorryan.whistletabber`), not plain Gradle, from the
-exact final release commit; step 3 and 4 above then sign the fdroid-built
+exact final release commit; steps 4 and 5 above then sign the fdroid-built
 unsigned APK instead. The signing certificate's SHA-256 fingerprint (public,
 it is embedded in every signed APK), lowercase without colons, is
 `885504b6eb73027326b0b191b8fc477765bbd02946f26747cee4c0c3667675e6`.

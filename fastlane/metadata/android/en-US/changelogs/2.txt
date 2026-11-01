@@ -1,0 +1,4 @@
+Write with fingerings: a tap editor for people who don't read ABC. Tap
+fingering diagrams from a palette to build a tune, with a live rendered
+preview and playback; tap the rhythm over a metronome with a count-in bar.
+New low-latency audio engine, and a new launcher icon.

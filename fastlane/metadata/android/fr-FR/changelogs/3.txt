@@ -1,0 +1,6 @@
+Menus de la bibliothèque et de l'écran d'air, son de whistle plus doux, et
+scans multi-images. Les boutons + et stylo se déploient en menus d'ajout et
+d'édition, le collage depuis le presse-papiers ajoute des fichiers ABC, du
+texte et des images de tablature, plusieurs captures d'une même tablature
+ajoutent leurs notes dans l'ordre, et la lecture ne souffle plus au début
+de chaque note.

@@ -1,0 +1,5 @@
+Première version : diagrammes de doigtés de tin whistle pour des airs en
+notation ABC, avec lecture. Bibliothèque avec recherche, filtres
+rythmiques et favoris, plus un jeu de dix airs connus ; import et export
+ABC ; transposition pour votre whistle avec aperçu du changement de ton ;
+lecture de tablatures depuis une image. En français et en anglais.

@@ -1,0 +1,5 @@
+Library and tune screen menus, a friendlier whistle sound, and
+multi-image scans. The + and pen buttons expand into speed dials of ways
+to add and edit a tune, paste from the clipboard adds ABC files, text and
+tab images, several screenshots of one tab append their notes in order,
+and playback no longer has a breath chiff at the start of every note.

@@ -1,0 +1,5 @@
+First release. Tin whistle fingering diagrams for tunes written in ABC
+notation, played back. Library with search, rhythm filters and starred
+tunes, plus a starter set of ten well-known tunes; ABC import and export;
+transposition for your whistle with key-change preview; read whistle tab
+from an image. English and French.

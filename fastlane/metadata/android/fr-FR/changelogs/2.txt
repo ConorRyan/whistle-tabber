@@ -1,0 +1,5 @@
+Écrire avec les doigtés : un éditeur par tape pour ceux qui ne lisent pas
+l'ABC. Tapez les diagrammes de doigtés depuis une palette pour construire
+un air, avec aperçu et lecture en direct ; tapez le rythme sur un
+métronome avec une mesure de décompte. Nouveau moteur audio à faible
+latence, et nouvelle icône de lancement.
