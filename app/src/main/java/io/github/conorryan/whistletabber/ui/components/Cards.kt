@@ -75,34 +75,44 @@ fun GroupLabel(text: String, modifier: Modifier = Modifier) {
     )
 }
 
-/** A small button like the tune header's chips: a label and a drop-down arrow. */
+/**
+ * A small button like the tune header's chips: a label and a drop-down arrow.
+ * [onClick] null: a plain chip that only shows the label.
+ */
 @Composable
 fun HeaderChip(
     text: String,
-    onClick: () -> Unit,
+    onClick: (() -> Unit)?,
     container: Color,
     content: Color,
     border: Color,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
-    Surface(
-        onClick = onClick,
-        enabled = enabled,
-        shape = MaterialTheme.shapes.extraSmall,
-        color = container,
-        contentColor = content,
-        border = BorderStroke(1.dp, border),
-        modifier = modifier,
-    ) {
+    val shape = MaterialTheme.shapes.extraSmall
+    val borderStroke = BorderStroke(1.dp, border)
+    val label: @Composable () -> Unit = {
         Row(
             Modifier.padding(start = 10.dp, end = 6.dp, top = 5.dp, bottom = 5.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             Text(text, style = MaterialTheme.typography.labelLarge)
-            if (enabled) Icon(Icons.Filled.ArrowDropDown, contentDescription = null, modifier = Modifier.size(18.dp))
+            if (onClick != null && enabled) Icon(Icons.Filled.ArrowDropDown, contentDescription = null, modifier = Modifier.size(18.dp))
         }
+    }
+    if (onClick == null) {
+        Surface(shape = shape, color = container, contentColor = content, border = borderStroke, modifier = modifier) { label() }
+    } else {
+        Surface(
+            onClick = onClick,
+            enabled = enabled,
+            shape = shape,
+            color = container,
+            contentColor = content,
+            border = borderStroke,
+            modifier = modifier,
+        ) { label() }
     }
 }
 

@@ -83,18 +83,6 @@ class TuneRepositoryTest {
     }
 
     @Test
-    fun `setWhistle writes the directive into the ABC`() = runBlocking {
-        val id = repo.save(tune("A"))
-        repo.setWhistle(id, WhistleKey.LOW_D)
-        val t = repo.get(id)!!
-        assertEquals(WhistleKey.LOW_D, t.whistle)
-        assertEquals(WhistleKey.LOW_D, AbcBook.whistleOf(t.abc))
-        repo.setWhistle(id, null)
-        assertNull(AbcBook.whistleOf(repo.get(id)!!.abc))
-        assertEquals(WhistleKey.D, repo.get(id)!!.whistle) // back to the key's suggestion
-    }
-
-    @Test
     fun `tunes are sorted by title ignoring case, accents and a leading the`() = runBlocking {
         for (title in listOf("the Wind", "Ál Bán", "banshee", "Abbey")) repo.save(tune(title))
         assertEquals(listOf("Abbey", "Ál Bán", "banshee", "the Wind"), repo.tunes.first().map { it.title })

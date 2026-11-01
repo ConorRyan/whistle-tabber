@@ -15,8 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -42,7 +40,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
@@ -81,7 +78,6 @@ import io.github.conorryan.whistletabber.render.TuneRenderer
 import io.github.conorryan.whistletabber.ui.components.HeaderChip
 import io.github.conorryan.whistletabber.ui.components.ScreenTitle
 import io.github.conorryan.whistletabber.ui.components.whistleLabel
-import io.github.conorryan.whistletabber.ui.settings.WrittenForSection
 import io.github.conorryan.whistletabber.ui.theme.LocalWhistleColors
 import io.github.conorryan.whistletabber.web.TuneWebController
 import io.github.conorryan.whistletabber.web.TuneWebViewHost
@@ -101,7 +97,6 @@ fun TuneScreen(
     val renderState by vm.renderState.collectAsStateWithLifecycle()
     val controller = remember { TuneWebController(context) }
     val snackbar = remember { SnackbarHostState() }
-    var writtenForSheet by remember { mutableStateOf(false) }
     var keyDialog by remember { mutableStateOf(false) }
     var editOpen by remember { mutableStateOf(false) }
 
@@ -188,7 +183,6 @@ fun TuneScreen(
                     tune = tune,
                     tuneWhistle = state.tuneWhistle,
                     onKey = { keyDialog = true },
-                    onWrittenFor = { writtenForSheet = true },
                 )
             }
             state.preview?.let { preview ->
@@ -213,20 +207,6 @@ fun TuneScreen(
         }
     }
 
-    if (writtenForSheet && tune != null) {
-        ModalBottomSheet(onDismissRequest = { writtenForSheet = false }) {
-            Column(
-                Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
-            ) {
-                WrittenForSection(
-                    explicit = tune.explicitWhistle,
-                    suggested = AbcBook.suggestWhistle(tune.key) ?: WhistleKey.DEFAULT,
-                    onSelect = vm::setTuneWhistle,
-                )
-            }
-        }
-    }
-
     if (keyDialog && tune != null) {
         KeyDialog(
             tune = tune,
@@ -238,8 +218,8 @@ fun TuneScreen(
 
 /**
  * The tune's name in big type, then its rhythm and meter, its key (a tap
- * changes it) and the whistle it is written for (a tap picks another).
- * My whistle stays in Settings.
+ * changes it) and the whistle it is written for (shown, chosen in the
+ * editor). My whistle stays in Settings.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -247,7 +227,6 @@ private fun TuneHeader(
     tune: Tune,
     tuneWhistle: WhistleKey,
     onKey: () -> Unit,
-    onWrittenFor: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
     ScreenTitle(tune.title, Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
@@ -279,9 +258,10 @@ private fun TuneHeader(
                     modifier = Modifier.testTag("keyChip"),
                 )
             }
+            // Not a button: the whistle is chosen in the editor.
             HeaderChip(
                 text = stringResource(R.string.written_for_chip, whistleLabel(tuneWhistle)),
-                onClick = onWrittenFor,
+                onClick = null,
                 container = colors.surfaceContainerLow,
                 content = colors.onSurface,
                 border = colors.outline,

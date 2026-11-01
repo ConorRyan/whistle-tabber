@@ -93,12 +93,6 @@ class TuneRepository(
 
     suspend fun setStarred(id: Long, starred: Boolean) = dao.setStarred(id, starred)
 
-    /** Sets or clears the tune's `%whistle_tab_key` directive. */
-    suspend fun setWhistle(id: Long, whistle: WhistleKey?) {
-        val tune = dao.get(id) ?: return
-        save(AbcBook.withWhistle(tune.abc, whistle), id)
-    }
-
     /**
      * Deletes the tunes and returns those that existed, so the caller can
      * offer [restore]. One transaction.

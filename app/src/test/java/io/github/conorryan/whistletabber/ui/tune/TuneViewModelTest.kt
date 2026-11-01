@@ -168,21 +168,6 @@ class TuneViewModelTest {
     }
 
     @Test
-    fun `setting the tune's whistle writes the directive and re-renders`() = runTest {
-        graph.store.setMode(TransposeMode.SAME_FINGERINGS)
-        val id = saved()
-        val (vm, page) = bound(id, editor(backgroundScope))
-        page.commands.test {
-            awaitItem()
-            vm.setTuneWhistle(WhistleKey.C)
-            val render = awaitItem() as BridgeCommand.Render
-            assertEquals(WhistleKey.C, AbcBook.whistleOf(render.abc))
-            assertEquals(14, render.midiTranspose)
-        }
-        assertEquals(WhistleKey.C, graph.repository.get(id)!!.whistle)
-    }
-
-    @Test
     fun `key change previews, then saves a copy and opens it`() = runTest {
         val id = saved()
         turbineScope {

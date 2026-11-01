@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -44,7 +45,7 @@ import io.github.conorryan.whistletabber.music.WhistleKey
 import io.github.conorryan.whistletabber.R
 import io.github.conorryan.whistletabber.ui.components.HeaderChip
 import io.github.conorryan.whistletabber.ui.components.whistleLabel
-import io.github.conorryan.whistletabber.ui.settings.WrittenForSection
+import io.github.conorryan.whistletabber.ui.settings.WhistleChips
 import io.github.conorryan.whistletabber.web.TuneWebController
 import io.github.conorryan.whistletabber.web.TuneWebViewHost
 
@@ -182,7 +183,6 @@ fun EditorContent(
                     explicit = state.explicitWhistle,
                     suggested = state.suggestedWhistle ?: WhistleKey.DEFAULT,
                     onSelect = onWhistle,
-                    tagPrefix = "editorWhistle",
                 )
             }
         }
@@ -202,4 +202,21 @@ fun EditorContent(
             },
         )
     }
+}
+
+/**
+ * The tune's own whistle in the editor: an explicit `%whistle_tab_key`
+ * directive, or "from the key" ([suggested]). A pick writes it into the text.
+ */
+@Composable
+private fun WrittenForSection(explicit: WhistleKey?, suggested: WhistleKey, onSelect: (WhistleKey?) -> Unit) {
+    Text(stringResource(R.string.written_for), style = MaterialTheme.typography.titleMedium)
+    FilterChip(
+        selected = explicit == null,
+        onClick = { onSelect(null) },
+        label = { Text(stringResource(R.string.written_for_auto, whistleLabel(suggested))) },
+        modifier = Modifier.testTag("editorWhistle-auto"),
+    )
+    WhistleChips(explicit, onSelect, "editorWhistle")
+    Text(stringResource(R.string.written_for_help), style = MaterialTheme.typography.bodySmall)
 }

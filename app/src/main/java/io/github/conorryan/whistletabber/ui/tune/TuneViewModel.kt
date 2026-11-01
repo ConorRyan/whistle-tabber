@@ -102,9 +102,6 @@ class TuneViewModel(
 
     fun dismissError() = renderer.dismissError()
 
-    /** Writes (or with null, removes) the tune's own whistle directive. */
-    fun setTuneWhistle(whistle: WhistleKey?) = viewModelScope.launch { repository.setWhistle(id, whistle) }
-
     fun setStarred(starred: Boolean) = viewModelScope.launch { repository.setStarred(id, starred) }
 
     /** Previews the tune rewritten with [tonic] as its key note; the page does the rewriting. */
