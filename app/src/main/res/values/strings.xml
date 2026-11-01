@@ -107,7 +107,6 @@
     <string name="editor_new_title">New tune</string>
     <string name="editor_edit_title">Edit tune</string>
     <string name="editor_abc_label">ABC</string>
-    <string name="editor_preview">Preview</string>
     <string name="problem_no_title">Add a title line, e.g. T:The Kesh</string>
     <string name="problem_no_key">Add a key line, e.g. K:G</string>
     <string name="discard_title">Discard changes?</string>

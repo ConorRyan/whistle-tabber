@@ -79,7 +79,7 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     render dedupe (same text and transpose only re-draws diagrams), the
     notes → `FingeringEngine` → `DiagramSpec` pipeline, `transposeText`
     request/reply matching (one outstanding request, stale steps dropped),
-    optional debounce (the editor), playback mirroring, warnings and errors.
+    optional debounce (the tap editor), playback mirroring, warnings and errors.
     Each ViewModel owns one; a screen `attach`es its controller, and a
     re-attach re-shows the last request to the fresh page.
 - `music/` — pure Kotlin music logic.
@@ -245,12 +245,12 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     ViewModel feeds `show(abc, midiTranspose, fingerings)` on every change
     and lets the renderer dedupe. Key change: `KeyChangePreview.start` →
     preview render → save as a copy (default) or replace.
-  - `editor/`: draft in `SavedStateHandle`, preview rendered by its
-    `TuneRenderer` (debounced 400 ms), save blocked without `T:`/`K:`. A new
-    tune may start from a given draft (`initialText`, from the scan screen),
-    unsaved until the user saves. A "For X whistle" chip opens the whistle
-    picker, writing the tune's own `%whistle_tab_key` directive into the text
-    (the tune screen only shows the whistle).
+  - `editor/`: draft in `SavedStateHandle`, save blocked without `T:`/`K:`. A
+    new tune may start from a given draft (`initialText`, from the scan
+    screen), unsaved until the user saves. A "For X whistle" chip opens the
+    whistle picker, writing the tune's own `%whistle_tab_key` directive into
+    the text (the tune screen only shows the whistle). No page preview: the
+    editor is text only.
   - `scan/`: "Read tab from an image" (Library menu, `ScanTabRoute(image?)`;
     a pasted clipboard image is read on entry instead of opening the picker,
     and a Paste button adds one too): the photo picker

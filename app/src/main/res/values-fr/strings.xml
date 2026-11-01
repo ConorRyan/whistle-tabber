@@ -115,7 +115,6 @@
     <string name="editor_new_title">Nouvel air</string>
     <string name="editor_edit_title">Modifier l\'air</string>
     <string name="editor_abc_label">ABC</string>
-    <string name="editor_preview">Aperçu</string>
     <string name="problem_no_title">Ajoutez une ligne de titre, par ex.\u00A0T:The Kesh</string>
     <string name="problem_no_key">Ajoutez une ligne de tonalité, par ex.\u00A0K:G</string>
     <string name="discard_title">Abandonner les modifications\u00A0?</string>

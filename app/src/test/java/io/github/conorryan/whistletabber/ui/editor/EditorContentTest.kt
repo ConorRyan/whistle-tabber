@@ -40,20 +40,18 @@ class EditorContentTest {
     }
 
     @Test
-    fun `a valid tune can be saved and shows the page's warnings`() {
+    fun `a valid tune can be saved`() {
         var saved = false
         compose.setContent {
             WhistleTabberTheme {
                 EditorContent(
                     EditorUiState(text = "X:1\nT:A\nK:D\n"),
-                    warnings = listOf("Unknown decoration"),
                     isNew = false,
                     onSave = { saved = true },
                 )
             }
         }
         compose.onNodeWithText("Edit tune").assertIsDisplayed()
-        compose.onNodeWithText("Unknown decoration").assertIsDisplayed()
         compose.onNodeWithTag("save").assertIsEnabled().performClick()
         assertTrue(saved)
     }

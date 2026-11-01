@@ -2,22 +2,16 @@ package io.github.conorryan.whistletabber.ui.editor
 
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
-import io.github.conorryan.whistletabber.render.FakeTunePage
 import io.github.conorryan.whistletabber.music.AbcBook
 import io.github.conorryan.whistletabber.music.AbcProblem
 import io.github.conorryan.whistletabber.music.WhistleKey
 import io.github.conorryan.whistletabber.ui.TestGraph
-import io.github.conorryan.whistletabber.web.BridgeCommand
-import io.github.conorryan.whistletabber.web.BridgeEvent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -59,30 +53,6 @@ class EditorViewModelTest {
     private fun vm(id: Long?, saved: SavedStateHandle = SavedStateHandle()) =
         EditorViewModel(id, saved, graph.repository)
 
-    /** A ViewModel with a fake page bound, as the screen would bind the WebView. */
-    private fun bound(id: Long?): Pair<EditorViewModel, FakeTunePage> {
-        val page = FakeTunePage()
-        return vm(id).also { it.bindPage(page) } to page
-    }
-
-    @Test
-    fun `the preview renders 400 ms after typing stops`() = runTest {
-        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
-        val (vm, page) = bound(null)
-        page.commands.test {
-            runCurrent()
-            advanceTimeBy(401)
-            assertEquals(BridgeCommand.Render(EditorViewModel.TEMPLATE), awaitItem())
-            vm.setText("X:1\nT:A\nK:D\nD|")
-            advanceTimeBy(200)
-            vm.setText("X:1\nT:AB\nK:D\nD|")
-            advanceTimeBy(399)
-            expectNoEvents()
-            advanceTimeBy(2)
-            assertEquals(BridgeCommand.Render("X:1\nT:AB\nK:D\nD|"), awaitItem())
-        }
-    }
-
     @Test
     fun `validation needs a title and a key`() = runTest {
         Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
@@ -95,14 +65,6 @@ class EditorViewModelTest {
         assertEquals(emptyList<AbcProblem>(), vm.state.value.problems)
         assertTrue(vm.state.value.canSave)
         assertTrue(vm.state.value.dirty)
-    }
-
-    @Test
-    fun `warnings come from the preview render`() = runTest {
-        Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
-        val (vm, page) = bound(null)
-        page.emit(BridgeEvent.Rendered(emptyList(), listOf("Unknown decoration")))
-        assertEquals(listOf("Unknown decoration"), vm.renderState.value.warnings)
     }
 
     @Test

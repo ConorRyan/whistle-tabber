@@ -26,14 +26,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -46,20 +44,11 @@ import io.github.conorryan.whistletabber.R
 import io.github.conorryan.whistletabber.ui.components.HeaderChip
 import io.github.conorryan.whistletabber.ui.components.whistleLabel
 import io.github.conorryan.whistletabber.ui.settings.WhistleChips
-import io.github.conorryan.whistletabber.web.TuneWebController
-import io.github.conorryan.whistletabber.web.TuneWebViewHost
 
 @Composable
 fun EditorScreen(vm: EditorViewModel, isNew: Boolean, onClose: () -> Unit, onSaved: (Long) -> Unit) {
-    val context = LocalContext.current
     val state by vm.state.collectAsStateWithLifecycle()
-    val renderState by vm.renderState.collectAsStateWithLifecycle()
-    val controller = remember { TuneWebController(context) }
 
-    DisposableEffect(controller) {
-        vm.bindPage(controller)
-        onDispose { controller.destroy() }
-    }
     LaunchedEffect(vm) {
         vm.effects.collect { effect ->
             when (effect) {
@@ -70,28 +59,24 @@ fun EditorScreen(vm: EditorViewModel, isNew: Boolean, onClose: () -> Unit, onSav
 
     EditorContent(
         state = state,
-        warnings = renderState.warnings,
         isNew = isNew,
         onText = vm::setText,
         onWhistle = vm::setWhistle,
         onSave = vm::save,
         onClose = onClose,
-        preview = { modifier -> TuneWebViewHost(controller, modifier) },
     )
 }
 
-/** Stateless editor UI; [preview] draws the live preview (a WebView in the app). */
+/** Stateless editor UI. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditorContent(
     state: EditorUiState,
-    warnings: List<String> = emptyList(),
     isNew: Boolean,
     onText: (String) -> Unit = {},
     onWhistle: (WhistleKey?) -> Unit = {},
     onSave: () -> Unit = {},
     onClose: () -> Unit = {},
-    preview: @Composable (Modifier) -> Unit = {},
 ) {
     var confirmDiscard by remember { mutableStateOf(false) }
     var whistleSheet by remember { mutableStateOf(false) }
@@ -156,21 +141,7 @@ fun EditorContent(
                         modifier = Modifier.testTag("problem-${problem.name}"),
                     )
                 }
-                for ((i, warning) in warnings.withIndex()) {
-                    Text(
-                        warning,
-                        color = MaterialTheme.colorScheme.tertiary,
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.testTag("warning-$i"),
-                    )
-                }
             }
-            Text(
-                stringResource(R.string.editor_preview),
-                style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier.padding(horizontal = 16.dp),
-            )
-            preview(Modifier.fillMaxWidth().weight(1f).testTag("previewWebView"))
         }
     }
 

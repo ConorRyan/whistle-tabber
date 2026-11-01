@@ -8,8 +8,6 @@ import io.github.conorryan.whistletabber.music.AbcBook
 import io.github.conorryan.whistletabber.music.AbcProblem
 import io.github.conorryan.whistletabber.music.WhistleKey
 import io.github.conorryan.whistletabber.music.problems
-import io.github.conorryan.whistletabber.render.TunePage
-import io.github.conorryan.whistletabber.render.TuneRenderer
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,24 +45,14 @@ sealed interface EditorEffect {
 /**
  * Edits one tune's ABC ([id] null: a new tune from [initialText], else
  * [TEMPLATE]; a new tune from [initialText] starts unsaved). The draft
- * lives in [SavedStateHandle], so it survives process death; the preview is
- * rendered by the [TuneRenderer] this ViewModel owns, [debounceMs] after
- * typing stops. The screen attaches its WebView with [bindPage].
+ * lives in [SavedStateHandle], so it survives process death.
  */
 class EditorViewModel(
     private val id: Long?,
     private val savedState: SavedStateHandle,
     private val repository: TuneRepository,
     private val initialText: String? = null,
-    debounceMs: Long = 400,
 ) : ViewModel() {
-
-    private val renderer = TuneRenderer(viewModelScope, debounceMs)
-
-    /** Parse warnings from the last preview render. */
-    val renderState: StateFlow<TuneRenderer.RendererState> = renderer.state
-
-    fun bindPage(page: TunePage) = renderer.attach(page)
 
     private val _state = MutableStateFlow(EditorUiState())
     val state: StateFlow<EditorUiState> = _state.asStateFlow()
@@ -97,7 +85,6 @@ class EditorViewModel(
                 suggestedWhistle = AbcBook.suggestWhistle(headers.key),
             )
         }
-        renderer.show(TuneRenderer.RenderRequest(text))
     }
 
     /** Picks the whistle the tune is written for: [whistle] null removes the directive. */
