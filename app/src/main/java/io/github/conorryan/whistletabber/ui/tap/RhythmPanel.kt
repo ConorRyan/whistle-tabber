@@ -18,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -47,7 +48,8 @@ internal const val LATENCY_WARNING_MS = 60
 
 /**
  * The rhythm tapper's setup, in a bottom sheet over the editor: tempo, time
- * signature, grid, pad sound, then start or cancel.
+ * signature, grid, triplets (simple meters only), pad sound, then start or
+ * cancel.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -89,6 +91,16 @@ internal fun RhythmSetupSheet(
                     onClick = { onSetup(setup.copy(grid = grid)) },
                     label = { Text(stringResource(label)) },
                     modifier = Modifier.testTag("grid-${grid.name}"),
+                )
+            }
+        }
+        if (!setup.meter.compound) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.rhythm_triplets), style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
+                Switch(
+                    checked = setup.triplets,
+                    onCheckedChange = { onSetup(setup.copy(triplets = it)) },
+                    modifier = Modifier.testTag("triplets"),
                 )
             }
         }

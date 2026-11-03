@@ -389,14 +389,14 @@ class TapEditorViewModelTest {
         assertNull(empty.state.value.rhythm) // a rest has nothing to tap
         empty.tap(0)
         empty.openRhythm()
-        empty.setRhythmSetup(RhythmSetup(bpm = 999, meter = Meter.SIX_EIGHT))
-        assertEquals(RhythmSetup(bpm = RhythmSetup.MAX_BPM, meter = Meter.SIX_EIGHT), empty.state.value.rhythm!!.setup)
+        empty.setRhythmSetup(RhythmSetup(bpm = 999, meter = Meter.SIX_EIGHT, triplets = false))
+        assertEquals(RhythmSetup(bpm = RhythmSetup.MAX_BPM, meter = Meter.SIX_EIGHT, triplets = false), empty.state.value.rhythm!!.setup)
         assertEquals(1, empty.state.value.rhythm!!.total)
 
         val again = vm(saved = saved)
         again.loaded()
         again.openRhythm()
-        assertEquals(RhythmSetup(bpm = RhythmSetup.MAX_BPM, meter = Meter.SIX_EIGHT), again.state.value.rhythm!!.setup)
+        assertEquals(RhythmSetup(bpm = RhythmSetup.MAX_BPM, meter = Meter.SIX_EIGHT, triplets = false), again.state.value.rhythm!!.setup)
     }
 
     @Test

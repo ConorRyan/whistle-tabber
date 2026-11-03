@@ -1,6 +1,7 @@
 package io.github.conorryan.whistletabber.music
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RhythmFitTest {
@@ -93,5 +94,51 @@ class RhythmFitTest {
         val r = RhythmFit.fit(presses(listOf(0, 250)), 4, common)
         assertEquals(listOf(note(0, 1), note(1, 2), note(2, 2), note(3, 2)), r.events)
         assertEquals(listOf(note(0, 2), note(1, 2)), RhythmFit.fit(emptyList(), 2, common).events)
+    }
+
+    /** A quarter, an eighth-note triplet, two quarters, at 4/4 120 (beats at 0, 500, 1000, 1500), shifted by [jitter] and [delay]. */
+    private fun withTriplet(jitter: List<Long> = List(6) { 0L }, delay: Long = 0): List<Press> {
+        val downs = listOf(0L, 500, 667, 833, 1000, 1500).mapIndexed { i, t -> t + jitter[i] + delay }
+        return presses(downs, hold = 150)
+    }
+
+    private fun ticks(r: Rhythm) = r.events.map { it.ticks }
+
+    @Test
+    fun `three presses on thirds of a beat are a triplet`() {
+        assertEquals(listOf(48, 16, 16, 16, 48, 24), ticks(RhythmFit.fit(withTriplet(), 6, common)))
+        // Played a little unevenly, and late.
+        val sloppy = withTriplet(jitter = listOf(20L, -25, 20, -20, 15, -10), delay = 60)
+        assertEquals(listOf(48, 16, 16, 16, 48, 24), ticks(RhythmFit.fit(sloppy, 6, common)))
+    }
+
+    @Test
+    fun `triplets are off when switched off and in compound meters`() {
+        val straight = ticks(RhythmFit.fit(withTriplet(), 6, common.copy(triplets = false)))
+        assertEquals(listOf(48, 24, 24, 24), straight.take(4))
+        // In 6/8 three to a beat is the plain rhythm: eighths.
+        val jig = RhythmSetup(bpm = 120, meter = Meter.SIX_EIGHT)
+        val eighth = 500.0 / 3
+        val r = RhythmFit.fit(presses((0 until 6).map { (it * eighth).toLong() }, hold = 120), 6, jig)
+        assertEquals(List(6) { 24 }, ticks(r))
+    }
+
+    @Test
+    fun `uneven eighths are not mistaken for triplets`() {
+        // Swung eighths, and a dotted eighth with a sixteenth: two presses to a beat.
+        val swung = presses(listOf(0L, 290, 500, 790, 1000, 1290, 1500, 1790), hold = 150)
+        assertTrue(RhythmFit.fit(swung, 8, common).events.none { it.ticks % 3 != 0 })
+        val slow = RhythmSetup(bpm = 60, meter = Meter.FOUR_FOUR, grid = RhythmGrid.SIXTEENTH)
+        val dotted = RhythmFit.fit(listOf(Press(0, 700), Press(750, 950), Press(1000, 1900)), 3, slow)
+        assertEquals(listOf(36, 12, 48), ticks(dotted))
+    }
+
+    @Test
+    fun `a tapped triplet is written as one`() {
+        val draft = TapDraft("T", WhistleKey.D, listOf(0, 2, 4, 5, 7, 9)).withRhythm(RhythmFit.fit(withTriplet(), 6, common), common)
+        val abc = TapTune.toAbc(draft)
+        // Seven eighths: shorter than a bar, so it is written as a pickup.
+        assertTrue(abc, abc.contains("D2 (3EFG"))
+        assertEquals(draft, TapTune.parse(abc))
     }
 }

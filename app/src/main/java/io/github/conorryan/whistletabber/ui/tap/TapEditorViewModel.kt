@@ -178,6 +178,7 @@ class TapEditorViewModel(
         savedState[KEY_BPM] = clamped.bpm
         savedState[KEY_METER] = clamped.meter.name
         savedState[KEY_GRID] = clamped.grid.name
+        savedState[KEY_TRIPLETS] = clamped.triplets
         _state.update { it.copy(rhythm = panel.copy(setup = clamped)) }
     }
 
@@ -282,6 +283,7 @@ class TapEditorViewModel(
             bpm = savedState.get<Int>(KEY_BPM) ?: d.bpm,
             meter = savedState.get<String>(KEY_METER)?.let { n -> Meter.entries.firstOrNull { it.name == n } } ?: d.meter,
             grid = savedState.get<String>(KEY_GRID)?.let { n -> RhythmGrid.entries.firstOrNull { it.name == n } } ?: d.grid,
+            triplets = savedState.get<Boolean>(KEY_TRIPLETS) ?: d.triplets,
         )
     }
 
@@ -331,6 +333,7 @@ class TapEditorViewModel(
         private const val KEY_BPM = "rhythmBpm"
         private const val KEY_METER = "rhythmMeter"
         private const val KEY_GRID = "rhythmGrid"
+        private const val KEY_TRIPLETS = "rhythmTriplets"
         private const val KEY_PAD = "rhythmPadSound"
     }
 }

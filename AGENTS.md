@@ -150,7 +150,11 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     into a `Rhythm` (note/rest lengths in ticks, a short first bar for a
     pickup): latency removed, onsets snapped by position, gaps under a beat
     legato, no legato or rest after a `breaks` note (the tune jumps to a
-    later ending there, `TapTune.breaks`). `TapDraft.withRhythm`
+    later ending there, `TapTune.breaks`). With `RhythmSetup.triplets` (the
+    setup sheet's switch, on by default, simple meters only) three presses
+    that clearly fall on thirds of a quarter (or of an eighth on the
+    sixteenth grid) are a triplet (`TRIPLET_BIAS`); the latency is taken
+    again without them. `TapDraft.withRhythm`
     applies it to a draft.
 - `scan/` — reading whistle tab from images, pure Kotlin except the loader.
   - `GrayImage`: luma per pixel (0 black–255 white), bicubic `scaled`.

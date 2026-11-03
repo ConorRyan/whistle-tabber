@@ -213,6 +213,7 @@
     <string name="rhythm_keep">Garder</string>
     <string name="rhythm_retry">Recommencer</string>
     <string name="rhythm_pad_sound">Son du pavé</string>
+    <string name="rhythm_triplets">Détecter les triolets</string>
     <string name="pad_note">Note</string>
     <string name="pad_tick">Tic</string>
     <string name="pad_silent">Muet</string>

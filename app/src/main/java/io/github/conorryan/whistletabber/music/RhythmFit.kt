@@ -1,9 +1,10 @@
 package io.github.conorryan.whistletabber.music
 
 import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.cos
-import kotlin.math.roundToInt
+import kotlin.math.pow
 import kotlin.math.sin
 
 /**
@@ -62,11 +63,17 @@ enum class RhythmGrid(val perEighth: Int, val unitLength: String) {
     val ticks: Int get() = TICKS_PER_EIGHTH / perEighth
 }
 
-/** What the rhythm is tapped against. */
+/**
+ * What the rhythm is tapped against. With [triplets], three presses that
+ * clearly fall on thirds of a quarter (or of an eighth, on the sixteenth
+ * grid) are a triplet; never in compound meters, where three to a beat is
+ * the plain rhythm.
+ */
 data class RhythmSetup(
     val bpm: Int = 100,
     val meter: Meter = Meter.FOUR_FOUR,
     val grid: RhythmGrid = RhythmGrid.EIGHTH,
+    val triplets: Boolean = true,
 ) {
     val unitsPerBeat: Int get() = meter.eighthsPerBeat * grid.perEighth
     val unitsPerBar: Int get() = meter.beatsPerBar * unitsPerBeat
@@ -107,59 +114,125 @@ object RhythmFit {
     const val MAX_LATENCY_MS = 150.0
 
     /**
+     * How much closer than the grid three presses must be to thirds of a
+     * span to count as a triplet: the triplet's squared error must be under
+     * this share of the plain fit's.
+     */
+    const val TRIPLET_BIAS = 0.5
+
+    /**
      * The rhythm of [noteCount] notes, the first `presses.size` of them tapped
      * as [presses]; notes not reached get one beat each. After a note in
      * [breaks] (the tune jumps on, as to a second ending) the note is as long
      * as it was held, with no rest after it.
      */
     fun fit(presses: List<Press>, noteCount: Int, setup: RhythmSetup, breaks: Set<Int> = emptySet()): Rhythm {
-        val beat = setup.unitsPerBeat
-        val tick = setup.grid.ticks
+        val beat = setup.ticksPerBeat
+        val grid = setup.grid.ticks
         val untimed = (noteCount - presses.size).coerceAtLeast(0)
         val tapped = presses.take(noteCount)
         if (tapped.isEmpty()) {
-            return Rhythm(List(untimed) { Rhythm.Event(it, beat * tick) }, setup.ticksPerBar)
+            return Rhythm(List(untimed) { Rhythm.Event(it, beat) }, setup.ticksPerBar)
         }
 
-        val unitMs = setup.unitMs
-        val latency = latencyUnits(tapped.map { it.downMs / unitMs }, setup)
-        val onsets = mutableListOf<Int>()
-        for (p in tapped) {
-            val q = (p.downMs / unitMs - latency).roundToInt()
-            onsets += if (onsets.isEmpty()) q else maxOf(q, onsets.last() + 1)
+        val tickMs = setup.beatMs / beat
+        val downs = tapped.map { it.downMs / tickMs }
+        // Triplets would pull the latency estimate, so it is taken again without them.
+        var latency = latencyTicks(downs, setup)
+        var snapped = snap(downs.map { it - latency }, setup)
+        if (snapped.span.any { it != 0 }) {
+            latency = latencyTicks(downs.filterIndexed { i, _ -> snapped.span[i] == 0 }.ifEmpty { downs }, setup)
+            snapped = snap(downs.map { it - latency }, setup)
         }
-        val releases = tapped.map { (it.upMs / unitMs - latency).roundToInt() }
+        val onsets = snapped.onsets
+        fun step(i: Int): Int = if (snapped.span[i] != 0) snapped.span[i] / 3 else grid
+        val releases = tapped.mapIndexed { i, p ->
+            val q = step(i)
+            Math.round((p.upMs / tickMs - latency) / q).toInt() * q
+        }
 
         val events = mutableListOf<Rhythm.Event>()
         for (i in onsets.indices) {
             val start = onsets[i]
             val next = onsets.getOrNull(i + 1)
             if (next == null || i in breaks) {
-                events += Rhythm.Event(i, (maxOf(releases[i], start + 1) - start).let { if (next == null) it else minOf(it, next - start) } * tick)
+                val held = maxOf(releases[i], start + step(i)) - start
+                events += Rhythm.Event(i, if (next == null) held else minOf(held, next - start))
                 if (next == null) break
                 continue
             }
-            val end = releases[i].coerceIn(start + 1, next)
+            val end = releases[i].coerceIn(start + step(i), next)
             if (next - end < LEGATO_BEATS * beat) {
-                events += Rhythm.Event(i, (next - start) * tick)
+                events += Rhythm.Event(i, next - start)
             } else {
-                events += Rhythm.Event(i, (end - start) * tick)
-                events += Rhythm.Event(null, (next - end) * tick)
+                events += Rhythm.Event(i, end - start)
+                events += Rhythm.Event(null, next - end)
             }
         }
-        for (k in 0 until untimed) events += Rhythm.Event(tapped.size + k, beat * tick)
+        for (k in 0 until untimed) events += Rhythm.Event(tapped.size + k, beat)
 
-        val intoBar = Math.floorMod(onsets.first(), setup.unitsPerBar)
-        return Rhythm(events, (setup.unitsPerBar - intoBar) * tick)
+        val intoBar = Math.floorMod(onsets.first(), setup.ticksPerBar)
+        return Rhythm(events, setup.ticksPerBar - intoBar)
+    }
+
+    /** Onsets in ticks, and for each the triplet span it is a third of (0: on the grid). */
+    private class Snapped(val onsets: IntArray, val span: IntArray)
+
+    /** Snaps [times] (ticks from the first downbeat, latency off) to the grid, or to triplets. */
+    private fun snap(times: List<Double>, setup: RhythmSetup): Snapped {
+        val grid = setup.grid.ticks
+        val n = times.size
+        val onsets = IntArray(n) { Math.round(times[it] / grid).toInt() * grid }
+        val span = IntArray(n)
+        if (setup.triplets && !setup.meter.compound) {
+            val spans = listOfNotNull(TICKS_PER_WHOLE / 4, (TICKS_PER_WHOLE / 8).takeIf { setup.grid == RhythmGrid.SIXTEENTH })
+            var i = 0
+            while (i + 2 < n) {
+                val found = spans.firstOrNull { s -> triplet(times, onsets, i, s) }
+                if (found == null) {
+                    i++
+                    continue
+                }
+                val w = Math.round(times[i] / found).toInt() * found
+                for (k in 0 until 3) {
+                    onsets[i + k] = w + k * found / 3
+                    span[i + k] = found
+                }
+                i += 3
+            }
+        }
+        // Two presses never share a slot: a later one moves on by a step (a third, in a triplet).
+        fun step(i: Int): Int = if (span[i] != 0) span[i] / 3 else grid
+        for (i in 1 until n) {
+            if (onsets[i] < onsets[i - 1] + minOf(step(i), step(i - 1))) onsets[i] = onsets[i - 1] + step(i)
+        }
+        return Snapped(onsets, span)
     }
 
     /**
-     * How late the presses are on average, in grid units: the circular mean
-     * of each onset's offset from the nearest eighth (so a constant delay
-     * near half an eighth doesn't flip sign), capped at [MAX_LATENCY_MS].
+     * Whether presses [i] to i+2 are a triplet filling a span of [s] ticks:
+     * each within a sixth of the span of its third, the press before and the
+     * one after outside the span, and much closer than the grid fit ([TRIPLET_BIAS]).
      */
-    private fun latencyUnits(onsets: List<Double>, setup: RhythmSetup): Double {
-        val period = setup.grid.perEighth.toDouble()
+    private fun triplet(times: List<Double>, straight: IntArray, i: Int, s: Int): Boolean {
+        val w = Math.round(times[i] / s).toDouble() * s
+        val tolerance = s / 6.0
+        val positions = (0 until 3).map { w + it * s / 3.0 }
+        if ((0 until 3).any { abs(times[i + it] - positions[it]) >= tolerance }) return false
+        if (i + 3 < times.size && times[i + 3] <= w + s - tolerance) return false
+        if (i > 0 && times[i - 1] >= w - tolerance) return false
+        val tripletError = (0 until 3).sumOf { (times[i + it] - positions[it]).pow(2) }
+        val gridError = (0 until 3).sumOf { (times[i + it] - straight[i + it]).pow(2) }
+        return tripletError < TRIPLET_BIAS * gridError
+    }
+
+    /**
+     * How late the presses are on average, in ticks: the circular mean of
+     * each onset's offset from the nearest eighth (so a constant delay near
+     * half an eighth doesn't flip sign), capped at [MAX_LATENCY_MS].
+     */
+    private fun latencyTicks(onsets: List<Double>, setup: RhythmSetup): Double {
+        val period = TICKS_PER_EIGHTH.toDouble()
         var s = 0.0
         var c = 0.0
         for (x in onsets) {
@@ -168,7 +241,7 @@ object RhythmFit {
             c += cos(angle)
         }
         val mean = atan2(s, c) / (2 * PI) * period
-        val cap = MAX_LATENCY_MS / setup.unitMs
+        val cap = MAX_LATENCY_MS / (setup.beatMs / setup.ticksPerBeat)
         return mean.coerceIn(-cap, cap)
     }
 }

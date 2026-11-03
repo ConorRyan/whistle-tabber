@@ -205,6 +205,7 @@
     <string name="rhythm_keep">Keep</string>
     <string name="rhythm_retry">Try again</string>
     <string name="rhythm_pad_sound">Pad sound</string>
+    <string name="rhythm_triplets">Detect triplets</string>
     <string name="pad_note">Note</string>
     <string name="pad_tick">Tick</string>
     <string name="pad_silent">Silent</string>

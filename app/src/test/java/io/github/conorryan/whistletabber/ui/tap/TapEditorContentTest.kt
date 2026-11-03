@@ -250,4 +250,25 @@ class TapEditorContentTest {
         compose.onNodeWithTag("bar-2-0").performScrollTo().performClick()
         assertEquals(draft.slotOf(2, 1), cursor)
     }
+
+    @Test
+    fun `the setup offers triplets only in simple meters`() {
+        var setup = RhythmSetup()
+        var panel by mutableStateOf(RhythmPanel(setup))
+        compose.setContent {
+            WhistleTabberTheme { RhythmSetupSheet(panel, onSetup = { setup = it; panel = panel.copy(setup = it) }, onPadSound = {}, onStart = {}, onClose = {}) }
+        }
+        compose.onNodeWithTag("triplets").performScrollTo().performClick()
+        assertEquals(false, setup.triplets)
+        panel = RhythmPanel(RhythmSetup(meter = Meter.SIX_EIGHT))
+        compose.onNodeWithTag("triplets").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a triplet's notes are marked 3`() {
+        val draft = TapTune.parse("X:1\nT:T\nM:2/4\nL:1/8\nK:D\nD2 (3EFG |]\n")!!
+        compose.setContent { WhistleTabberTheme { TapEditorContent(TapEditorUiState(draft = draft, cursor = draft.endSlot), isNew = false) } }
+        compose.onNodeWithTag("triplet-1", useUnmergedTree = true).assertExists()
+        compose.onNodeWithTag("triplet-0", useUnmergedTree = true).assertDoesNotExist()
+    }
 }

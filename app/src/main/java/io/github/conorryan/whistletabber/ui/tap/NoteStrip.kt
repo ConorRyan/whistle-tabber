@@ -98,6 +98,8 @@ internal fun NoteStrip(
                     }
                 }
                 if (timing != null && units != null) LengthMark(units, i)
+                // A triplet's length isn't a plain note value: mark it "3".
+                if (units != null && units % 3 != 0) Text("3", style = MaterialTheme.typography.labelSmall, modifier = Modifier.testTag("triplet-$i"))
             }
         }
     }
