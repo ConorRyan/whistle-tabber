@@ -22,6 +22,7 @@ class BridgeCodecTest {
         assertEquals("tempo", typeOf(BridgeCodec.encode(BridgeCommand.Tempo(80))))
         assertEquals("diagrams", typeOf(BridgeCodec.encode(BridgeCommand.Diagrams(emptyList()))))
         assertEquals("transposeText", typeOf(BridgeCodec.encode(BridgeCommand.TransposeText("X:1", 5))))
+        assertEquals("topInset", typeOf(BridgeCodec.encode(BridgeCommand.TopInset(120.5))))
     }
 
     @Test

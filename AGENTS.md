@@ -69,7 +69,7 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     `BridgeProtocolSyncTest` reads the JS source and fails if the two drift.
   - `TuneWebController`: owns one WebView, implements the `render/TunePage`
     port, and queues commands until the page posts `ready` (only the newest
-    `Render` is kept).
+    `Render` and `TopInset` are kept). `onScroll` reports the page's scroll.
   - `TuneWebViewHost`: Compose wrapper.
   - `SoundPathHandler`: answers abcjs's soundfont URLs with synthesised samples.
 - `render/` — the render cycle, deep behind a small interface.
@@ -273,7 +273,12 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     *written-for* whistle; `TabSettings.whistle` is *my* whistle. The
     ViewModel feeds `show(abc, midiTranspose, fingerings)` on every change
     and lets the renderer dedupe. Key change: `KeyChangePreview.start` →
-    preview render → save as a copy (default) or replace.
+    preview render → save as a copy (default) or replace. The page fills
+    the screen and scrolls as a whole: the header (title, chips, preview
+    bar; on a short screen, `TuneLayout.isShort`, the app bar too) floats
+    over its top, `TopInset` leaves room for it, and it moves up with the
+    page's scroll (`TuneLayout.headerShift`/`pageTop`). A short screen's
+    player is a single row.
   - `editor/`: draft in `SavedStateHandle`, save blocked without `T:`/`K:`. A
     new tune may start from a given draft (`initialText`, from the scan
     screen), unsaved until the user saves. The tune's own

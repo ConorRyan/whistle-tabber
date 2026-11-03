@@ -51,12 +51,16 @@ class TuneWebController(
     private val pending = ArrayDeque<BridgeCommand>()
     private var ready = false
 
+    /** Called on the main thread with the page's vertical scroll, in px, whenever it changes. */
+    var onScroll: ((Int) -> Unit)? = null
+
     val webView: WebView = createWebView(context)
 
     override fun send(command: BridgeCommand) {
         if (!ready) {
-            // A newer render replaces any queued one: only the latest tune matters.
+            // A newer render or inset replaces any queued one: only the latest matters.
             if (command is BridgeCommand.Render) pending.removeAll { it is BridgeCommand.Render }
+            if (command is BridgeCommand.TopInset) pending.removeAll { it is BridgeCommand.TopInset }
             pending.addLast(command)
             return
         }
@@ -107,6 +111,7 @@ class TuneWebController(
             } else {
                 addJavascriptInterface(LegacyBridge(), BRIDGE_NAME)
             }
+            setOnScrollChangeListener { _, _, y, _, _ -> onScroll?.invoke(y) }
             loadUrl(PAGE_URL)
         }
     }

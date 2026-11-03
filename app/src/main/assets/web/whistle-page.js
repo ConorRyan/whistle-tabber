@@ -24,6 +24,7 @@
     // fit, so four bars of a reel or jig fit on a phone with room for diagrams.
     var ZOOM_OUT = 1.2;
 
+    var sheet = document.getElementById("sheet");
     var paper = document.getElementById("paper");
     var credits = document.getElementById("credits");
 
@@ -300,6 +301,12 @@
         post({ type: "transposedText", abc: abc, steps: cmd.steps });
     }
 
+    // The app's header lies over the top of the page and scrolls with it;
+    // the music starts below it. 8px is #sheet's own top padding.
+    function setTopInset(px) {
+        sheet.style.paddingTop = (8 + Math.max(0, px)) + "px";
+    }
+
     function handle(cmd) {
         var result;
         switch (cmd.type) {
@@ -311,6 +318,7 @@
             case "seek": result = seek(cmd.fraction); break;
             case "tempo": result = setTempo(cmd.percent); break;
             case "transposeText": result = transposeText(cmd); break;
+            case "topInset": result = setTopInset(cmd.px); break;
             default: throw new Error("Unknown command " + cmd.type);
         }
         Promise.resolve(result).catch(reportError);

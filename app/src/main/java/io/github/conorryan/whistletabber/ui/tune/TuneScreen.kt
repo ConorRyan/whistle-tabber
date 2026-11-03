@@ -3,7 +3,32 @@ package io.github.conorryan.whistletabber.ui.tune
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.LayoutDirection
+import io.github.conorryan.whistletabber.web.BridgeCommand
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -61,7 +86,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -104,9 +128,22 @@ fun TuneScreen(
         if (uri != null) vm.export(uri)
     }
 
+    val short = TuneLayout.isShort(LocalConfiguration.current.screenHeightDp)
+    var scrollY by remember { mutableIntStateOf(0) }
+    var headerHeight by remember { mutableIntStateOf(0) }
+    val density = LocalDensity.current
+
     DisposableEffect(controller) {
         vm.bindPage(controller)
-        onDispose { controller.destroy() }
+        controller.onScroll = { scrollY = it }
+        onDispose {
+            controller.onScroll = null
+            controller.destroy()
+        }
+    }
+    // The page leaves room at its top for the header that lies over it.
+    LaunchedEffect(headerHeight, density) {
+        if (headerHeight > 0) controller.send(BridgeCommand.TopInset(headerHeight / density.density.toDouble()))
     }
     LaunchedEffect(vm) {
         vm.effects.collect { effect ->
@@ -120,41 +157,45 @@ fun TuneScreen(
     }
 
     val tune = state.tune
+    val appBar: @Composable (WindowInsets) -> Unit = { insets ->
+        TopAppBar(
+            // The title is the big one under the bar.
+            title = {},
+            windowInsets = insets,
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+            navigationIcon = {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                }
+            },
+            actions = {
+                if (tune != null) {
+                    IconButton(onClick = { vm.setStarred(!tune.starred) }, modifier = Modifier.testTag("star")) {
+                        Icon(
+                            if (tune.starred) Icons.Filled.Star else Icons.Outlined.StarOutline,
+                            contentDescription = stringResource(if (tune.starred) R.string.unstar else R.string.star),
+                            tint = if (tune.starred) LocalWhistleColors.current.star else LocalContentColor.current,
+                        )
+                    }
+                    IconButton(onClick = { exportLauncher.launch(ExportNames.tune(tune.title)) }, modifier = Modifier.testTag("export")) {
+                        Icon(Icons.Filled.FileUpload, contentDescription = stringResource(R.string.action_export_tune))
+                    }
+                    // No confirmation: the library's snackbar offers undo.
+                    IconButton(onClick = vm::delete, modifier = Modifier.testTag("delete")) {
+                        Icon(Icons.Outlined.Delete, contentDescription = stringResource(R.string.action_delete))
+                    }
+                }
+            },
+        )
+    }
     Scaffold(
-        topBar = {
-            TopAppBar(
-                // The title is the big one under the bar.
-                title = {},
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
-                    }
-                },
-                actions = {
-                    if (tune != null) {
-                        IconButton(onClick = { vm.setStarred(!tune.starred) }, modifier = Modifier.testTag("star")) {
-                            Icon(
-                                if (tune.starred) Icons.Filled.Star else Icons.Outlined.StarOutline,
-                                contentDescription = stringResource(if (tune.starred) R.string.unstar else R.string.star),
-                                tint = if (tune.starred) LocalWhistleColors.current.star else LocalContentColor.current,
-                            )
-                        }
-                        IconButton(onClick = { exportLauncher.launch(ExportNames.tune(tune.title)) }, modifier = Modifier.testTag("export")) {
-                            Icon(Icons.Filled.FileUpload, contentDescription = stringResource(R.string.action_export_tune))
-                        }
-                        // No confirmation: the library's snackbar offers undo.
-                        IconButton(onClick = vm::delete, modifier = Modifier.testTag("delete")) {
-                            Icon(Icons.Outlined.Delete, contentDescription = stringResource(R.string.action_delete))
-                        }
-                    }
-                },
-            )
-        },
+        // On a short screen the bar scrolls away with the header instead.
+        topBar = { if (!short) appBar(TopAppBarDefaults.windowInsets) },
         bottomBar = {
             if (tune != null) {
                 PlaybackBar(
                     state = renderState,
+                    compact = short,
                     onTogglePlay = vm::togglePlay,
                     onRestart = vm::restart,
                     onTempo = vm::setTempo,
@@ -173,36 +214,76 @@ fun TuneScreen(
         },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
+        // Clipped: the header leaves through the top edge, not over the status bar.
+        Box(Modifier.fillMaxSize().padding(padding).clipToBounds()) {
             if (state.missing) {
+                if (short) appBar(WindowInsets(0))
                 Text(stringResource(R.string.tune_missing), modifier = Modifier.padding(16.dp).testTag("missing"))
-                return@Column
+                return@Box
             }
-            if (tune != null) {
-                TuneHeader(
-                    tune = tune,
-                    tuneWhistle = state.tuneWhistle,
-                    onKey = { keyDialog = true },
-                )
-            }
-            state.preview?.let { preview ->
-                PreviewBar(
-                    preview = preview,
-                    onCopy = vm::savePreviewAsCopy,
-                    onReplace = vm::replaceWithPreview,
-                    onCancel = vm::cancelPreview,
-                )
-            }
-            val pageShape = MaterialTheme.shapes.large
+            // The page fills the screen; its card starts under the header and
+            // rises with it as the page scrolls, so the music gets the whole height.
+            val corner = MaterialTheme.shapes.large.topStart
+            val outline = MaterialTheme.colorScheme.outlineVariant
             Box(
                 Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .padding(start = 12.dp, end = 12.dp, top = 12.dp)
-                    .clip(pageShape)
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, pageShape),
+                    .fillMaxSize()
+                    .padding(horizontal = 12.dp)
+                    .drawWithContent {
+                        drawContent()
+                        val top = TuneLayout.pageTop(scrollY, headerHeight).toFloat()
+                        val stroke = 1.dp.toPx()
+                        val radius = corner.toPx(size, this)
+                        drawRoundRect(
+                            color = outline,
+                            topLeft = Offset(stroke / 2, top + stroke / 2),
+                            size = Size(size.width - stroke, (size.height - top - stroke).coerceAtLeast(0f)),
+                            cornerRadius = CornerRadius(radius - stroke / 2),
+                            style = Stroke(stroke),
+                        )
+                    }
+                    .graphicsLayer {
+                        clip = true
+                        shape = CardBelow(TuneLayout.pageTop(scrollY, headerHeight).toFloat(), corner)
+                    },
             ) {
                 TuneWebViewHost(controller, Modifier.fillMaxSize().testTag("tuneWebView"))
+            }
+            // Dragging the header scrolls the page under it.
+            var dragRest by remember { mutableFloatStateOf(0f) }
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .offset { IntOffset(0, -TuneLayout.headerShift(scrollY, headerHeight)) }
+                    .onSizeChanged { headerHeight = it.height }
+                    .draggable(
+                        rememberDraggableState { delta ->
+                            val dy = dragRest - delta
+                            val whole = dy.roundToInt()
+                            dragRest = dy - whole
+                            if (whole != 0) controller.webView.scrollBy(0, whole)
+                        },
+                        Orientation.Vertical,
+                    )
+                    .padding(bottom = 12.dp)
+                    .testTag("tuneHeader"),
+            ) {
+                if (short) appBar(WindowInsets(0))
+                if (tune != null) {
+                    TuneHeader(
+                        tune = tune,
+                        tuneWhistle = state.tuneWhistle,
+                        onKey = { keyDialog = true },
+                    )
+                }
+                state.preview?.let { preview ->
+                    PreviewBar(
+                        preview = preview,
+                        onCopy = vm::savePreviewAsCopy,
+                        onReplace = vm::replaceWithPreview,
+                        onCancel = vm::cancelPreview,
+                    )
+                }
             }
         }
     }
@@ -361,10 +442,22 @@ private fun PreviewBar(preview: KeyChangePreview.Preview, onCopy: () -> Unit, on
     }
 }
 
-/** The dark player under the page: play, the bar being played, restart, and tempo. */
+/** A rounded card from [top] (px) to the bottom: the page's visible frame. */
+private class CardBelow(private val top: Float, private val corner: CornerSize) : Shape {
+    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline =
+        Outline.Rounded(
+            RoundRect(0f, top.coerceAtMost(size.height), size.width, size.height, CornerRadius(corner.toPx(size, density))),
+        )
+}
+
+/**
+ * The dark player under the page: play, the bar being played, restart, and
+ * tempo. [compact] (a phone on its side) puts it all on one row.
+ */
 @Composable
 private fun PlaybackBar(
     state: TuneRenderer.RendererState,
+    compact: Boolean,
     onTogglePlay: () -> Unit,
     onRestart: () -> Unit,
     onTempo: (Int) -> Unit,
@@ -374,62 +467,97 @@ private fun PlaybackBar(
     var tempo by remember(state.tempo) { mutableFloatStateOf(state.tempo.toFloat()) }
     val colors = MaterialTheme.colorScheme
     val extras = LocalWhistleColors.current
+    val play: @Composable () -> Unit = {
+        FilledIconButton(
+            onClick = onTogglePlay,
+            modifier = Modifier.size(if (compact) 44.dp else 52.dp).testTag("play"),
+            colors = IconButtonDefaults.filledIconButtonColors(containerColor = extras.play, contentColor = extras.onPlay),
+        ) {
+            Icon(
+                if (state.playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                contentDescription = stringResource(if (state.playing) R.string.pause else R.string.play),
+            )
+        }
+    }
+    val status: @Composable (Modifier) -> Unit = { modifier ->
+        val text = when {
+            state.error != null -> stringResource(R.string.page_error, state.error)
+            state.bar != null -> stringResource(R.string.bar_n, state.bar + 1)
+            state.warnings.isNotEmpty() -> pluralStringResource(R.plurals.warnings_count, state.warnings.size, state.warnings.size)
+            else -> ""
+        }
+        Text(
+            text,
+            style = MaterialTheme.typography.titleSmall,
+            color = if (state.error != null) colors.error else colors.inverseOnSurface,
+            maxLines = if (compact) 1 else Int.MAX_VALUE,
+            overflow = TextOverflow.Ellipsis,
+            modifier = modifier.testTag("status"),
+        )
+        if (state.error != null) {
+            TextButton(onClick = onDismissError) { Text(stringResource(R.string.cancel), color = colors.inverseOnSurface) }
+        }
+    }
+    val restart: @Composable () -> Unit = {
+        IconButton(onClick = onRestart, modifier = Modifier.testTag("restart")) {
+            Icon(Icons.Filled.Replay, contentDescription = stringResource(R.string.restart))
+        }
+    }
+    val tempoLabel: @Composable () -> Unit = {
+        Text(
+            stringResource(R.string.tempo_percent, tempo.roundToInt()),
+            style = MaterialTheme.typography.bodySmall,
+            color = colors.inverseOnSurface.copy(alpha = 0.75f),
+        )
+    }
+    val tempoSlider: @Composable (Modifier) -> Unit = { modifier ->
+        Slider(
+            value = tempo,
+            onValueChange = { tempo = it },
+            onValueChangeFinished = { onTempo(tempo.roundToInt()) },
+            valueRange = 40f..150f,
+            colors = SliderDefaults.colors(
+                thumbColor = colors.inverseOnSurface,
+                activeTrackColor = colors.inverseOnSurface,
+                inactiveTrackColor = colors.inverseOnSurface.copy(alpha = 0.2f),
+            ),
+            modifier = modifier.testTag("tempo"),
+        )
+    }
     Surface(
         color = colors.inverseSurface,
         contentColor = colors.inverseOnSurface,
         shape = MaterialTheme.shapes.extraLarge,
-        modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 12.dp, vertical = if (compact) 6.dp else 12.dp),
     ) {
+        if (compact) {
+            Row(
+                Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                play()
+                status(Modifier.widthIn(max = 200.dp))
+                tempoLabel()
+                tempoSlider(Modifier.weight(1f))
+                restart()
+                edit()
+            }
+            return@Surface
+        }
         Column(Modifier.padding(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                FilledIconButton(
-                    onClick = onTogglePlay,
-                    modifier = Modifier.size(52.dp).testTag("play"),
-                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = extras.play, contentColor = extras.onPlay),
-                ) {
-                    Icon(
-                        if (state.playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        contentDescription = stringResource(if (state.playing) R.string.pause else R.string.play),
-                    )
-                }
-                val status = when {
-                    state.error != null -> stringResource(R.string.page_error, state.error)
-                    state.bar != null -> stringResource(R.string.bar_n, state.bar + 1)
-                    state.warnings.isNotEmpty() -> pluralStringResource(R.plurals.warnings_count, state.warnings.size, state.warnings.size)
-                    else -> ""
-                }
-                Text(
-                    status,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = if (state.error != null) colors.error else colors.inverseOnSurface,
-                    modifier = Modifier.weight(1f).testTag("status"),
-                )
-                if (state.error != null) {
-                    TextButton(onClick = onDismissError) { Text(stringResource(R.string.cancel), color = colors.inverseOnSurface) }
-                }
-                IconButton(onClick = onRestart, modifier = Modifier.testTag("restart")) {
-                    Icon(Icons.Filled.Replay, contentDescription = stringResource(R.string.restart))
-                }
+                play()
+                status(Modifier.weight(1f))
+                restart()
                 edit()
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    stringResource(R.string.tempo_percent, tempo.roundToInt()),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colors.inverseOnSurface.copy(alpha = 0.75f),
-                )
-                Slider(
-                    value = tempo,
-                    onValueChange = { tempo = it },
-                    onValueChangeFinished = { onTempo(tempo.roundToInt()) },
-                    valueRange = 40f..150f,
-                    colors = SliderDefaults.colors(
-                        thumbColor = colors.inverseOnSurface,
-                        activeTrackColor = colors.inverseOnSurface,
-                        inactiveTrackColor = colors.inverseOnSurface.copy(alpha = 0.2f),
-                    ),
-                    modifier = Modifier.weight(1f).testTag("tempo"),
-                )
+                tempoLabel()
+                tempoSlider(Modifier.weight(1f))
             }
         }
     }

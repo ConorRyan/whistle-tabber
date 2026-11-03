@@ -74,6 +74,15 @@ class TuneWebControllerTest {
     }
 
     @Test
+    fun topInsetLeavesRoomAboveTheMusic() = runBlocking {
+        val rendered = listen { awaitEvent<BridgeEvent.Rendered>() }
+        send(BridgeCommand.Render(abc))
+        rendered.await()
+        send(BridgeCommand.TopInset(100.0))
+        assertEquals("\"108px\"", js("getComputedStyle(document.getElementById('sheet')).paddingTop"))
+    }
+
+    @Test
     fun rendersTuneAndReportsNotes() = runBlocking {
         val rendered = listen { awaitEvent<BridgeEvent.Rendered>() }
         send(BridgeCommand.Render(abc))

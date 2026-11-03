@@ -49,6 +49,14 @@ sealed interface BridgeCommand {
     @Serializable
     @SerialName("transposeText")
     data class TransposeText(val abc: String, val steps: Int) : BridgeCommand
+
+    /**
+     * Blank space above the music, in CSS px: the app's header floats over
+     * the top of the page and scrolls away with it.
+     */
+    @Serializable
+    @SerialName("topInset")
+    data class TopInset(val px: Double) : BridgeCommand
 }
 
 @Serializable
