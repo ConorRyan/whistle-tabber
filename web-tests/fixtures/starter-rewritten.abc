@@ -1,0 +1,168 @@
+X:1
+T:Drowsy Maggie
+R:reel
+N:"collected by J. O'Neill"
+B:O'Neill's 1425
+Z:"Transcribed by Bob Safranek, rjs@gsp.org"
+M:C|
+L:1/8
+%whistle_tab_key d
+K:Em
+E2(BE dEBE) | E2(BE AFDF) | E2(BE dEBE) | (TBAB)^c dAFD |
+E2(BE dEBE) | E2(BE AFDF) | E2(BE dEBE) | (TBAB)^c dAFA ||
+d2(fd) c2(ec) | defg afge | d2(fd) c2(ec) | (TBAB)c dAFA |
+d2(fd) c2(ec) | defg afge | afge fdec | (TBAB)c dAFD |]
+
+X:1
+T:the Merry Blacksmith
+T: an ga.ba mea.dra.c.
+R:reel
+O: F.O'Neill
+B: O'Neill's 1850 "Music of Ireland" #1509
+Z: transcribed by John B. Walsh, walsh@math.ubc.ca 8/23/96
+M:C|
+L:1/8
+%whistle_tab_key d
+K:D
+D2 |\
+d3A T(BA)FA | ABdA TBAFA | ABde fded | Beed egfe |\
+d2dA TBAFA | ABdA TBAFA | ABde fdec | dBAF D2 |]
+|| (fg) |\
+a3g f2Tfe | d2{e}dA TBAFA | ABde fded | Beed egfe |\
+abag f2{g}fe | d3A TBAFA | ABde fdec | dBAF D2 |]
+
+X:1
+T:the Wind that Shakes the Barley
+T: an gao.t a .bio.dgeas an t-orna.
+R:reel
+B: O'Neill's 1850 "Music of Ireland" #1518
+O: F.O'Neill
+Z: transcribed by John B. Walsh, walsh@math.ubc.ca 8/23/96
+M:C|
+L:1/8
+%whistle_tab_key d
+K:D
+B | A2AB AFED | B2BA BcdB | A2AB AFED | gfed [1 Bcd :| [2 B2d |]
+|: e | f2fd g2ge | f2fd Bcde |[1 f2fd g2fg | afed Bcd :|[2 fafd gbge | afed Bcd !D.C.! ||
+
+X:1
+T:Banish Misfortune.
+R:jig
+C:Cronin.
+B:O'Neill's Music of Ireland
+N:O'Neill's - 776
+Z:Transcribed by Stephen Foy (shf@access.digex.net)
+Z:abc 1.6
+M:6/8
+L:1/8
+%whistle_tab_key d
+K:D
+A/G/ | F2D DED | DEF GFG | A3 cAG | ABc (d/c/A)G | F2D DED | DEF GFG |
+AdB cde | d3 d2 :: d/e/ | f2d/d/ dcd | dfa agf | e2c/c/ cBc |\
+(e/d/)ef gfe |
+|[1 f2d/d/ dcd | dfa agf | (g/f/e)d cde | d3 d2 :|[2 fga gab |\
+afd ecA | fed cde | d3 d2 ||
+|| d/e/ | (f/e/d).f (e/d/c).e | (d/c/A).B cAG | F2D DED |\
+DEF GFG | (A/G/A).B cAG | AdB cde | fed cde | d3 d2 :|
+
+X:1
+T:Out on the Ocean.
+R:jig
+C:F. O'Neill.
+B:O'Neill's Music of Ireland
+N:O'Neill's - 795
+Z:Transcribed by Stephen Foy (shf@access.digex.net)
+Z:abc 1.6
+M:6/8
+L:1/8
+%whistle_tab_key d
+K:G
+e | dcB {c}BAG | BdB A2B | GED G2A | {c}BAB GED |\
+dcB {c}BAG | BdB A2B | GED G2A | {c}BGG G2 :|
+|| d | efd {f}edB | efe fdB | ded dBd | gfe dBA |\
+{A}GFG {B}AGA | BcB B2A | GED G2A | {c}BGG G2 :|
+
+X:1
+T:Haste to the Wedding
+T:Deun Deifir Go De An Posga
+R:jig
+S:987 O'Neill's Music of Ireland
+B:O'Neill's 987
+Z:Transcribed by Robert Thorpe (thorpe@skep.com)
+Z:ABCMUS 1.0
+M:6/8
+L:1/8
+%whistle_tab_key d
+K:D
+A | AFA Agf | ede fdB | AFA AdF | EFE E2A |
+AFA Agf | ede fdB | A2g g/-a3/2g | ded d2 :|
+a | afa afa | bgb bfb | afa agf | efe dfg |
+a3 f3 | ede fdB | A2g f/-a3/2g | ded d2 :|
+
+X:1
+T:Harvest Home, The
+R:hornpipe
+N:
+B:O'Neill's 1603
+Z:Transcribed by Michael Hogan
+M:C|
+L:1/8
+%whistle_tab_key d
+K:D
+(AF) | DAFA DAFA | defe dcBA | eAfA gAfA | edcB AGFE |
+DAFA DAFA | defe dcBA | dAFA fgec | d2d2 d2 :|
+|: (cd) | e>A (3AAA f>A (3AAA | e>A (3AAA f>A (3AAA | eAfA gAfA | (3efe (3dcB (3ABA (3GFE |
+DAFA DAFA | defe dcBA | dAFA fgec | d2d2 d2 :|
+
+X:1
+T:Off To California
+R:hornpipe
+B:O'Neills 1628
+N:"setting 1","collected by F. O'Neill"
+Z:Transcribed by Nick Terhorst, nickte@microsoft.com
+N:Staff breaks fixed [jc]
+M:2/4
+L:1/16
+%whistle_tab_key d
+K:G
+(3DEF | G>FG>B A>GE>D | G>Bd>g e2 (3def | g>fg>d e>dB>G | A>BA>G E2 (3DEF |
+G>FG>B A>GE>D | G>Bd>g e2 (3def | g>fg>d e>dB>G | A>BA>F G2 :|
+|: (3def | g>fe>g f>ed>f | e>de>f e>dB>d | g>fg>d e>dB>G |
+A>BA>G E2D2 | (3GAGB>G A>GE>D | G>Bd>g e2 (3def | g>fg>d e>dB>G | A>BA>F G2 :|
+
+X:1
+T:The Boys of Bluehill
+R:hornpipe
+B:O'Neill's 1700
+N:"collected by West"
+Z:Transcribed by Nick Terhorst (O'Neill's Project file F/1625-1700_nt.abc; credit line added by Whistle Tabber)
+M:2/4
+L:1/16
+%whistle_tab_key d
+K:D
+F-A |\
+BAFA D2F-A | BABd e2d-e | faaf egfe | dfed B2d-B |
+BAFA D2F-A | BABd e2d-e | faaf egfe | d2dd d2 :|
+|: f-g |\
+afdf a2g-f | gfga b2a-g | faaf egfe | dfed B2d-B |
+BAFA D2F-A | BABd e2d-e | faaf egfe | d2dd d2 :|
+
+X:1
+T:The Rakes Of Mallow
+R:march
+B:O'Neill's 1814
+N:"collected by J. O'Neill"
+Z:"Transcribed by Bob Safranek, rjs@gsp.org"
+M:2/4
+L:1/16
+%whistle_tab_key d
+K:G
+.G2.B2 .G2.B2 | .G2.B2 cBAG | .F2.A2 .F2.A2 | .F2.A2 dcBA |
+.G2.B2 .G2.B2 | .G2.B2 .d2.B2 | cBAG FGAc | B2G2 G2z2 |
+GBBB GBBB | GBBB cBAG | FAAA FAAA | FAAA dcBA |
+GBBB GBBB | GBBB d2B2 | cBAG FGAc | B2G2 G2z2 ||
+g2fe .d2.c2 | .B2.c2 .d2.B2 | g2fe .d2.c2 | .B2.e2 A2z2 |
+g2fe .d2.c2 | .B2.c2 .d2.B2 | cBAG FGAc | B2G2 G2z2 |
+g2fe (de)dc | BABc dcBc | g2fe (de)dc | BABe A2(Bd) |
+g2fe (de)dc | BABc dcBd | cBAG FGAc | B2G2 G2z2 |]
+

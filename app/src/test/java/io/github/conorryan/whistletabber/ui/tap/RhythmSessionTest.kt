@@ -25,7 +25,7 @@ class RhythmSessionTest {
         s.release(900)
         assertTrue(s.finished)
         assertNull(s.press(1000))
-        assertEquals(listOf(Rhythm.Event(0, 2), Rhythm.Event(1, 2)), s.rhythm().events)
+        assertEquals(listOf(Rhythm.Event(0, 48), Rhythm.Event(1, 48)), s.rhythm().events)
     }
 
     @Test
@@ -35,7 +35,7 @@ class RhythmSessionTest {
         assertEquals(1, s.press(500)) // the next finger landed first
         s.release(600)
         assertEquals(2, s.next)
-        assertEquals(listOf(2, 1), s.rhythm().events.take(2).map { it.units }) // the first ended at 500
+        assertEquals(listOf(48, 24), s.rhythm().events.take(2).map { it.ticks }) // the first ended at 500
     }
 
     @Test
@@ -47,6 +47,6 @@ class RhythmSessionTest {
         s.cancelHeld()
         s.release(400)
         assertTrue(s.empty)
-        assertEquals(listOf(Rhythm.Event(0, 2), Rhythm.Event(1, 2)), s.rhythm().events) // untimed: a beat each
+        assertEquals(listOf(Rhythm.Event(0, 48), Rhythm.Event(1, 48)), s.rhythm().events) // untimed: a beat each
     }
 }

@@ -1,6 +1,63 @@
 package io.github.conorryan.whistletabber.music
 
 /**
+ * What a note carries as written, besides its pitch and length: [prefix]
+ * (decorations such as `~` or `!roll!`, grace notes `{g}`, chord symbols
+ * `"G"`, a slur's `(`) and [suffix] (a slur's `)`, a tie to another pitch).
+ */
+data class NoteMarks(val prefix: String = "", val suffix: String = "")
+
+/**
+ * Something in a tune's body between notes, kept as written: before the item
+ * at [gap] (`notes.size`: after the last one).
+ */
+data class Anchor(val gap: Int, val kind: Kind, val text: String) {
+    enum class Kind {
+        /** A bar line that isn't worked out from the lengths: `|:`, `:|`, `||`, `[2`, or any bar line in a free tune. */
+        BAR,
+
+        /** The end of a music line; [text] is `\` for a continued one. */
+        BREAK,
+
+        /** A whole line in the body: `P:B`, `w:` lyrics, a `%` comment. */
+        LINE,
+
+        /** Anything else in the music: a decoration with no note after it, `[P:A]`, a comment at the end of a line. */
+        TEXT,
+    }
+
+    /** The note strip shows it, and the cursor can stop on either side of it. */
+    val visible: Boolean get() = kind == Kind.BAR
+}
+
+/** What reading a tune into a [TapDraft] couldn't keep. */
+enum class Loss {
+    /** Chords: the top note is kept. */
+    CHORDS,
+
+    /** A second voice or a voice overlay: only the first is kept. */
+    VOICES,
+
+    /** A key change in the tune: the pitches are kept, written in the first key. */
+    KEY_CHANGE,
+
+    /** A meter change in the tune: the bar lines are kept as written under the first meter. */
+    METER_CHANGE,
+
+    /** Notes out of the whistle's range, moved by octaves. */
+    FOLDED,
+
+    /** Lengths (odd tuplets) rounded to the nearest tick. */
+    ROUNDED,
+
+    /** Parts that couldn't be read: an unknown key change, notes with no fingering. */
+    UNREADABLE,
+}
+
+/** A tune read for the tap editor, and what was lost on the way ([TapTune.read]). */
+data class TapRead(val draft: TapDraft, val losses: Set<Loss>)
+
+/**
  * A tune written by tapping fingerings: [notes] are semitones above
  * [whistle]'s bottom note ([FingeringEngine] offsets), null for a rest.
  * Storing fingerings, not pitches, lets the whistle change without
@@ -8,8 +65,12 @@ package io.github.conorryan.whistletabber.music
  *
  * @property extraHeaders header lines [TapTune] doesn't write itself (such as
  *   `Z:` or `R:`), kept so a tune edited as text loses nothing
- * @property timing the tapped rhythm, one length per item of [notes]; null
- *   while every note is an equal quarter
+ * @property timing the rhythm, one length per item of [notes]; null while
+ *   every note is an equal quarter
+ * @property key the tune's `K:` as written, when it isn't [whistle]'s major
+ *   key (`Em`, `Ador`); it moves with the whistle
+ * @property marks each item's [NoteMarks] (empty: none at all)
+ * @property anchors what sits between the items, in order
  */
 data class TapDraft(
     val title: String,
@@ -17,49 +78,151 @@ data class TapDraft(
     val notes: List<Int?>,
     val extraHeaders: List<String> = emptyList(),
     val timing: TapTiming? = null,
+    val key: String? = null,
+    val marks: List<NoteMarks?> = emptyList(),
+    val anchors: List<Anchor> = emptyList(),
 ) {
+    /** The `K:` value written. */
+    val keyText: String get() = key ?: whistle.letter
+
+    // ------------------------------------------------------------- the cursor
+
+    /*
+     * The cursor sits in a slot: between two of the items and visible
+     * anchors, in order. Without anchors a slot is a note index.
+     */
+
+    private fun visibleAt(gap: Int): Int = anchors.count { it.gap == gap && it.visible }
+
+    /** The slot before everything at [gap], plus [k] of its visible anchors. */
+    fun slotOf(gap: Int, k: Int = 0): Int = gap + anchors.count { it.gap < gap && it.visible } + k
+
+    /** The slot just after item [index]. */
+    fun slotAfter(index: Int): Int = slotOf(index + 1)
+
+    /** The last slot. */
+    val lastSlot: Int get() = slotOf(notes.size, visibleAt(notes.size))
+
+    /** Where the cursor goes on opening: after the last note, before what closes the tune. */
+    val endSlot: Int get() = if (notes.isEmpty()) lastSlot else slotAfter(notes.lastIndex)
+
+    /** The gap [slot] is in, and how many of that gap's visible anchors come before it. */
+    fun gapOf(slot: Int): Pair<Int, Int> {
+        var start = 0
+        for (gap in 0..notes.size) {
+            val visible = visibleAt(gap)
+            if (slot <= start + visible) return gap to (slot - start).coerceAtLeast(0)
+            start += visible + 1
+        }
+        return notes.size to visibleAt(notes.size)
+    }
+
+    /** The anchors at [gap] up to and including its [k]th visible one. */
+    private fun anchorsBefore(gap: Int, k: Int): Int {
+        if (k == 0) return 0
+        val at = anchors.filter { it.gap == gap }
+        var seen = 0
+        for ((i, a) in at.withIndex()) {
+            if (a.visible) seen++
+            if (seen == k) return i + 1
+        }
+        return at.size
+    }
+
+    // ------------------------------------------------------------- editing
+
     /**
      * The notes with a tapped [rhythm] (from [RhythmFit], whose events index
      * the sounding notes): the draft's own rests give way to the rests the
-     * fit found.
+     * fit found, and what sat between the notes stays with the note after it.
+     * A free tune's plain bar lines go: the new rhythm places them.
      */
     fun withRhythm(rhythm: Rhythm, setup: RhythmSetup): TapDraft {
-        val sounding = notes.filterNotNull()
-        val events = rhythm.events.filter { e -> e.note == null || e.note in sounding.indices }
+        val soundingIndex = notes.indices.filter { notes[it] != null }
+        val events = rhythm.events.filter { e -> e.note == null || e.note in soundingIndex.indices }
+        val old = timing
+        val dropPlainBars = old?.free == true
+        // Each old gap goes before the event of the first sounding note at or after it.
+        val eventOfSounding = IntArray(soundingIndex.size) { -1 }
+        events.forEachIndexed { k, e -> if (e.note != null) eventOfSounding[e.note] = k }
+        fun newGap(gap: Int): Int {
+            val s = soundingIndex.indexOfFirst { it >= gap }
+            return if (s < 0 || eventOfSounding[s] < 0) events.size else eventOfSounding[s]
+        }
+        val moved = anchors.filterNot { dropPlainBars && it.kind == Anchor.Kind.BAR && it.text == "|" }
+            .map { it.copy(gap = newGap(it.gap)) }
+        val newMarks = events.map { e -> e.note?.let { marks.getOrNull(soundingIndex[it]) } }
+        val unit = if (old != null && !old.free) old.unitLength else setup.grid.unitLength
         return copy(
-            notes = events.map { e -> e.note?.let(sounding::get) },
-            timing = TapTiming(setup, events.map { it.units }, rhythm.firstBarUnits),
+            notes = events.map { e -> e.note?.let { notes[soundingIndex[it]] } },
+            timing = TapTiming(setup, events.map { it.ticks }, rhythm.firstBarTicks, unit),
+            marks = newMarks.takeIf { m -> m.any { it != null } }.orEmpty(),
+            anchors = moved,
         ).normalized()
     }
 
     /**
-     * Inserts [note] (null: a rest) at [index]. In a timed draft it is as long
+     * Inserts [note] (null: a rest) at [slot]. In a timed draft it is as long
      * as the item before it, or a beat at the start. Returns the draft and the
-     * index just after the new item.
+     * slot just after the new item.
      */
-    fun inserted(index: Int, note: Int?): Pair<TapDraft, Int> {
-        val at = index.coerceIn(0, notes.size)
-        val t = timing ?: return copy(notes = notes.toMutableList().apply { add(at, note) }) to at + 1
-        val length = t.lengths.getOrNull(at - 1) ?: t.setup.unitsPerBeat
-        val draft = copy(
-            notes = notes.toMutableList().apply { add(at, note) },
-            timing = t.copy(lengths = t.lengths.toMutableList().apply { add(at, length) }),
-        )
-        val (merged, index) = draft.mergedRests()
-        return merged.fixFirstBar() to index[at] + 1
+    fun inserted(slot: Int, note: Int?): Pair<TapDraft, Int> {
+        val (gap, k) = gapOf(slot.coerceIn(0, lastSlot))
+        val split = anchorsBefore(gap, k)
+        var seen = 0
+        val newAnchors = anchors.map { a ->
+            when {
+                a.gap < gap -> a
+                a.gap > gap -> a.copy(gap = a.gap + 1)
+                else -> (if (seen++ < split) a else a.copy(gap = gap + 1))
+            }
+        }
+        val newNotes = notes.toMutableList().apply { add(gap, note) }
+        val newMarks = if (marks.isEmpty()) marks else marks.toMutableList().apply { add(gap, null) }
+        val t = timing
+        val draft = if (t == null) {
+            copy(notes = newNotes, marks = newMarks, anchors = newAnchors)
+        } else {
+            val length = t.lengths.getOrNull(gap - 1) ?: t.setup.ticksPerBeat
+            copy(notes = newNotes, marks = newMarks, anchors = newAnchors, timing = t.copy(lengths = t.lengths.toMutableList().apply { add(gap, length) }))
+        }
+        val (merged, map) = draft.mergedRests()
+        val fixed = merged.fixFirstBar()
+        return fixed to fixed.slotAfter(map[gap])
+    }
+
+    /**
+     * Removes the item before [slot], with its length; anchors between it and
+     * the cursor stay. Returns the draft and where the cursor goes.
+     */
+    fun removedBefore(slot: Int): Pair<TapDraft, Int> {
+        val (gap, k) = gapOf(slot.coerceIn(0, lastSlot))
+        if (gap == 0) return this to slot.coerceIn(0, lastSlot)
+        val index = gap - 1
+        val kept = visibleAt(index) + k
+        val newAnchors = anchors.map { a -> if (a.gap > index) a.copy(gap = a.gap - 1) else a }
+        val newNotes = notes.toMutableList().apply { removeAt(index) }
+        val newMarks = if (marks.isEmpty()) marks else marks.toMutableList().apply { removeAt(index) }.takeIf { m -> m.any { it != null } }.orEmpty()
+        val t = timing
+        val draft = when {
+            t == null -> copy(notes = newNotes, marks = newMarks, anchors = newAnchors)
+            newNotes.isEmpty() -> copy(notes = newNotes, marks = newMarks, anchors = newAnchors, timing = null)
+            else -> copy(notes = newNotes, marks = newMarks, anchors = newAnchors, timing = t.copy(lengths = t.lengths.toMutableList().apply { removeAt(index) }))
+        }
+        val (merged, map) = draft.mergedRests()
+        val fixed = merged.fixFirstBar()
+        val newGap = if (index == 0) 0 else map[index - 1] + 1
+        return fixed to fixed.slotOf(newGap, kept)
     }
 
     /** Removes the item at [index], with its length. Returns the draft and where the cursor goes. */
-    fun removed(index: Int): Pair<TapDraft, Int> {
-        if (index !in notes.indices) return this to index.coerceIn(0, notes.size)
-        val t = timing ?: return copy(notes = notes.toMutableList().apply { removeAt(index) }) to index
-        val draft = copy(
-            notes = notes.toMutableList().apply { removeAt(index) },
-            timing = t.copy(lengths = t.lengths.toMutableList().apply { removeAt(index) }),
-        )
-        if (draft.notes.isEmpty()) return draft.copy(timing = null) to 0
-        val (merged, map) = draft.mergedRests()
-        return merged.fixFirstBar() to if (index == 0) 0 else map[index - 1] + 1
+    fun removed(index: Int): Pair<TapDraft, Int> =
+        if (index !in notes.indices) this to slotOf(index.coerceIn(0, notes.size)) else removedBefore(slotAfter(index))
+
+    /** Keeps the fingerings; the key moves with the whistle (`Em` on a D whistle is `Am` on a G). */
+    fun withWhistle(whistle: WhistleKey): TapDraft {
+        val moved = key?.let { AbcNotes.transposeKey(it, whistle.writtenTonic - this.whistle.writtenTonic) ?: it }
+        return copy(whistle = whistle, key = moved?.takeIf { it != whistle.letter })
     }
 
     /**
@@ -73,248 +236,123 @@ data class TapDraft(
         return mergedRests().first.fixFirstBar()
     }
 
-    /** Adjacent rests merged into one, and where each old item went. */
+    /** Adjacent rests merged into one (unless something sits between them), and where each old item went. */
     private fun mergedRests(): Pair<TapDraft, IntArray> {
         val t = timing ?: return this to IntArray(notes.size) { it }
         val outNotes = mutableListOf<Int?>()
         val outLengths = mutableListOf<Int>()
+        val outMarks = mutableListOf<NoteMarks?>()
         val map = IntArray(notes.size)
         for (i in notes.indices) {
-            if (notes[i] == null && outNotes.isNotEmpty() && outNotes.last() == null) {
+            val mark = marks.getOrNull(i)
+            val merge = notes[i] == null && outNotes.isNotEmpty() && outNotes.last() == null &&
+                anchors.none { it.gap == i } && mark?.prefix.isNullOrEmpty() && outMarks.last()?.suffix.isNullOrEmpty()
+            if (merge) {
                 outLengths[outLengths.size - 1] += t.lengths[i]
+                if (mark != null) outMarks[outMarks.size - 1] = NoteMarks(outMarks.last()?.prefix.orEmpty(), mark.suffix)
             } else {
                 outNotes += notes[i]
                 outLengths += t.lengths[i]
+                outMarks += mark
             }
             map[i] = outNotes.size - 1
         }
-        return copy(notes = outNotes, timing = t.copy(lengths = outLengths)) to map
+        if (outNotes.size == notes.size) return this to map
+        val newAnchors = anchors.map { a -> a.copy(gap = if (a.gap >= notes.size) outNotes.size else map[a.gap]) }
+        return copy(
+            notes = outNotes,
+            timing = t.copy(lengths = outLengths),
+            marks = outMarks.takeIf { m -> m.any { it != null } }.orEmpty(),
+            anchors = newAnchors,
+        ) to map
     }
 
     private fun fixFirstBar(): TapDraft {
         val t = timing ?: return this
-        val first = minOf(t.firstBarUnits, t.lengths.sum()).coerceIn(1, t.setup.unitsPerBar)
-        return if (first == t.firstBarUnits) this else copy(timing = t.copy(firstBarUnits = first))
+        if (t.free) return this
+        val first = minOf(t.firstBarTicks, t.lengths.sum()).coerceIn(1, t.setup.ticksPerBar)
+        return if (first == t.firstBarTicks) this else copy(timing = t.copy(firstBarTicks = first))
     }
 }
 
 /**
- * A [TapDraft]'s rhythm: [lengths] in grid units of [setup], one per item of
- * the draft's notes (rests too), and [firstBarUnits], the first bar's length
- * (less than a bar for a pickup).
+ * A [TapDraft]'s rhythm: [lengths] in ticks ([TICKS_PER_WHOLE] to a whole
+ * note), one per item of the draft's notes (rests too), and [firstBarTicks],
+ * the first bar's length (less than a bar for a pickup).
+ *
+ * @property setup the meter, and what the tapper starts from (tempo, grid)
+ * @property unitLength the `L:` written
+ * @property tempo the `Q:` value written, or none
+ * @property freeMeter for a free tune, the `M:` written (`none`, `7/8`, or a
+ *   meter its bar lines don't follow): bar lines are kept as anchors, not
+ *   worked out
  */
-data class TapTiming(val setup: RhythmSetup, val lengths: List<Int>, val firstBarUnits: Int)
+data class TapTiming(
+    val setup: RhythmSetup,
+    val lengths: List<Int>,
+    val firstBarTicks: Int,
+    val unitLength: String = setup.grid.unitLength,
+    val tempo: String? = "${setup.meter.tempoNote}=${setup.bpm}",
+    val freeMeter: String? = null,
+) {
+    val free: Boolean get() = freeMeter != null
+}
 
 /**
- * The ABC form of a [TapDraft], and back. Every form has the whistle's
- * major key and its `%whistle_tab_key` directive, four bars to a line.
+ * The ABC form of a [TapDraft], and back ([AbcBody] does the body).
  *
  * - Untimed: every note a quarter, four to a 4/4 bar (`L:1/4`).
- * - Timed ([TapDraft.timing]): the meter, a unit of the grid (`L:1/8` or
- *   `L:1/16`) and a `Q:` tempo. Notes that cross a bar line, or whose length
- *   isn't one ABC note, are tied pieces; a space at each beat groups the
- *   beams.
+ * - Timed ([TapDraft.timing]): the meter, the unit length and a `Q:` tempo.
+ *   Notes that cross a bar line, or whose length isn't one ABC note, are
+ *   tied pieces; a space at each beat groups the beams; dotted pairs that
+ *   need fractions are written `A>B`, triplets `(3ABC`.
  *
- * [parse] accepts only text in these forms, so any other tune stays with
- * the text editor.
+ * Any tune with a key and a whistle reads ([read]); [parse] only gives a draft
+ * when nothing is lost, so saving it writes the same music back.
  */
 object TapTune {
 
     const val PER_BAR = 4
     const val BARS_PER_LINE = 4
 
-    private const val METER = "4/4"
-    private const val UNIT = "1/4"
-    private val OWN_FIELDS = setOf('X', 'M', 'L', 'K')
+    fun toAbc(draft: TapDraft): String = AbcBody.write(draft)
 
-    /** Lengths, in units, that one ABC note can have here, longest first. */
-    private val WRITABLE = listOf(16, 12, 8, 6, 4, 3, 2, 1)
+    /** The draft [abc] reads as, and what it couldn't keep; null if it has no key or whistle the editor can use. */
+    fun read(abc: String): TapRead? = AbcBody.read(abc)
 
-    fun toAbc(draft: TapDraft): String {
-        draft.timing?.let { return timed(draft, it) }
-        val key = draft.whistle.letter
-        val bars = draft.notes.ifEmpty { listOf(null) }.chunked(PER_BAR).map { bar ->
-            AbcNotes.spellBar(bar.map { offset -> offset?.let { draft.whistle.writtenTonic + it } }, key).joinToString(" ")
-        }
-        return withHeader(draft, listOf("M:$METER", "L:$UNIT"), bars)
-    }
+    /** The draft [abc] reads as without losing anything, or null. */
+    fun parse(abc: String): TapDraft? = read(abc)?.takeIf { it.losses.isEmpty() }?.draft
 
-    /** One written note or rest: [midi] null for a rest, [tie] to the next piece. */
-    private data class Piece(val midi: Int?, val units: Int, val tie: Boolean, val atBeat: Boolean)
-
-    private fun timed(draft: TapDraft, timing: TapTiming): String {
-        val setup = timing.setup
-        val key = draft.whistle.letter
-        val bar = setup.unitsPerBar
-        val beat = setup.unitsPerBeat
-
-        // Positions count from the start of the first (maybe partial) bar's full length.
-        var pos = bar - timing.firstBarUnits
-        val bars = mutableListOf<MutableList<Piece>>(mutableListOf())
-        for ((i, offset) in draft.notes.withIndex()) {
-            val midi = offset?.let { draft.whistle.writtenTonic + it }
-            var left = timing.lengths.getOrElse(i) { beat }
-            while (left > 0) {
-                val inBar = Math.floorMod(pos, bar)
-                if (inBar == 0 && bars.last().isNotEmpty()) bars += mutableListOf<Piece>()
-                val length = WRITABLE.first { it <= minOf(left, bar - inBar) }
-                left -= length
-                bars.last() += Piece(midi, length, tie = midi != null && left > 0, atBeat = inBar % beat == 0)
-                pos += length
-            }
-        }
-
-        val written = bars.filter { it.isNotEmpty() }.map { pieces ->
-            val names = AbcNotes.spellBar(pieces.map { it.midi }, key)
-            pieces.indices.joinToString("") { i ->
-                val p = pieces[i]
-                val gap = if (i > 0 && p.atBeat) " " else ""
-                gap + names[i] + (if (p.units == 1) "" else p.units.toString()) + (if (p.tie) "-" else "")
-            }
-        }
-        return withHeader(
-            draft,
-            listOf("M:" + setup.meter.abc, "L:" + setup.grid.unitLength, "Q:${tempoNote(setup.meter)}=${setup.bpm}"),
-            written.ifEmpty { listOf("z") },
-        )
-    }
-
-    /** What the `Q:` tempo counts: the beat, a dotted quarter in compound meters. */
-    private fun tempoNote(meter: Meter): String = if (meter.compound) "3/8" else "1/4"
+    /** For each item, whether a worked-out bar line comes before it. */
+    fun barStarts(draft: TapDraft): BooleanArray = AbcBody.barStarts(draft)
 
     /**
-     * A whole tune from [draft]'s title, extra headers and whistle, the
-     * [fields] (such as `M:` and `L:`) before its `K:`, and the bars of its
-     * body, [BARS_PER_LINE] to a line.
+     * The sounding notes the tune jumps on after (the last before a later
+     * ending, `[2`), as indexes into the sounding notes: tapping goes on from
+     * there with no legato or rest.
      */
-    private fun withHeader(draft: TapDraft, fields: List<String>, bars: List<String>): String {
-        val body = bars.chunked(BARS_PER_LINE).joinToString(" |\n") { it.joinToString(" | ") }
+    fun breaks(draft: TapDraft): Set<Int> {
+        val sounding = draft.notes.indices.filter { draft.notes[it] != null }
+        return draft.anchors
+            .filter { it.kind == Anchor.Kind.BAR && (AbcBody.endingOf(it.text) ?: 1) != 1 }
+            .mapNotNull { a -> sounding.indexOfLast { it < a.gap }.takeIf { it >= 0 } }
+            .toSet()
+    }
+
+    /**
+     * A whole tune from [draft]'s title, extra headers and key, [timing]'s
+     * `M:`, `L:` and `Q:` before its `K:`, and the [body].
+     */
+    internal fun withHeader(draft: TapDraft, timing: TapTiming, body: String): String {
         val header = buildList {
             add("X:1")
             add("T:" + draft.title.lines().joinToString(" ").trim())
             addAll(draft.extraHeaders)
-            addAll(fields)
-            add("K:" + draft.whistle.letter)
+            add("M:" + (timing.freeMeter ?: timing.setup.meter.abc))
+            add("L:" + timing.unitLength)
+            timing.tempo?.let { add("Q:$it") }
+            add("K:" + draft.keyText)
         }
-        return AbcBook.withWhistle(header.joinToString("\n") + "\n$body |]\n", draft.whistle)
+        return AbcBook.withWhistle(header.joinToString("\n") + "\n$body\n", draft.whistle)
     }
-
-    /** The draft [abc] was written from, or null if it isn't a tune in one of [toAbc]'s forms. */
-    fun parse(abc: String): TapDraft? {
-        val headers = AbcBook.headers(abc)
-        val setup = when (headers.unitLength) {
-            UNIT -> null.also { if (headers.meter != METER) return null }
-            else -> {
-                val grid = RhythmGrid.entries.firstOrNull { it.unitLength == headers.unitLength } ?: return null
-                val meter = Meter.entries.firstOrNull { it.abc == headers.meter } ?: return null
-                RhythmSetup(meter = meter, grid = grid)
-            }
-        }
-        val key = headers.key?.takeIf { it in AbcNotes.KEYS } ?: return null
-        val whistle = headers.whistle ?: AbcBook.suggestWhistle(key) ?: return null
-
-        val lines = abc.removePrefix("﻿").lines().map { it.trimEnd('\r') }.filterNot(::isWhistleLine)
-        val keyLine = lines.indexOfFirst { it.startsWith("K:") }
-        val own = if (setup == null) OWN_FIELDS else OWN_FIELDS + 'Q'
-        var titleSeen = false
-        var tempo: String? = null
-        val extra = lines.subList(0, keyLine).filter { line ->
-            val field = FIELD.find(line)?.groupValues?.get(1)?.get(0)
-            if (field == 'Q' && tempo == null) tempo = line.substring(2).trim()
-            when {
-                line.isBlank() -> false
-                field == 'T' && !titleSeen -> { titleSeen = true; false }
-                field in own -> false
-                else -> true
-            }
-        }
-
-        val body = lines.drop(keyLine + 1).joinToString(" ").trim()
-        if (!body.endsWith("|]") || body.dropLast(2).contains("|]")) return null
-        val bars = body.dropLast(2).split("|").map { it.trim() }
-        val draft = if (setup == null) {
-            val notes = untimedNotes(bars, key, whistle) ?: return null
-            TapDraft(headers.title.orEmpty(), whistle, notes, extra)
-        } else {
-            val bpm = tempo?.removePrefix(tempoNote(setup.meter) + "=")?.takeIf { it != tempo }?.toIntOrNull()
-                ?.takeIf { it > 0 } ?: return null
-            val timed = timedNotes(bars, key, whistle, setup.copy(bpm = bpm)) ?: return null
-            TapDraft(headers.title.orEmpty(), whistle, timed.first, extra, timed.second)
-        }
-        return draft
-    }
-
-    private fun untimedNotes(bars: List<String>, key: String, whistle: WhistleKey): List<Int?>? {
-        val notes = mutableListOf<Int?>()
-        for (bar in bars) {
-            val midis = AbcNotes.parseBar(bar.split(" ").filter { it.isNotEmpty() }, key) ?: return null
-            for (midi in midis) notes += midi?.let { offsetOf(it, whistle) ?: return null }
-        }
-        return notes
-    }
-
-    /**
-     * The notes and timing of a timed body: tied pieces of one pitch join up,
-     * also across bar lines, and the bars must line up (only the first and
-     * last may be short).
-     */
-    private fun timedNotes(bars: List<String>, key: String, whistle: WhistleKey, setup: RhythmSetup): Pair<List<Int?>, TapTiming>? {
-        val notes = mutableListOf<Int?>()
-        val lengths = mutableListOf<Int>()
-        var tied = false
-        var firstBar = 0
-        for ((b, bar) in bars.withIndex()) {
-            val text = bar.filterNot { it.isWhitespace() }
-            val pitches = mutableListOf<String>()
-            val units = mutableListOf<Int>()
-            val ties = mutableListOf<Boolean>()
-            var at = 0
-            while (at < text.length) {
-                val m = PIECE.matchAt(text, at) ?: return null
-                val (pitch, length, tie) = m.destructured
-                if (pitch == "z" && tie.isNotEmpty()) return null
-                pitches += pitch
-                units += if (length.isEmpty()) 1 else length.toIntOrNull()?.takeIf { it > 0 } ?: return null
-                ties += tie.isNotEmpty()
-                at = m.range.last + 1
-            }
-            val sum = units.sum()
-            val full = setup.unitsPerBar
-            when {
-                sum == 0 || sum > full -> return null
-                sum < full && b != 0 && b != bars.lastIndex -> return null
-            }
-            if (b == 0) firstBar = sum
-            val midis = AbcNotes.parseBar(pitches, key) ?: return null
-            for (i in midis.indices) {
-                val offset = midis[i]?.let { offsetOf(it, whistle) ?: return null }
-                when {
-                    tied -> {
-                        if (offset == null || offset != notes.last()) return null
-                        lengths[lengths.size - 1] += units[i]
-                    }
-                    offset == null && notes.isNotEmpty() && notes.last() == null -> lengths[lengths.size - 1] += units[i]
-                    else -> {
-                        notes += offset
-                        lengths += units[i]
-                    }
-                }
-                tied = ties[i]
-            }
-        }
-        if (tied) return null
-        return notes to TapTiming(setup, lengths, firstBar)
-    }
-
-    /** [midi] as an offset above [whistle]'s bottom note, if it has a fingering. */
-    private fun offsetOf(midi: Int, whistle: WhistleKey): Int? =
-        (midi - whistle.writtenTonic).takeIf { FingeringEngine.fingeringAt(it, CNatural.DEFAULT) != null }
-
-    private val FIELD = Regex("""^([A-Za-z]):""")
-
-    /** A note or rest with its length in units and an optional tie. */
-    private val PIECE = Regex("""([_^=]?[A-Ga-g][,']*|z)(\d*)(-?)""")
-
-    /** [toAbc] writes the directive itself. */
-    private fun isWhistleLine(line: String): Boolean = line.startsWith("%whistle_tab_key")
 }

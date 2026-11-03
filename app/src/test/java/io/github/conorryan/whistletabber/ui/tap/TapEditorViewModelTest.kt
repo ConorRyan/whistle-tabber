@@ -3,6 +3,7 @@ package io.github.conorryan.whistletabber.ui.tap
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import io.github.conorryan.whistletabber.audio.PadSound
+import io.github.conorryan.whistletabber.music.Loss
 import io.github.conorryan.whistletabber.music.Meter
 import io.github.conorryan.whistletabber.music.Press
 import io.github.conorryan.whistletabber.music.RhythmFit
@@ -178,8 +179,8 @@ class TapEditorViewModelTest {
     }
 
     @Test
-    fun `a tune changed as text, or gone, says so`() = runTest {
-        val id = runBlocking { graph.repository.save("X:1\nT:Text\nK:D\nDEF|\n") }
+    fun `a tune with no key the editor can read, or gone, says so`() = runTest {
+        val id = runBlocking { graph.repository.save("X:1\nT:Text\nK:none\nDEF|\n") }
         assertTrue(vm(id).state.first { it.unsupported }.unsupported)
         assertTrue(vm(999).state.first { it.missing }.missing)
     }
@@ -416,5 +417,91 @@ class TapEditorViewModelTest {
         again.loaded()
         again.openRhythm()
         assertEquals(PadSound.TICK, again.state.value.rhythm!!.padSound)
+    }
+
+    private suspend fun TapEditorViewModel.savedId(): Long {
+        var id = -1L
+        effects.test {
+            save()
+            id = (awaitItem() as TapEditorEffect.Saved).id
+        }
+        return id
+    }
+
+    private val reelAbc = "X:1\nT:Reel\nR:reel\nM:C|\nL:1/8\nQ:1/2=90\nK:D\n|: D2FA d2fa :|\n|: a2fd A2FA :|\n"
+
+    @Test
+    fun `an imported tune is edited in place, its repeats kept`() = runTest {
+        val id = runBlocking { graph.repository.save(reelAbc) }
+        val vm = vm(id)
+        val s = vm.loaded()
+        assertEquals(emptySet<Loss>(), s.losses)
+        assertFalse(s.asCopy)
+        // The cursor opens after the last note, before the closing :|.
+        val draft = s.draft!!
+        assertEquals(draft.slotAfter(draft.notes.lastIndex), s.cursor)
+        vm.deleteBack()
+        vm.tap(5)
+        assertEquals(id, vm.savedId())
+        val abc = graph.repository.get(id)!!.abc
+        assertTrue(abc, abc.contains("|: D2FA d2fa :|"))
+        assertTrue(abc, abc.contains("|: a2fd A2FG :|"))
+        assertTrue(abc, abc.contains("\nQ:1/2=90\n") && abc.contains("\nR:reel\n"))
+    }
+
+    @Test
+    fun `the cursor can stand either side of a repeat sign`() = runTest {
+        val id = runBlocking { graph.repository.save(reelAbc) }
+        val vm = vm(id)
+        val draft = vm.loaded().draft!!
+        vm.moveCursor(draft.slotAfter(5)) // the end of the first part, before :|
+        vm.deleteBack()
+        vm.tap(9)
+        val abc = TapTune.toAbc(vm.state.value.draft!!)
+        assertTrue(abc, abc.contains("|: D2FA d2fB :|"))
+        // After the second part's |: (gap 6 holds :|, a line break, then |:).
+        vm.moveCursor(vm.state.value.draft!!.slotOf(6, 2))
+        vm.tap(14)
+        val after = vm.state.value.draft!!
+        assertEquals(14, after.notes[6])
+        assertEquals(listOf(":|", "|:"), after.anchors.filter { it.gap == 6 && it.visible }.map { it.text })
+    }
+
+    @Test
+    fun `a tune it can't keep whole opens as a copy and saves as a new tune`() = runTest {
+        val original = "X:1\nT:Chords\nM:C|\nL:1/8\nK:D\n[DFA]4 d4 |]\n"
+        val id = runBlocking { graph.repository.save(original) }
+        val vm = vm(id)
+        val s = vm.loaded()
+        assertEquals(setOf(Loss.CHORDS), s.losses)
+        assertTrue(s.asCopy)
+        assertTrue(s.canSave)
+        val copy = vm.savedId()
+        assertTrue(copy != id)
+        assertEquals(original, graph.repository.get(id)!!.abc)
+        assertEquals(listOf(7, 12), TapTune.parse(graph.repository.get(copy)!!.abc)!!.notes)
+    }
+
+    @Test
+    fun `the tapper starts from the tune's own meter and tempo`() = runTest {
+        val id = runBlocking { graph.repository.save(reelAbc) }
+        val vm = vm(id)
+        vm.loaded()
+        vm.openRhythm()
+        val setup = vm.state.value.rhythm!!.setup
+        assertEquals(Meter.CUT, setup.meter)
+        assertEquals(90, setup.bpm)
+    }
+
+    @Test
+    fun `an imported draft survives in the saved state`() = runTest {
+        val id = runBlocking { graph.repository.save(reelAbc) }
+        val saved = SavedStateHandle()
+        vm(id, saved = saved).also { it.loaded() }.apply { tap(2) }
+        val first = vm(id, saved = saved).loaded()
+        assertTrue(first.dirty)
+        assertEquals(2, first.draft!!.anchors.count { it.text == "|:" })
+        assertEquals(13, first.draft!!.notes.size)
+        assertEquals(2, first.draft!!.notes.last())
     }
 }

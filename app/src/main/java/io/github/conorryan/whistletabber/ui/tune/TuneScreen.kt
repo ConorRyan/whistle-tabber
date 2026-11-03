@@ -163,7 +163,7 @@ fun TuneScreen(
                         EditTuneMenu(
                             open = editOpen,
                             onOpen = { editOpen = it },
-                            tapEditable = state.tapEditable,
+                            tapEdit = state.tapEdit,
                             onEdit = onEdit,
                             onEditTaps = onEditTaps,
                         )
@@ -272,13 +272,15 @@ private fun TuneHeader(
 }
 
 /**
- * The player's pen button. A tune the tap editor wrote has two edits, so the
- * pen opens a small menu above it: edit the fingerings (the tap editor) or
- * edit the ABC. Any other tune has only one edit, so the pen goes straight
- * there. Choosing, a tap outside or back closes the menu.
+ * The player's pen button. A tune the tap editor can read has two edits, so
+ * the pen opens a small menu above it: edit the fingerings (the tap editor;
+ * as a copy when it can't keep everything) or edit the ABC. Any other tune
+ * has only one edit, so the pen goes straight there. Choosing, a tap outside
+ * or back closes the menu.
  */
 @Composable
-internal fun EditTuneMenu(open: Boolean, onOpen: (Boolean) -> Unit, tapEditable: Boolean, onEdit: () -> Unit, onEditTaps: () -> Unit) {
+internal fun EditTuneMenu(open: Boolean, onOpen: (Boolean) -> Unit, tapEdit: TapEdit, onEdit: () -> Unit, onEditTaps: () -> Unit) {
+    val tapEditable = tapEdit != TapEdit.NONE
     Box {
         FilledIconButton(
             onClick = { if (tapEditable) onOpen(!open) else onEdit() },
@@ -297,7 +299,9 @@ internal fun EditTuneMenu(open: Boolean, onOpen: (Boolean) -> Unit, tapEditable:
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         ) {
             DropdownMenuItem(
-                text = { Text(stringResource(R.string.action_edit_fingerings)) },
+                text = {
+                    Text(stringResource(if (tapEdit == TapEdit.AS_COPY) R.string.action_edit_fingerings_copy else R.string.action_edit_fingerings))
+                },
                 leadingIcon = { Icon(Icons.Filled.TouchApp, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                 onClick = { onOpen(false); onEditTaps() },
                 modifier = Modifier.testTag("editTaps"),

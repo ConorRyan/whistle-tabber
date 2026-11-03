@@ -8,6 +8,7 @@ import io.github.conorryan.whistletabber.data.tunes.RecentlyDeleted
 import io.github.conorryan.whistletabber.data.tunes.Tune
 import io.github.conorryan.whistletabber.data.tunes.TuneRepository
 import io.github.conorryan.whistletabber.music.TabSettings
+import io.github.conorryan.whistletabber.music.TapRead
 import io.github.conorryan.whistletabber.music.TapTune
 import io.github.conorryan.whistletabber.music.WhistleKey
 import io.github.conorryan.whistletabber.render.TunePage
@@ -29,11 +30,31 @@ data class TuneUiState(
     val missing: Boolean = false,
     val settings: TabSettings = TabSettings(),
     val preview: KeyChangePreview.Preview? = null,
-    /** The tune is in the form the tap editor writes ([TapTune]), so Edit opens that. */
-    val tapEditable: Boolean = false,
+    /** How the tap editor can open the tune ([TapTune.read]). */
+    val tapEdit: TapEdit = TapEdit.NONE,
 ) {
     /** The whistle the tune is written for: its directive, else its key's suggestion, else D. */
     val tuneWhistle: WhistleKey get() = tune?.whistle ?: WhistleKey.DEFAULT
+}
+
+/** How the tap editor opens a tune. */
+enum class TapEdit {
+    /** Read without loss: edited and saved in place. */
+    IN_PLACE,
+
+    /** Read, but something is lost ([TapRead.losses]): a converted copy, saved as a new tune. */
+    AS_COPY,
+
+    /** No key or whistle the tap editor can use: the text editor only. */
+    NONE,
+    ;
+
+    companion object {
+        fun of(abc: String): TapEdit {
+            val read = TapTune.read(abc) ?: return NONE
+            return if (read.losses.isEmpty()) IN_PLACE else AS_COPY
+        }
+    }
 }
 
 sealed interface TuneEffect {
@@ -81,7 +102,7 @@ class TuneViewModel(
                     if (!deleting) _state.update { it.copy(missing = true) }
                     return@collect
                 }
-                _state.update { it.copy(tune = tune, settings = settings, preview = preview, missing = false, tapEditable = TapTune.parse(tune.abc) != null) }
+                _state.update { it.copy(tune = tune, settings = settings, preview = preview, missing = false, tapEdit = TapEdit.of(tune.abc)) }
                 val whistle = _state.value.tuneWhistle
                 renderer.show(
                     TuneRenderer.RenderRequest(

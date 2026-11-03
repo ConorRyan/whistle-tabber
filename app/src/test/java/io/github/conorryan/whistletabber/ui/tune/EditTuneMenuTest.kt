@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import io.github.conorryan.whistletabber.ui.theme.WhistleTabberTheme
 import org.junit.Assert.assertEquals
@@ -24,11 +25,11 @@ class EditTuneMenuTest {
     val compose = createComposeRule()
 
     /** The dial with its own open state, as TuneScreen shows it. */
-    private fun setContent(tapEditable: Boolean, onEdit: () -> Unit = {}, onEditTaps: () -> Unit = {}) {
+    private fun setContent(tapEdit: TapEdit, onEdit: () -> Unit = {}, onEditTaps: () -> Unit = {}) {
         compose.setContent {
             WhistleTabberTheme {
                 var open by remember { mutableStateOf(false) }
-                EditTuneMenu(open = open, onOpen = { open = it }, tapEditable = tapEditable, onEdit = onEdit, onEditTaps = onEditTaps)
+                EditTuneMenu(open = open, onOpen = { open = it }, tapEdit = tapEdit, onEdit = onEdit, onEditTaps = onEditTaps)
             }
         }
     }
@@ -37,7 +38,7 @@ class EditTuneMenuTest {
     fun `a tap-editable tune expands into both edits and each closes it`() {
         var edits = 0
         var taps = 0
-        setContent(tapEditable = true, onEdit = { edits++ }, onEditTaps = { taps++ })
+        setContent(tapEdit = TapEdit.IN_PLACE, onEdit = { edits++ }, onEditTaps = { taps++ })
         compose.onNodeWithTag("editTaps").assertDoesNotExist()
         compose.onNodeWithTag("edit").performClick()
         compose.onNodeWithTag("editTaps").assertIsDisplayed()
@@ -57,11 +58,20 @@ class EditTuneMenuTest {
     fun `a tune that is not tap-editable goes straight to the ABC editor`() {
         var edits = 0
         var taps = 0
-        setContent(tapEditable = false, onEdit = { edits++ }, onEditTaps = { taps++ })
+        setContent(tapEdit = TapEdit.NONE, onEdit = { edits++ }, onEditTaps = { taps++ })
         compose.onNodeWithTag("editTaps").assertDoesNotExist()
         compose.onNodeWithTag("edit").performClick()
         assertEquals(1, edits)
         assertEquals(0, taps)
         compose.onNodeWithTag("editAbc").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a tune the tap editor converts says it edits a copy`() {
+        var taps = 0
+        setContent(tapEdit = TapEdit.AS_COPY, onEditTaps = { taps++ })
+        compose.onNodeWithTag("edit").performClick()
+        compose.onNodeWithText("Edit fingerings (as a copy)").performClick()
+        assertEquals(1, taps)
     }
 }

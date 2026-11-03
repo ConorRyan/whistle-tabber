@@ -114,28 +114,43 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     editor and the import.
   - `KeyChange`: target tonics, steps (−6..+5) and names for rewriting a
     tune into another key.
-  - `AbcNotes`: single ABC notes in a major key, MIDI ↔ text. `spellBar`
+  - `AbcNotes`: single ABC notes in a key (any tonic and mode: `signature`,
+    `transposeKey`), MIDI ↔ text. `spellBar`
     writes an explicit accidental on every note of a letter already altered
     in the bar (abcjs's playback scopes bar accidentals by letter and octave,
     its transposer by letter); `parseBar` reads the standard way; `name`
     gives "F♯"/"Fa♯".
-  - `TapTune` + `TapDraft`: a tune written by tapping fingerings, stored as
+  - `TapTune` + `TapDraft`: a tune for the tap editor, stored as
     `FingeringEngine` offsets (null = rest) for a whistle, plus an optional
-    `TapTiming` (the `RhythmSetup`, one length in grid units per note, and
-    the first bar's length) for a tapped rhythm. `toAbc`: without timing,
-    equal quarter notes, `M:4/4`, 4 per bar, 4 bars per line; with it, the
-    setup's meter, grid unit and `Q:`, ties across bar lines and for lengths
-    one note can't have. Either way the whistle's major key and
-    `%whistle_tab_key`; other header lines kept. `parse` reads only these two
-    forms back (else null), which is what makes a tune tap-editable — a saved
-    timed tune included. `inserted`/`removed` keep the timing (a new note is
-    as long as the one before it); `normalized` merges adjacent rests and
-    caps the first bar, so a draft always writes and reads the same.
+    `TapTiming` (the `RhythmSetup`, one length in ticks per note —
+    `TICKS_PER_WHOLE` = 192, so triplets are whole numbers — the first bar's
+    length, the `L:`/`Q:` written, and `freeMeter` for a tune whose bar lines
+    are kept as written: `M:none`, or bars that don't follow the meter), the
+    tune's `key` when it isn't the whistle's major (it moves with
+    `withWhistle`), per-note `NoteMarks` (decorations, grace notes, chord
+    symbols, slurs, kept as text) and `Anchor`s between notes (bar lines that
+    aren't plain — `|:`, `:|`, `[2` — line breaks, body lines such as `P:` or
+    `w:`, other text). `AbcBody` reads and writes it: any tune with a key and
+    a whistle reads (`TapTune.read` → `TapRead`, with the `Loss`es — chords,
+    voices, key/meter changes, folded notes — it couldn't keep); `parse` is
+    `read` without losses. Plain bar lines are worked out from the lengths
+    (a later ending, `[2`, goes back to where `[1` started); `toAbc` ties
+    across them, writes `A>B` and `(3ABC` where lengths need it, a space at
+    each beat, and four bars a line unless the tune has its own breaks. An
+    untimed draft writes equal quarters in 4/4. The cursor stands in a
+    *slot*: between items and visible anchors (`slotOf`, `gapOf`), so a note
+    can go either side of a repeat sign. `inserted`/`removedBefore` keep the
+    timing (a new note is as long as the one before it) and the anchors;
+    `normalized` merges adjacent rests and caps the first bar, so a draft
+    always writes and reads the same. `web-tests/rewritten.test.js` checks
+    with abcjs that the rewritten starter set plays exactly as the original.
   - `RhythmFit`: rhythm tapped over written notes. `fit`
     turns `Press`es (ms from the first downbeat after the count-in) and a
-    `RhythmSetup` (bpm, `Meter`, `RhythmGrid`) into a `Rhythm` (note/rest
-    lengths in grid units, a short first bar for a pickup): latency removed,
-    onsets snapped by position, gaps under a beat legato. `TapDraft.withRhythm`
+    `RhythmSetup` (bpm, `Meter` — x/4, `C`, `C|`, x/2, x/8 — `RhythmGrid`)
+    into a `Rhythm` (note/rest lengths in ticks, a short first bar for a
+    pickup): latency removed, onsets snapped by position, gaps under a beat
+    legato, no legato or rest after a `breaks` note (the tune jumps to a
+    later ending there, `TapTune.breaks`). `TapDraft.withRhythm`
     applies it to a draft.
 - `scan/` — reading whistle tab from images, pure Kotlin except the loader.
   - `GrayImage`: luma per pixel (0 black–255 white), bicubic `scaled`.
@@ -269,7 +284,7 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     C natural, half-hole notes under "More"), rest, delete and cursor keys. No
     staff preview: the strip is the whole display, and a tap sounds the note
     through `audio/TapAudio`. Draft (rhythm included) in `SavedStateHandle`; saves
-    `TapTune.toAbc`. "Tap the rhythm" opens the rhythm
+    `TapTune.toAbc` (the draft's ABC is also its saved state). "Tap the rhythm" opens the rhythm
     tapper (`RhythmPanel`: the setup in a bottom sheet with a `PadSound` of
     note, tick or silent, then a press-and-hold pad over a metronome with a
     count-in bar, then keep or try again; files `RhythmPanel.kt`,
@@ -283,9 +298,13 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     timed tune stays tap-editable. The note strip shows bar gaps from the
     note lengths and a mark of each note's length. The audio diagnostics show
     in debug builds only; a release build warns when the delay is over 60 ms.
-    The tune screen's Edit opens it when
-    `TuneUiState.tapEditable` (`TapTune.parse` succeeds), with "Edit ABC" for
-    the text editor; other tunes go straight to the text editor.
+    Any stored tune opens (`TapTune.read`): read without loss it is edited
+    in place; with `losses` it is a converted copy (a notice lists what was
+    lost) and Save adds a new tune. The tapper's setup starts from the
+    tune's meter, tempo and grid. The tune screen's Edit offers it by
+    `TuneUiState.tapEdit` (`TapEdit`: `IN_PLACE`, `AS_COPY`, or `NONE` for a
+    tune with no key it can read, which goes straight to the text editor),
+    with "Edit ABC" for the text editor.
   - `findtunes/`: "Find tunes online", links (`TUNE_SITES`) opened in the
     browser with `ACTION_VIEW`; downloads come back through `IncomingTunes`.
     Never list TheSession.org (a test checks).

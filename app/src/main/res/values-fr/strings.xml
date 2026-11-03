@@ -185,7 +185,16 @@
     <string name="tap_delete">Supprimer la note</string>
     <string name="tap_cursor_left">Vers la gauche</string>
     <string name="tap_cursor_right">Vers la droite</string>
-    <string name="tap_unsupported">Cet air a été modifié en texte\u00A0: il ne peut plus être modifié avec les doigtés. Utilisez plutôt Modifier l\'ABC.</string>
+    <string name="tap_unsupported">L\'éditeur de doigtés ne sait pas lire la tonalité de cet air. Utilisez plutôt Modifier l\'ABC.</string>
+    <string name="action_edit_fingerings_copy">Modifier les doigtés (une copie)</string>
+    <string name="tap_copy_notice">L\'éditeur de doigtés ne peut pas tout garder de cet air\u00A0: il en a ouvert une copie. Enregistrer ajoute un nouvel air\u00A0; l\'original reste tel quel.</string>
+    <string name="loss_chords">Accords\u00A0: seule la note du haut est gardée.</string>
+    <string name="loss_voices">Plusieurs voix\u00A0: seule la première est gardée.</string>
+    <string name="loss_key_change">Un changement de tonalité\u00A0: les notes sont gardées, écrites dans la première tonalité.</string>
+    <string name="loss_meter_change">Un changement de mesure\u00A0: les barres de mesure sont gardées sous la première.</string>
+    <string name="loss_folded">Les notes hors de la tessiture du whistle sont déplacées d\'une octave.</string>
+    <string name="loss_rounded">Quelques durées inhabituelles sont arrondies.</string>
+    <string name="loss_unreadable">Certains passages n\'ont pas pu être lus et sont laissés de côté.</string>
     <string name="tap_rhythm">Taper le rythme</string>
     <string name="tap_remove_rhythm">Supprimer le rythme</string>
     <string name="rhythm_tempo">Tempo\u00A0: %1$d temps par minute</string>

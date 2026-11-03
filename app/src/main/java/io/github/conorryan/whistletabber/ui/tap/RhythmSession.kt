@@ -9,9 +9,10 @@ import io.github.conorryan.whistletabber.music.RhythmSetup
  * One pass of tapping the rhythm over [total] sounding notes at [setup]:
  * presses and releases in ms from the first downbeat after the count-in.
  * One press is held at a time; a press while another is held (the next
- * finger landing first) ends that one there. Pure.
+ * finger landing first) ends that one there. [breaks] are the notes the tune
+ * jumps on after ([RhythmFit.fit]). Pure.
  */
-class RhythmSession(val setup: RhythmSetup, val total: Int) {
+class RhythmSession(val setup: RhythmSetup, val total: Int, private val breaks: Set<Int> = emptySet()) {
 
     private val presses = mutableListOf<Press>()
     private var heldSince: Long? = null
@@ -45,5 +46,5 @@ class RhythmSession(val setup: RhythmSetup, val total: Int) {
     }
 
     /** The best-guess rhythm of everything tapped; notes not reached get a beat each. */
-    fun rhythm(): Rhythm = RhythmFit.fit(presses.toList(), total, setup)
+    fun rhythm(): Rhythm = RhythmFit.fit(presses.toList(), total, setup, breaks)
 }

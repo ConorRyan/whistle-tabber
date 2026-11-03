@@ -19,10 +19,12 @@ import androidx.compose.ui.test.performTouchInput
 import io.github.conorryan.whistletabber.audio.OutputPath
 import io.github.conorryan.whistletabber.audio.PadSound
 import io.github.conorryan.whistletabber.audio.TapAudio
+import io.github.conorryan.whistletabber.music.Loss
 import io.github.conorryan.whistletabber.music.Meter
 import io.github.conorryan.whistletabber.music.RhythmSetup
 import io.github.conorryan.whistletabber.music.TapDraft
 import io.github.conorryan.whistletabber.music.TapTiming
+import io.github.conorryan.whistletabber.music.TapTune
 import io.github.conorryan.whistletabber.music.WhistleKey
 import io.github.conorryan.whistletabber.ui.theme.WhistleTabberTheme
 import org.junit.Assert.assertEquals
@@ -202,7 +204,7 @@ class TapEditorContentTest {
     fun `a tapped rhythm can be kept or tapped again`() {
         var kept = false
         var retried = false
-        val timed = TapDraft("T", WhistleKey.D, listOf(0, null, 2), timing = TapTiming(RhythmSetup(), listOf(2, 4, 2), 8))
+        val timed = TapDraft("T", WhistleKey.D, listOf(0, null, 2), timing = TapTiming(RhythmSetup(), listOf(48, 96, 48), 192))
         val done = TapEditorUiState(draft = timed, cursor = 3, rhythm = RhythmPanel(RhythmSetup(), phase = RhythmPhase.DONE, next = 2, total = 2))
         compose.setContent {
             WhistleTabberTheme { TapEditorContent(done, isNew = false, onKeepRhythm = { kept = true }, onRetryRhythm = { retried = true }) }
@@ -214,7 +216,7 @@ class TapEditorContentTest {
 
     @Test
     fun `a timed strip shows bar gaps from the lengths, a mark per note, and can drop the rhythm`() {
-        val timing = TapTiming(RhythmSetup(bpm = 120, meter = Meter.FOUR_FOUR), listOf(2, 2, 2, 2, 2), 8)
+        val timing = TapTiming(RhythmSetup(bpm = 120, meter = Meter.FOUR_FOUR), listOf(48, 48, 48, 48, 48), 192)
         val state = TapEditorUiState(draft = TapDraft("T", WhistleKey.D, listOf(0, 2, 4, 5, 7), timing = timing), cursor = 5)
         var removed = false
         compose.setContent {
@@ -225,5 +227,27 @@ class TapEditorContentTest {
         compose.onNodeWithTag("length-4", useUnmergedTree = true).assertExists()
         compose.onNodeWithTag("removeRhythm").performScrollTo().performClick()
         assertTrue(removed)
+    }
+
+    @Test
+    fun `a converted copy says what it couldn't keep`() {
+        val state = TapEditorUiState(draft = TapDraft("T", WhistleKey.D, listOf(0, 2)), losses = setOf(Loss.CHORDS, Loss.FOLDED))
+        compose.setContent { WhistleTabberTheme { TapEditorContent(state, isNew = false) } }
+        compose.onNodeWithTag("copyNotice").assertExists()
+        compose.onNodeWithTag("loss-CHORDS", useUnmergedTree = true).assertExists()
+        compose.onNodeWithTag("loss-FOLDED", useUnmergedTree = true).assertExists()
+        compose.onNodeWithTag("loss-VOICES", useUnmergedTree = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun `repeat signs show in the strip and put the cursor after them`() {
+        val draft = TapTune.parse("X:1\nT:T\nM:2/4\nL:1/8\nK:D\n|: D2F2 :|: A2d2 :|\n")!!
+        var cursor = -1
+        compose.setContent {
+            WhistleTabberTheme { TapEditorContent(TapEditorUiState(draft = draft, cursor = draft.endSlot), isNew = false, onCursor = { cursor = it }) }
+        }
+        compose.onNodeWithTag("bar-0-0").assertExists()
+        compose.onNodeWithTag("bar-2-0").performScrollTo().performClick()
+        assertEquals(draft.slotOf(2, 1), cursor)
     }
 }

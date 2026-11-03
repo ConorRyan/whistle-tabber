@@ -7,26 +7,59 @@ import kotlin.math.roundToInt
 import kotlin.math.sin
 
 /**
- * A time signature the rhythm tapper knows. The beat is a quarter in simple
- * meters and a dotted quarter in compound ones (a jig at 120 is 120 dotted
- * quarters a minute), which is what the BPM counts.
+ * A time signature the rhythm tapper knows, as written in `M:`. The beat is a
+ * quarter in x/4 meters and `C`, a half in x/2 and `C|`, and a dotted quarter
+ * in compound ones (a jig at 120 is 120 dotted quarters a minute), which is
+ * what the BPM counts.
  */
 enum class Meter(val abc: String, val beatsPerBar: Int, val eighthsPerBeat: Int) {
     TWO_FOUR("2/4", 2, 2),
     THREE_FOUR("3/4", 3, 2),
     FOUR_FOUR("4/4", 4, 2),
+    COMMON("C", 4, 2),
+    TWO_TWO("2/2", 2, 4),
+    CUT("C|", 2, 4),
+    THREE_TWO("3/2", 3, 4),
+    THREE_EIGHT("3/8", 1, 3),
     SIX_EIGHT("6/8", 2, 3),
     NINE_EIGHT("9/8", 3, 3),
     TWELVE_EIGHT("12/8", 4, 3),
     ;
 
     val compound: Boolean get() = eighthsPerBeat == 3
+
+    /** A beat and a bar in [TICKS_PER_WHOLE] ticks. */
+    val ticksPerBeat: Int get() = eighthsPerBeat * TICKS_PER_EIGHTH
+    val ticksPerBar: Int get() = beatsPerBar * ticksPerBeat
+
+    /** What a `Q:` tempo counts: the beat. */
+    val tempoNote: String get() = when (eighthsPerBeat) {
+        3 -> "3/8"
+        4 -> "1/2"
+        else -> "1/4"
+    }
+
+    companion object {
+        /** The meter written [text] (`M:` value), if it is one of these. */
+        fun of(text: String?): Meter? = entries.firstOrNull { it.abc == text?.trim() }
+    }
 }
+
+/**
+ * Note lengths are counted in ticks, [TICKS_PER_WHOLE] to a whole note, so
+ * that every length down to a 64th and every triplet of them is a whole
+ * number: an eighth is 24 ticks, an eighth-note triplet 16.
+ */
+const val TICKS_PER_WHOLE = 192
+const val TICKS_PER_EIGHTH = TICKS_PER_WHOLE / 8
 
 /** The shortest note the fit writes. */
 enum class RhythmGrid(val perEighth: Int, val unitLength: String) {
     EIGHTH(1, "1/8"),
     SIXTEENTH(2, "1/16"),
+    ;
+
+    val ticks: Int get() = TICKS_PER_EIGHTH / perEighth
 }
 
 /** What the rhythm is tapped against. */
@@ -39,6 +72,8 @@ data class RhythmSetup(
     val unitsPerBar: Int get() = meter.beatsPerBar * unitsPerBeat
     val beatMs: Double get() = 60_000.0 / bpm
     val unitMs: Double get() = beatMs / unitsPerBeat
+    val ticksPerBeat: Int get() = meter.ticksPerBeat
+    val ticksPerBar: Int get() = meter.ticksPerBar
 
     companion object {
         const val MIN_BPM = 40
@@ -50,13 +85,13 @@ data class RhythmSetup(
 data class Press(val downMs: Long, val upMs: Long)
 
 /**
- * A fitted rhythm: [events] in order from the first note, each [units] grid
- * units long; [note] indexes the tune's sounding notes, null is a rest.
- * [firstBarUnits] is the length of the first bar (less than a bar for a
- * pickup), so bar lines fall on the metronome's downbeats.
+ * A fitted rhythm: [events] in order from the first note, each [ticks] long
+ * ([TICKS_PER_WHOLE] to a whole note); [note] indexes the tune's sounding
+ * notes, null is a rest. [firstBarTicks] is the length of the first bar (less
+ * than a bar for a pickup), so bar lines fall on the metronome's downbeats.
  */
-data class Rhythm(val events: List<Event>, val firstBarUnits: Int) {
-    data class Event(val note: Int?, val units: Int)
+data class Rhythm(val events: List<Event>, val firstBarTicks: Int) {
+    data class Event(val note: Int?, val ticks: Int)
 }
 
 /**
@@ -73,14 +108,17 @@ object RhythmFit {
 
     /**
      * The rhythm of [noteCount] notes, the first `presses.size` of them tapped
-     * as [presses]; notes not reached get one beat each.
+     * as [presses]; notes not reached get one beat each. After a note in
+     * [breaks] (the tune jumps on, as to a second ending) the note is as long
+     * as it was held, with no rest after it.
      */
-    fun fit(presses: List<Press>, noteCount: Int, setup: RhythmSetup): Rhythm {
+    fun fit(presses: List<Press>, noteCount: Int, setup: RhythmSetup, breaks: Set<Int> = emptySet()): Rhythm {
         val beat = setup.unitsPerBeat
+        val tick = setup.grid.ticks
         val untimed = (noteCount - presses.size).coerceAtLeast(0)
         val tapped = presses.take(noteCount)
         if (tapped.isEmpty()) {
-            return Rhythm(List(untimed) { Rhythm.Event(it, beat) }, setup.unitsPerBar)
+            return Rhythm(List(untimed) { Rhythm.Event(it, beat * tick) }, setup.ticksPerBar)
         }
 
         val unitMs = setup.unitMs
@@ -96,22 +134,23 @@ object RhythmFit {
         for (i in onsets.indices) {
             val start = onsets[i]
             val next = onsets.getOrNull(i + 1)
-            if (next == null) {
-                events += Rhythm.Event(i, maxOf(releases[i], start + 1) - start)
-                break
+            if (next == null || i in breaks) {
+                events += Rhythm.Event(i, (maxOf(releases[i], start + 1) - start).let { if (next == null) it else minOf(it, next - start) } * tick)
+                if (next == null) break
+                continue
             }
             val end = releases[i].coerceIn(start + 1, next)
             if (next - end < LEGATO_BEATS * beat) {
-                events += Rhythm.Event(i, next - start)
+                events += Rhythm.Event(i, (next - start) * tick)
             } else {
-                events += Rhythm.Event(i, end - start)
-                events += Rhythm.Event(null, next - end)
+                events += Rhythm.Event(i, (end - start) * tick)
+                events += Rhythm.Event(null, (next - end) * tick)
             }
         }
-        for (k in 0 until untimed) events += Rhythm.Event(tapped.size + k, beat)
+        for (k in 0 until untimed) events += Rhythm.Event(tapped.size + k, beat * tick)
 
         val intoBar = Math.floorMod(onsets.first(), setup.unitsPerBar)
-        return Rhythm(events, setup.unitsPerBar - intoBar)
+        return Rhythm(events, (setup.unitsPerBar - intoBar) * tick)
     }
 
     /**

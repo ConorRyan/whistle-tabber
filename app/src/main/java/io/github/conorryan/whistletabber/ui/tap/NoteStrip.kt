@@ -27,27 +27,29 @@ import io.github.conorryan.whistletabber.R
 import io.github.conorryan.whistletabber.music.CNatural
 import io.github.conorryan.whistletabber.music.Fingering
 import io.github.conorryan.whistletabber.music.FingeringEngine
-import io.github.conorryan.whistletabber.music.TapTiming
+import io.github.conorryan.whistletabber.music.TICKS_PER_EIGHTH
+import io.github.conorryan.whistletabber.music.TapDraft
 import io.github.conorryan.whistletabber.music.TapTune
 import io.github.conorryan.whistletabber.ui.components.FingeringDiagram
 import io.github.conorryan.whistletabber.ui.theme.LocalWhistleColors
 
 /**
  * The tune so far, a diagram per note and the cursor; tap a note to put the
- * cursor after it. Without [timing] every fourth note starts a bar; with it
- * the bar gaps come from the note lengths and each note carries a mark of its
- * length (wider is longer).
+ * cursor after it. Bar gaps come from the note lengths ([TapTune.barStarts])
+ * and the tune's own bar lines; a bar line that isn't plain (`|:`, `:|`,
+ * `[2`) shows as a label, which a tap puts the cursor after. With a rhythm,
+ * each note carries a mark of its length (wider is longer).
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun NoteStrip(
-    notes: List<Int?>,
+    draft: TapDraft,
     cursor: Int,
     cNatural: CNatural,
     onCursor: (Int) -> Unit,
     highlight: Int? = null,
-    timing: TapTiming? = null,
 ) {
+    val notes = draft.notes
     if (notes.isEmpty()) {
         Text(
             stringResource(R.string.tap_empty),
@@ -57,17 +59,21 @@ internal fun NoteStrip(
         )
         return
     }
+    val timing = draft.timing
     val restLabel = stringResource(R.string.tap_rest)
-    val bar = timing?.setup?.unitsPerBar ?: TapTune.PER_BAR
-    // Positions count from the start of the first (maybe partial) bar's full length, as in TapTune.
-    var pos = if (timing != null) bar - timing.firstBarUnits else 0
+    val barStarts = TapTune.barStarts(draft)
+    val byGap = draft.anchors.filter { it.visible }.groupBy { it.gap }
     FlowRow(Modifier.fillMaxWidth().testTag("noteStrip"), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         for (i in 0..notes.size) {
-            if (i == cursor) Cursor()
+            val bars = byGap[i].orEmpty()
+            if (cursor == draft.slotOf(i)) Cursor()
+            if (barStarts.getOrElse(i) { false } && bars.isEmpty()) Box(Modifier.width(12.dp).testTag("barGap-$i"))
+            bars.forEachIndexed { k, bar ->
+                BarMark(bar.text, Modifier.clickable { onCursor(draft.slotOf(i, k + 1)) }.testTag("bar-$i-$k"))
+                if (cursor == draft.slotOf(i, k + 1)) Cursor()
+            }
             if (i == notes.size) break
-            val atBarLine = if (timing != null) i > 0 && Math.floorMod(pos, bar) == 0 else i > 0 && i % TapTune.PER_BAR == 0
-            if (atBarLine) Box(Modifier.width(12.dp).testTag("barGap-$i"))
-            val units = timing?.lengths?.getOrElse(i) { timing.setup.unitsPerBeat }
+            val units = timing?.lengths?.getOrNull(i)
             val fingering = notes[i]?.let { FingeringEngine.fingeringAt(it, cNatural) }
             Column(
                 Modifier
@@ -78,7 +84,7 @@ internal fun NoteStrip(
                             Modifier
                         },
                     )
-                    .clickable { onCursor(i + 1) }
+                    .clickable { onCursor(draft.slotAfter(i)) }
                     .padding(horizontal = 3.dp, vertical = 2.dp)
                     .testTag("note-$i"),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -93,7 +99,18 @@ internal fun NoteStrip(
                 }
                 if (timing != null && units != null) LengthMark(units, i)
             }
-            if (timing != null) pos += units ?: timing.setup.unitsPerBeat
+        }
+    }
+}
+
+/** A bar line as written, a plain one as a thin rule. */
+@Composable
+private fun BarMark(text: String, modifier: Modifier) {
+    Box(modifier.height(64.dp).padding(horizontal = 4.dp), contentAlignment = Alignment.Center) {
+        if (text == "|") {
+            Box(Modifier.width(1.dp).height(40.dp).background(MaterialTheme.colorScheme.outline))
+        } else {
+            Text(text, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
         }
     }
 }
@@ -108,13 +125,13 @@ private fun OctaveMark(fingering: Fingering) {
     Text("+".repeat(fingering.octave).ifEmpty { " " }, style = MaterialTheme.typography.labelSmall)
 }
 
-/** A bar under the note, as wide as its length in grid units (capped). */
+/** A bar under the note, as wide as its length (4 dp an eighth, capped). */
 @Composable
-private fun LengthMark(units: Int, index: Int) {
+private fun LengthMark(ticks: Int, index: Int) {
     Box(
         Modifier.padding(top = 1.dp)
             .height(3.dp)
-            .width((units * 4).dp.coerceAtMost(28.dp))
+            .width((ticks * 4f / TICKS_PER_EIGHTH).dp.coerceAtMost(28.dp))
             .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(1.dp))
             .testTag("length-$index"),
     )

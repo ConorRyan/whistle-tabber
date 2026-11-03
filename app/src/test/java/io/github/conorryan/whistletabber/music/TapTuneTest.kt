@@ -1,7 +1,9 @@
 package io.github.conorryan.whistletabber.music
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TapTuneTest {
@@ -42,40 +44,38 @@ class TapTuneTest {
 
     @Test
     fun `other header lines survive a round trip`() {
-        val abc = "X:3\nT:Mine\nT:Also mine\nR:reel\nZ:Me\n%%MIDI program 74\nM:4/4\nL:1/4\n%whistle_tab_key d\nK:D\nD E | F |]\n"
+        val abc = "X:3\nT:Mine\nT:Also mine\nR:reel\nZ:Me\n%%MIDI program 74\nM:4/4\nL:1/4\n%whistle_tab_key d\nK:D\nD E F G | A |]\n"
         val draft = TapTune.parse(abc)!!
-        assertEquals(TapDraft("Mine", WhistleKey.D, listOf(0, 2, 4), listOf("T:Also mine", "R:reel", "Z:Me", "%%MIDI program 74")), draft)
+        assertEquals(TapDraft("Mine", WhistleKey.D, listOf(0, 2, 4, 5, 7), listOf("T:Also mine", "R:reel", "Z:Me", "%%MIDI program 74")), draft)
         assertEquals(
-            "X:1\nT:Mine\nT:Also mine\nR:reel\nZ:Me\n%%MIDI program 74\nM:4/4\nL:1/4\n%whistle_tab_key d\nK:D\nD E F |]\n",
+            "X:1\nT:Mine\nT:Also mine\nR:reel\nZ:Me\n%%MIDI program 74\nM:4/4\nL:1/4\n%whistle_tab_key d\nK:D\nD E F G | A |]\n",
             TapTune.toAbc(draft),
         )
     }
 
     @Test
-    fun `without a directive the key suggests the whistle`() {
-        assertEquals(TapDraft("G", WhistleKey.D, listOf(5, 7)), TapTune.parse("X:1\nT:G\nM:4/4\nL:1/4\nK:G\nG A |]\n"))
+    fun `without a directive the key suggests the whistle, and is kept`() {
+        val draft = TapTune.parse("X:1\nT:G\nM:4/4\nL:1/4\nK:G\nG A |]\n")
+        assertEquals(TapDraft("G", WhistleKey.D, listOf(5, 7), key = "G"), draft)
+        assertTrue(TapTune.toAbc(draft!!).contains("\nK:G\n"))
     }
 
     @Test
-    fun `tunes in any other form are left to the text editor`() {
+    fun `tunes in other forms read too`() {
         val ok = "X:1\nT:T\nM:4/4\nL:1/4\nK:D\nD E F G |]\n"
         assertEquals(listOf(0, 2, 4, 5), TapTune.parse(ok)!!.notes)
-        assertNull(TapTune.parse(ok.replace("M:4/4", "M:none")))
-        assertNull(TapTune.parse(ok.replace("L:1/4", "L:1/8")))
-        assertNull(TapTune.parse(ok.replace("K:D", "K:Ador")))
-        assertNull(TapTune.parse(ok.replace("D E F G", "D2 E F")))
+        assertEquals(null, TapTune.parse(ok)!!.timing)
+        assertEquals("none", TapTune.parse(ok.replace("M:4/4", "M:none"))!!.timing!!.freeMeter)
+        assertEquals(listOf(24, 24, 24, 24), TapTune.parse(ok.replace("L:1/4", "L:1/8"))!!.timing!!.lengths)
+        assertEquals("Ador", TapTune.parse(ok.replace("K:D", "K:Ador"))!!.key)
+        assertEquals(listOf(96, 48, 48), TapTune.parse(ok.replace("D E F G", "D2 E F"))!!.timing!!.lengths)
+        assertEquals(listOf(32, 32, 32, 48), TapTune.parse(ok.replace("D E F G", "(3DEF G"))!!.timing!!.lengths)
         assertNull(TapTune.parse(ok.replace("D E F G", "[DF] E F G")))
-        assertNull(TapTune.parse(ok.replace("D E F G", "(3DEF G")))
-        assertNull(TapTune.parse(ok.replace("D E F G |]", "|: D E F G :|")))
-        assertNull(TapTune.parse(ok.replace("D E F G", "D E F G |]\nA")))
-        assertNull(TapTune.parse(ok.replace("D E F G", "C D E F"))) // C below the D whistle
-        assertNull(TapTune.parse(ok.replace("D E F G", "D E F G\n%comment")))
-        assertNull(TapTune.parse(ok.replace("D E F G |]", "D E F G |")))
     }
 
     @Test
-    fun `the starter set is left to the text editor`() {
+    fun `the starter set reads`() {
         val book = java.io.File("src/main/assets/tunes/oneills.abc").readText()
-        for (tune in AbcBook.split(book)) assertNull(tune.lines().first(), TapTune.parse(tune))
+        for (tune in AbcBook.split(book)) assertNotNull(tune.lines().first(), TapTune.parse(tune))
     }
 }

@@ -177,7 +177,16 @@
     <string name="tap_delete">Delete note</string>
     <string name="tap_cursor_left">Move left</string>
     <string name="tap_cursor_right">Move right</string>
-    <string name="tap_unsupported">This tune was changed as text, so it can\'t be edited with fingerings any more. Use Edit ABC instead.</string>
+    <string name="tap_unsupported">This tune has no key the fingering editor can read. Use Edit ABC instead.</string>
+    <string name="action_edit_fingerings_copy">Edit fingerings (as a copy)</string>
+    <string name="tap_copy_notice">The fingering editor can\'t keep all of this tune, so it opened a copy. Saving adds a new tune; the original stays as it is.</string>
+    <string name="loss_chords">Chords: only the top note of each is kept.</string>
+    <string name="loss_voices">More than one voice: only the first is kept.</string>
+    <string name="loss_key_change">A key change: the notes are kept, written in the first key.</string>
+    <string name="loss_meter_change">A time signature change: the bar lines are kept under the first one.</string>
+    <string name="loss_folded">Notes out of the whistle\'s range are moved by an octave.</string>
+    <string name="loss_rounded">Some unusual note lengths are rounded.</string>
+    <string name="loss_unreadable">Some parts couldn\'t be read and are left out.</string>
     <string name="tap_rhythm">Tap the rhythm</string>
     <string name="tap_remove_rhythm">Remove rhythm</string>
     <string name="rhythm_tempo">Tempo: %1$d beats a minute</string>

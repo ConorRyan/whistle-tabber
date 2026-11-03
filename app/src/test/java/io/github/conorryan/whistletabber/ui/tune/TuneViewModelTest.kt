@@ -91,12 +91,15 @@ class TuneViewModelTest {
     }
 
     @Test
-    fun `a tune in the tap editor's form is tap-editable, others aren't`() = runTest {
-        val tap = saved("X:1\nT:Tapped\nM:4/4\nL:1/4\n%whistle_tab_key d\nK:D\nD E F |]\n")
-        val (tapVm, _) = bound(tap, editor(backgroundScope))
-        assertTrue(tapVm.state.first { it.tune != null }.tapEditable)
-        val (textVm, _) = bound(saved(), editor(backgroundScope))
-        assertFalse(textVm.state.first { it.tune != null }.tapEditable)
+    fun `the tap editor opens a tune in place, as a copy, or not at all`() = runTest {
+        suspend fun tapEdit(abc: String): TapEdit {
+            val (vm, _) = bound(saved(abc), editor(backgroundScope))
+            return vm.state.first { it.tune != null }.tapEdit
+        }
+        assertEquals(TapEdit.IN_PLACE, tapEdit("X:1\nT:Tapped\nM:4/4\nL:1/4\n%whistle_tab_key d\nK:D\nD E F |]\n"))
+        assertEquals(TapEdit.IN_PLACE, tapEdit("X:1\nT:Reel\nM:C|\nL:1/8\nK:D\n|: D2FA d2fa :|\n"))
+        assertEquals(TapEdit.AS_COPY, tapEdit("X:1\nT:Chords\nM:C|\nL:1/8\nK:D\n[DFA]4 d4 |]\n"))
+        assertEquals(TapEdit.NONE, tapEdit("X:1\nT:None\nK:none\nDEF |]\n"))
     }
 
     @Test

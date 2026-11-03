@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.conorryan.whistletabber.R
+import io.github.conorryan.whistletabber.music.Loss
 import io.github.conorryan.whistletabber.audio.PadSound
 import io.github.conorryan.whistletabber.audio.TapAudio
 import io.github.conorryan.whistletabber.music.RhythmSetup
@@ -267,6 +268,7 @@ fun TapEditorContent(
                 Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                if (state.asCopy) CopyNotice(state.losses)
                 OutlinedTextField(
                     value = draft.title,
                     onValueChange = onTitle,
@@ -330,7 +332,7 @@ fun TapEditorContent(
                     .testTag("noteStripCard"),
             ) {
                 Box(Modifier.padding(12.dp)) {
-                    NoteStrip(draft.notes, state.cursor, state.settings.cNatural, onCursor, highlight, draft.timing)
+                    NoteStrip(draft, state.cursor, state.settings.cNatural, onCursor, highlight)
                 }
             }
             val panel = state.rhythm
@@ -361,7 +363,7 @@ fun TapEditorContent(
                             cNatural = state.settings.cNatural,
                             canDelete = state.cursor > 0,
                             canLeft = state.cursor > 0,
-                            canRight = state.cursor < draft.notes.size,
+                            canRight = state.cursor < draft.lastSlot,
                             onOctave = onOctave,
                             onTap = onTap,
                             onRest = onRest,
@@ -419,4 +421,32 @@ fun TapEditorContent(
             },
         )
     }
+}
+
+/** A converted copy: what the editor couldn't keep, and that saving adds a new tune. */
+@Composable
+private fun CopyNotice(losses: Set<Loss>) {
+    Surface(
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier.fillMaxWidth().testTag("copyNotice"),
+    ) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(stringResource(R.string.tap_copy_notice), style = MaterialTheme.typography.bodyMedium)
+            for (loss in Loss.entries.filter { it in losses }) {
+                Text("• " + stringResource(lossText(loss)), style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("loss-${loss.name}"))
+            }
+        }
+    }
+}
+
+private fun lossText(loss: Loss): Int = when (loss) {
+    Loss.CHORDS -> R.string.loss_chords
+    Loss.VOICES -> R.string.loss_voices
+    Loss.KEY_CHANGE -> R.string.loss_key_change
+    Loss.METER_CHANGE -> R.string.loss_meter_change
+    Loss.FOLDED -> R.string.loss_folded
+    Loss.ROUNDED -> R.string.loss_rounded
+    Loss.UNREADABLE -> R.string.loss_unreadable
 }

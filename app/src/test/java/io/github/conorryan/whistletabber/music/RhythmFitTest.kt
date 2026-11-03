@@ -8,8 +8,10 @@ class RhythmFitTest {
     /** 4/4 at 120: a beat is 500 ms, an eighth 250 ms. */
     private val common = RhythmSetup(bpm = 120, meter = Meter.FOUR_FOUR)
 
-    private fun note(i: Int, units: Int) = Rhythm.Event(i, units)
-    private fun rest(units: Int) = Rhythm.Event(null, units)
+    /** Lengths in eighths (or [grid] units), as ticks. */
+    private fun note(i: Int, units: Int, grid: RhythmGrid = RhythmGrid.EIGHTH) = Rhythm.Event(i, units * grid.ticks)
+    private fun rest(units: Int) = Rhythm.Event(null, units * RhythmGrid.EIGHTH.ticks)
+    private fun bar(eighths: Int) = eighths * TICKS_PER_EIGHTH
 
     /** Presses starting at [downs] ms, each held [hold] ms. */
     private fun presses(downs: List<Long>, hold: Long = 400) = downs.map { Press(it, it + hold) }
@@ -18,7 +20,7 @@ class RhythmFitTest {
     fun `presses on the beat are quarter notes`() {
         val r = RhythmFit.fit(presses(listOf(0, 500, 1000, 1500)), 4, common)
         assertEquals(listOf(note(0, 2), note(1, 2), note(2, 2), note(3, 2)), r.events)
-        assertEquals(8, r.firstBarUnits)
+        assertEquals(bar(8), r.firstBarTicks)
     }
 
     @Test
@@ -36,7 +38,7 @@ class RhythmFitTest {
         val downs = jitter.mapIndexed { i, j -> i * 250L + 110 + j }
         val r = RhythmFit.fit(presses(downs, hold = 200), 8, common)
         assertEquals(List(8) { note(it, 1) }, r.events)
-        assertEquals(8, r.firstBarUnits)
+        assertEquals(bar(8), r.firstBarTicks)
     }
 
     @Test
@@ -54,10 +56,10 @@ class RhythmFitTest {
     @Test
     fun `a tune starting off the downbeat has a pickup bar`() {
         val onBeatFour = RhythmFit.fit(presses(listOf(1500, 2000)), 2, common)
-        assertEquals(2, onBeatFour.firstBarUnits)
+        assertEquals(bar(2), onBeatFour.firstBarTicks)
         // A pickup tapped during the count-in counts too.
         val inCountIn = RhythmFit.fit(presses(listOf(-500, 0)), 2, common)
-        assertEquals(2, inCountIn.firstBarUnits)
+        assertEquals(bar(2), inCountIn.firstBarTicks)
         assertEquals(listOf(note(0, 2), note(1, 2)), inCountIn.events)
     }
 
@@ -74,7 +76,7 @@ class RhythmFitTest {
         val downs = (0 until 6).map { (it * eighth).toLong() }
         val r = RhythmFit.fit(presses(downs, hold = 120), 6, jig)
         assertEquals(List(6) { note(it, 1) }, r.events)
-        assertEquals(6, r.firstBarUnits)
+        assertEquals(bar(6), r.firstBarTicks)
     }
 
     @Test
@@ -82,8 +84,8 @@ class RhythmFitTest {
         // 4/4 at 60: a beat is 1000 ms, a sixteenth 250 ms. Dotted eighth, sixteenth, quarter.
         val slow = RhythmSetup(bpm = 60, meter = Meter.FOUR_FOUR, grid = RhythmGrid.SIXTEENTH)
         val r = RhythmFit.fit(listOf(Press(0, 700), Press(750, 950), Press(1000, 1900)), 3, slow)
-        assertEquals(listOf(note(0, 3), note(1, 1), note(2, 4)), r.events)
-        assertEquals(16, r.firstBarUnits)
+        assertEquals(listOf(note(0, 3, RhythmGrid.SIXTEENTH), note(1, 1, RhythmGrid.SIXTEENTH), note(2, 4, RhythmGrid.SIXTEENTH)), r.events)
+        assertEquals(bar(8), r.firstBarTicks)
     }
 
     @Test

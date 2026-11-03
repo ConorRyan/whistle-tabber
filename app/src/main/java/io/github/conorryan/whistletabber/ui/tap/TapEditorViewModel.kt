@@ -7,12 +7,12 @@ import io.github.conorryan.whistletabber.audio.PadSound
 import io.github.conorryan.whistletabber.data.tunes.TuneRepository
 import io.github.conorryan.whistletabber.music.CNatural
 import io.github.conorryan.whistletabber.music.FingeringEngine
+import io.github.conorryan.whistletabber.music.Loss
 import io.github.conorryan.whistletabber.music.Meter
 import io.github.conorryan.whistletabber.music.RhythmGrid
 import io.github.conorryan.whistletabber.music.RhythmSetup
 import io.github.conorryan.whistletabber.music.TabSettings
 import io.github.conorryan.whistletabber.music.TapDraft
-import io.github.conorryan.whistletabber.music.TapTiming
 import io.github.conorryan.whistletabber.music.TapTune
 import io.github.conorryan.whistletabber.music.WhistleKey
 import kotlinx.coroutines.channels.Channel
@@ -28,7 +28,7 @@ import kotlinx.coroutines.launch
 data class TapEditorUiState(
     /** Null while loading. */
     val draft: TapDraft? = null,
-    /** Where the next tap goes: 0 before the first note, `notes.size` at the end. */
+    /** Where the next tap goes, a slot of the draft ([TapDraft.slotOf]): 0 before everything. */
     val cursor: Int = 0,
     /** The palette's octave: 0 bottom, 1 "+", 2 "++". */
     val octave: Int = 0,
@@ -37,8 +37,13 @@ data class TapEditorUiState(
     val saving: Boolean = false,
     /** The tune no longer exists. */
     val missing: Boolean = false,
-    /** The tune isn't one [TapTune] can read (it was changed as text). */
+    /** The tune has no key or whistle [TapTune] can read. */
     val unsupported: Boolean = false,
+    /**
+     * What reading the stored tune couldn't keep; when there is anything,
+     * the draft is a converted copy and saving adds a new tune.
+     */
+    val losses: Set<Loss> = emptySet(),
     /** The rhythm tapper, shown in place of the palette; null when closed. */
     val rhythm: RhythmPanel? = null,
 ) {
@@ -46,6 +51,9 @@ data class TapEditorUiState(
     val timed: Boolean get() = draft?.timing != null
 
     val canSave: Boolean get() = draft != null && draft.title.isNotBlank() && draft.notes.any { it != null } && !saving
+
+    /** Saving adds a new tune instead of replacing the one opened. */
+    val asCopy: Boolean get() = losses.isNotEmpty()
 }
 
 enum class RhythmPhase { SETUP, TAPPING, DONE }
@@ -65,8 +73,10 @@ sealed interface TapEditorEffect {
 
 /**
  * Writes a tune by tapping fingerings ([id] null: a new tune for my whistle;
- * else a stored tune [TapTune] can read). The draft lives in
- * [SavedStateHandle]; the strip of tapped diagrams is its whole display.
+ * else a stored tune, read by [TapTune.read]: one read without loss is
+ * edited in place, any other is a converted copy, saved as a new tune). The
+ * draft lives in [SavedStateHandle] as ABC; the strip of tapped diagrams is
+ * its whole display.
  */
 class TapEditorViewModel(
     private val id: Long?,
@@ -82,6 +92,7 @@ class TapEditorViewModel(
     val effects: Flow<TapEditorEffect> = _effects.receiveAsFlow()
 
     private var original: TapDraft? = null
+    private var losses: Set<Loss> = emptySet()
 
     /** The draft as it was when the rhythm tapper opened; Cancel and Try again go back to it. */
     private var draftBeforeRhythm: TapDraft? = null
@@ -98,15 +109,17 @@ class TapEditorViewModel(
                     _state.update { it.copy(missing = true) }
                     return@launch
                 }
-                TapTune.parse(abc) ?: run {
+                val read = TapTune.read(abc) ?: run {
                     _state.update { it.copy(unsupported = true) }
                     return@launch
                 }
+                losses = read.losses
+                read.draft
             }
-            original = loaded
+            original = loaded.takeIf { losses.isEmpty() }
             val draft = restore(loaded)
-            val cursor = (savedState.get<Int>(KEY_CURSOR) ?: draft.notes.size).coerceIn(0, draft.notes.size)
-            _state.update { it.copy(settings = s, cursor = cursor) }
+            val cursor = (savedState.get<Int>(KEY_CURSOR) ?: draft.endSlot).coerceIn(0, draft.lastSlot)
+            _state.update { it.copy(settings = s, cursor = cursor, losses = losses) }
             edit(draft, cursor)
         }
     }
@@ -120,18 +133,18 @@ class TapEditorViewModel(
 
     fun rest() = insert(null)
 
-    /** Removes the note before the cursor, with its length. */
+    /** Removes the note before the cursor, with its length; bar lines and repeats stay. */
     fun deleteBack() {
         val s = _state.value
         val draft = s.draft ?: return
         if (s.cursor == 0) return
-        val (removed, cursor) = draft.removed(s.cursor - 1)
+        val (removed, cursor) = draft.removedBefore(s.cursor)
         edit(removed, cursor)
     }
 
     fun moveCursor(position: Int) {
         val draft = _state.value.draft ?: return
-        val cursor = position.coerceIn(0, draft.notes.size)
+        val cursor = position.coerceIn(0, draft.lastSlot)
         savedState[KEY_CURSOR] = cursor
         _state.update { it.copy(cursor = cursor) }
     }
@@ -146,7 +159,7 @@ class TapEditorViewModel(
     /** Keeps the fingerings; the tune's key and pitches follow the whistle. */
     fun setWhistle(whistle: WhistleKey) {
         val s = _state.value
-        edit(s.draft?.copy(whistle = whistle) ?: return, s.cursor)
+        edit(s.draft?.withWhistle(whistle) ?: return, s.cursor)
     }
 
     /** Opens the rhythm tapper, if there are notes to tap. */
@@ -156,7 +169,7 @@ class TapEditorViewModel(
         if (total == 0) return
         draftBeforeRhythm = draft
         val pad = savedState.get<String>(KEY_PAD)?.let { n -> PadSound.entries.firstOrNull { it.name == n } } ?: PadSound.NOTE
-        _state.update { it.copy(rhythm = RhythmPanel(setup(), pad, total = total)) }
+        _state.update { it.copy(rhythm = RhythmPanel(setup(draft), pad, total = total)) }
     }
 
     fun setRhythmSetup(setup: RhythmSetup) {
@@ -177,7 +190,7 @@ class TapEditorViewModel(
     /** The screen starts the metronome; presses are in ms from its first downbeat after the count-in. */
     fun startTapping() {
         val panel = _state.value.rhythm ?: return
-        session = RhythmSession(panel.setup, panel.total)
+        session = RhythmSession(panel.setup, panel.total, _state.value.draft?.let(TapTune::breaks).orEmpty())
         _state.update { it.copy(rhythm = panel.copy(phase = RhythmPhase.TAPPING, next = 0)) }
     }
 
@@ -224,7 +237,7 @@ class TapEditorViewModel(
         val panel = _state.value.rhythm ?: return
         session = null
         val draft = draftBeforeRhythm
-        if (draft != null) edit(draft, _state.value.cursor.coerceIn(0, draft.notes.size))
+        if (draft != null) edit(draft, _state.value.cursor.coerceIn(0, draft.lastSlot))
         _state.update { it.copy(rhythm = panel.copy(phase = RhythmPhase.SETUP, next = 0)) }
     }
 
@@ -242,7 +255,7 @@ class TapEditorViewModel(
         val draft = draftBeforeRhythm
         draftBeforeRhythm = null
         _state.update { it.copy(rhythm = null) }
-        if (draft != null) edit(draft, _state.value.cursor.coerceIn(0, draft.notes.size))
+        if (draft != null) edit(draft, _state.value.cursor.coerceIn(0, draft.lastSlot))
     }
 
     /** Drops the tapped rhythm: every note is an equal quarter again. */
@@ -259,11 +272,12 @@ class TapEditorViewModel(
         val draft = _state.value.draft ?: return
         val applied = draft.withRhythm(s.rhythm(), panel.setup)
         _state.update { it.copy(rhythm = panel.copy(phase = RhythmPhase.DONE)) }
-        edit(applied, _state.value.cursor.coerceIn(0, applied.notes.size))
+        edit(applied, _state.value.cursor.coerceIn(0, applied.lastSlot))
     }
 
-    private fun setup(): RhythmSetup {
-        val d = RhythmSetup()
+    /** The tapper's setup: as last chosen on this screen, else the tune's own meter, tempo and grid. */
+    private fun setup(draft: TapDraft?): RhythmSetup {
+        val d = draft?.timing?.setup ?: RhythmSetup()
         return RhythmSetup(
             bpm = savedState.get<Int>(KEY_BPM) ?: d.bpm,
             meter = savedState.get<String>(KEY_METER)?.let { n -> Meter.entries.firstOrNull { it.name == n } } ?: d.meter,
@@ -277,9 +291,9 @@ class TapEditorViewModel(
         if (!s.canSave) return
         _state.update { it.copy(saving = true) }
         viewModelScope.launch {
-            val savedId = repository.save(TapTune.toAbc(draft), id)
+            val savedId = repository.save(TapTune.toAbc(draft), id.takeIf { !s.asCopy })
             original = draft
-            listOf(KEY_NOTES, KEY_TITLE, KEY_WHISTLE, KEY_CURSOR, KEY_LENGTHS, KEY_FIRST_BAR).forEach { savedState.remove<Any>(it) }
+            listOf(KEY_ABC, KEY_EMPTY, KEY_TITLE, KEY_CURSOR).forEach { savedState.remove<Any>(it) }
             _state.update { it.copy(saving = false, dirty = false) }
             _effects.send(TapEditorEffect.Saved(savedId))
         }
@@ -292,51 +306,31 @@ class TapEditorViewModel(
         edit(inserted, cursor)
     }
 
-    /** Shows [draft]; it carries its own rhythm, saved to [savedState] with the notes. */
+    /** Shows [draft]; it is kept in [savedState] as its ABC, which reads back as the same draft. */
     private fun edit(draft: TapDraft, cursor: Int) {
-        savedState[KEY_NOTES] = draft.notes.map { it ?: REST }.toIntArray()
+        savedState[KEY_ABC] = TapTune.toAbc(draft)
+        savedState[KEY_EMPTY] = draft.notes.isEmpty()
         savedState[KEY_TITLE] = draft.title
-        savedState[KEY_WHISTLE] = draft.whistle.name
         savedState[KEY_CURSOR] = cursor
-        val timing = draft.timing
-        if (timing != null && timing.lengths.size == draft.notes.size && timing.lengths.all { it > 0 }) {
-            savedState[KEY_LENGTHS] = timing.lengths.toIntArray()
-            savedState[KEY_FIRST_BAR] = timing.firstBarUnits
-        } else {
-            savedState.remove<IntArray>(KEY_LENGTHS)
-            savedState.remove<Int>(KEY_FIRST_BAR)
-        }
         _state.update { it.copy(draft = draft, cursor = cursor, dirty = draft != original) }
     }
 
     private fun restore(loaded: TapDraft): TapDraft {
-        val notes = savedState.get<IntArray>(KEY_NOTES) ?: return loaded
-        val draft = loaded.copy(
-            title = savedState.get<String>(KEY_TITLE) ?: loaded.title,
-            whistle = savedState.get<String>(KEY_WHISTLE)?.let { name -> WhistleKey.entries.firstOrNull { it.name == name } } ?: loaded.whistle,
-            notes = notes.map { it.takeIf { n -> n != REST } },
-        )
-        val lengths = savedState.get<IntArray>(KEY_LENGTHS)
-        val firstBar = savedState.get<Int>(KEY_FIRST_BAR)
-        val timing = if (lengths != null && firstBar != null && lengths.size == draft.notes.size && lengths.all { it > 0 }) {
-            TapTiming(setup(), lengths.toList(), firstBar)
-        } else {
-            null
-        }
-        return draft.copy(timing = timing).normalized()
+        val abc = savedState.get<String>(KEY_ABC) ?: return loaded
+        val read = TapTune.read(abc)?.draft ?: return loaded
+        val draft = read.copy(title = savedState.get<String>(KEY_TITLE) ?: read.title)
+        if (savedState.get<Boolean>(KEY_EMPTY) != true) return draft
+        return draft.copy(notes = emptyList(), timing = null, marks = emptyList(), anchors = draft.anchors.map { it.copy(gap = 0) })
     }
 
     companion object {
-        private const val KEY_NOTES = "tapNotes"
+        private const val KEY_ABC = "tapAbc"
+        private const val KEY_EMPTY = "tapEmpty"
         private const val KEY_TITLE = "tapTitle"
-        private const val KEY_WHISTLE = "tapWhistle"
         private const val KEY_CURSOR = "tapCursor"
-        private const val KEY_LENGTHS = "tapTimingLengths"
-        private const val KEY_FIRST_BAR = "tapTimingFirstBar"
         private const val KEY_BPM = "rhythmBpm"
         private const val KEY_METER = "rhythmMeter"
         private const val KEY_GRID = "rhythmGrid"
         private const val KEY_PAD = "rhythmPadSound"
-        private const val REST = -1
     }
 }
