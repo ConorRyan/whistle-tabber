@@ -151,6 +151,15 @@ class TuneRepositoryTest {
     }
 
     @Test
+    fun `a pasted set without X imports as separate tunes`() = runBlocking {
+        val set = "T:Set Jig\nR:jig\nK:D\nDFA dAF|\nT:Set Reel\nR:reel\nK:G\nGABc dBGB|\n"
+        assertEquals(ImportResult(added = 2, skipped = 0, errors = emptyList()), repo.importBook(set))
+        assertEquals(setOf("Set Jig", "Set Reel"), repo.tunes.first().map { it.title }.toSet())
+        // Exported, each gets its X: and comes back the same.
+        assertEquals(ImportResult(0, 2, emptyList()), repo.importBook(repo.exportAll()))
+    }
+
+    @Test
     fun `importing the same file twice adds nothing the second time`() = runBlocking {
         val text = fixture("book-with-header.abc")
         assertEquals(3, repo.importBook(text).added)

@@ -43,6 +43,42 @@ class AbcBookTest {
     }
 
     @Test
+    fun `split a set without X, the tunes run together`() {
+        val text = """
+            T:Made Up Jig
+            R:jig
+            M:6/8
+            K:D
+            DFA dAF|
+            T:Made Up Reel, The
+            % a comment in the header
+            R:reel
+            L:1/8
+            K:G
+            GABc dBGB|
+        """.trimIndent()
+        assertEquals(
+            listOf(
+                "T:Made Up Jig\nR:jig\nM:6/8\nK:D\nDFA dAF|",
+                "T:Made Up Reel, The\n% a comment in the header\nR:reel\nL:1/8\nK:G\nGABc dBGB|",
+            ),
+            AbcBook.split(text),
+        )
+    }
+
+    @Test
+    fun `split a set without X, separated by blank lines`() {
+        val tunes = AbcBook.split("T:One\nK:D\nD|\n\nT:Two\nK:G\nG|\n\nT:Three\nK:A\nA|\n")
+        assertEquals(listOf("One", "Two", "Three"), tunes.map { AbcBook.headers(it).title })
+    }
+
+    @Test
+    fun `split without X keeps part titles and key changes in their tune`() {
+        val tune = "T:Two Parts\nK:D\nDEF|\nT:Second part\nP:B\nABc|\nK:G\nGAB|"
+        assertEquals(listOf(tune), AbcBook.split(tune))
+    }
+
+    @Test
     fun `split only starts tunes at X at the start of a line`() {
         val tunes = AbcBook.split("X:1\nT:A\nN: see X:2 below\nK:D\nD|\n")
         assertEquals(1, tunes.size)

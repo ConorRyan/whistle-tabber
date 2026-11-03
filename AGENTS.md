@@ -104,7 +104,9 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
   - `WhistleSynth`: deterministic whistle tone samples as WAV.
   - `AbcBook`: plain-text ABC operations. `split` (like abcjs's
     `bookParser`: a tune ends at a blank line; file-header `%%` directives
-    and fields are copied in after each tune's `X:`), `headers`, `join`
+    and fields are copied in after each tune's `X:`; text with no `X:` at all,
+    as some sites copy a set, splits at blank lines and at each new
+    `T:`…`K:` header after music), `headers`, `join`
     (renumbers `X:`), `withTitle`, `suggestWhistle(K:)`, and Eskin's
     `%whistle_tab_key` directive (`whistleOf`/`withWhistle`; our extension
     `%whistle_tab_key d low`). `AbcHeaders.problems()` (`AbcProblem`) is the

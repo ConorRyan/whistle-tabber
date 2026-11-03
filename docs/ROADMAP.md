@@ -192,3 +192,6 @@ Key design points:
 
 ### Bugfix (2026-10-31, evening)
 - Reported on the phone: tune playback sounded like a little drum beat accompanying every note. Root cause: `WhistleSynth`'s playback samples opened with a breath "chiff" — low-passed noise at 0.35 amplitude decaying over the first 60 ms — and abcjs plays one sample per note, so the burst repeated note after note. Removed the burst; the faint constant breath under the tone stays, and the `chiff` flag went with it (the rhythm pad already passed `false`). Regression test: the attack's peak must stay within 5% of the sustained tone's (the old samples peaked 16% over it); the pinned sample checksum updated deliberately. 343 JVM and 39 node tests green; not yet heard on a device.
+
+### Bugfix (2026-11-03)
+- Reported: pasting a set copied with a website's "Copy ABC" button imported one tune holding every tune's music. The copied text had no `X:` lines (each tune starts at `T:`), and `AbcBook.split` read text without `X:` as one lone tune. Now such text splits at blank lines and wherever a new header (field lines with a `T:` reaching a `K:` before any music) follows music; part titles and key changes inside a tune stay put. Hand-written fixtures only. 360 JVM and 39 node tests green; not yet tried on a device.

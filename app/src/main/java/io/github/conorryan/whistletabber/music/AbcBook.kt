@@ -60,16 +60,13 @@ object AbcBook {
 
     /**
      * The tunes of a tune book, each ready to store and parse on its own, with
-     * `\n` line endings. Text without any `X:` line counts as one tune if it
-     * has a `K:` line (abcjs accepts a lone tune without `X:`).
+     * `\n` line endings. Text without any `X:` line is read as tunes without
+     * one (abcjs accepts a lone tune without `X:`); see [splitWithoutX].
      */
     fun split(text: String): List<String> {
         val lines = text.removePrefix(BOM.toString()).lines()
         val firstTune = lines.indexOfFirst { TUNE_START.containsMatchIn(it) }
-        if (firstTune < 0) {
-            val tune = lines.dropWhile { it.isBlank() }.takeWhile { it.isNotBlank() }
-            return if (tune.any { it.startsWith("K:") }) listOf(tune.joinToString("\n")) else emptyList()
-        }
+        if (firstTune < 0) return splitWithoutX(lines)
         val header = lines.subList(0, firstTune)
         val directives = header.filter { it.startsWith("%%") }
         val fields = header.filter { FIELD.matches(it) }
@@ -99,6 +96,47 @@ object AbcBook {
             val inherited = fields.filter { FIELD.find(it)!!.groupValues[1] !in own }
             (listOf(tune.lines.first()) + directives + tune.prefix + inherited + tune.lines.drop(1)).joinToString("\n")
         }
+    }
+
+    /**
+     * Tunes in text without any `X:` line, as some sites copy a set: each tune
+     * starts at its `T:`. A tune ends at a blank line, or where a new header
+     * begins after its music: a run of field lines (comments allowed) with a
+     * `T:` that reaches a `K:` before any music. A `T:` or `K:` inside a tune
+     * (a part title, a key change) is followed by music, so it stays put.
+     * Only runs with a `K:` are tunes.
+     */
+    private fun splitWithoutX(lines: List<String>): List<String> {
+        fun isField(line: String) = FIELD.matches(line)
+        fun startsHeader(from: Int): Boolean {
+            var title = false
+            for (line in lines.subList(from, lines.size)) {
+                when {
+                    line.startsWith("%") -> continue
+                    !isField(line) -> return false
+                    line.startsWith("T:") -> title = true
+                    line.startsWith("K:") -> return title
+                }
+            }
+            return false
+        }
+        val tunes = mutableListOf<MutableList<String>>()
+        var current: MutableList<String>? = null
+        var inBody = false
+        lines.forEachIndexed { i, line ->
+            when {
+                line.isBlank() -> current = null
+                current == null || (inBody && isField(line) && startsHeader(i)) -> {
+                    current = mutableListOf(line).also { tunes += it }
+                    inBody = line.startsWith("K:")
+                }
+                else -> {
+                    current!!.add(line)
+                    if (line.startsWith("K:")) inBody = true
+                }
+            }
+        }
+        return tunes.filter { tune -> tune.any { it.startsWith("K:") } }.map { it.joinToString("\n") }
     }
 
     /**
