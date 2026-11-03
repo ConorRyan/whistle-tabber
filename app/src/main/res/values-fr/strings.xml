@@ -130,7 +130,13 @@
     <string name="mode_same_fingerings">Les doigtés</string>
     <string name="mode_same_pitches_help">Les doigtés sont calculés pour votre whistle. L\'air sonne de la même façon.</string>
     <string name="mode_same_fingerings_help">Les doigtés restent ceux du whistle de l\'air. L\'air sonne dans la tonalité de votre whistle.</string>
-    <string name="settings_c_natural">Doigté du do bécarre</string>
+    <string name="settings_fingerings">Doigtés</string>
+    <string name="settings_fingerings_summary">Choisir comment jouer les notes qui ont plusieurs doigtés</string>
+    <string name="fingerings_show">Afficher les doigtés</string>
+    <string name="fingerings_hide">Masquer les doigtés</string>
+    <string name="settings_fingerings_help">Les notes marquées d\'un point se jouent de plusieurs façons. Touchez-en une pour choisir.</string>
+    <string name="fingering_sheet_title">Comment jouer %1$s</string>
+    <string name="fingering_fife">Tirée d\'une tablature de fifre\u00A0: peut ne pas convenir à tous les whistles</string>
     <string name="settings_fold">Ramener les notes hors tessiture</string>
     <string name="settings_fold_help">Décale d\'une octave les notes que le whistle ne peut pas jouer. Elles sont estompées et marquées d\'une flèche.</string>
     <string name="settings_note_names">Noms des notes</string>

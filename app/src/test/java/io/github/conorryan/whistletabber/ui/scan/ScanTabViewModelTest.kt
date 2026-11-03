@@ -1,7 +1,7 @@
 package io.github.conorryan.whistletabber.ui.scan
 
 import android.net.Uri
-import io.github.conorryan.whistletabber.music.CNatural
+import io.github.conorryan.whistletabber.music.FingeringChoices
 import io.github.conorryan.whistletabber.music.TabSettings
 import io.github.conorryan.whistletabber.music.WhistleKey
 import io.github.conorryan.whistletabber.scan.GrayImage
@@ -53,9 +53,9 @@ class ScanTabViewModelTest {
     @Test
     fun `starts with my whistle and the default title, nothing read`() = runTest {
         Dispatchers.setMain(UnconfinedTestDispatcher(testScheduler))
-        val s = vm(TabSettings(whistle = WhistleKey.LOW_D, cNatural = CNatural.HALF_TOP)).state.value
+        val s = vm(TabSettings(whistle = WhistleKey.LOW_D, fingerings = FingeringChoices.DEFAULT.with(10, 1))).state.value
         assertEquals(WhistleKey.LOW_D, s.whistle)
-        assertEquals(CNatural.HALF_TOP, s.cNatural)
+        assertEquals(FingeringChoices.DEFAULT.with(10, 1), s.fingerings)
         assertEquals("Tune from an image", s.title)
         assertTrue(s.images.isEmpty())
         assertFalse(s.canOpen)

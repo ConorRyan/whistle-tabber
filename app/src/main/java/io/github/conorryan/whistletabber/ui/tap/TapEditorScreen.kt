@@ -332,7 +332,7 @@ fun TapEditorContent(
                     .testTag("noteStripCard"),
             ) {
                 Box(Modifier.padding(12.dp)) {
-                    NoteStrip(draft, state.cursor, state.settings.cNatural, onCursor, highlight)
+                    NoteStrip(draft, state.cursor, state.settings.fingerings, onCursor, highlight)
                 }
             }
             val panel = state.rhythm
@@ -360,7 +360,7 @@ fun TapEditorContent(
                         Palette(
                             whistle = draft.whistle,
                             octave = state.octave,
-                            cNatural = state.settings.cNatural,
+                            fingerings = state.settings.fingerings,
                             canDelete = state.cursor > 0,
                             canLeft = state.cursor > 0,
                             canRight = state.cursor < draft.lastSlot,

@@ -3,7 +3,6 @@ package io.github.conorryan.whistletabber.ui.tune
 import app.cash.turbine.test
 import app.cash.turbine.turbineScope
 import io.github.conorryan.whistletabber.music.AbcBook
-import io.github.conorryan.whistletabber.music.CNatural
 import io.github.conorryan.whistletabber.music.TransposeMode
 import io.github.conorryan.whistletabber.music.WhistleKey
 import io.github.conorryan.whistletabber.render.FakeTunePage
@@ -103,13 +102,13 @@ class TuneViewModelTest {
     }
 
     @Test
-    fun `changing C natural re-sends diagrams without re-rendering`() = runTest {
+    fun `changing a fingering re-sends diagrams without re-rendering`() = runTest {
         val (vm, page) = bound(saved(), editor(backgroundScope))
         page.commands.test {
             awaitItem() // render
             page.emit(BridgeEvent.Rendered(notes, emptyList()))
             awaitItem() // first diagrams
-            vm.settingsEditor.setCNatural(CNatural.HALF_TOP)
+            vm.settingsEditor.setFingering(10, 1)
             val diagrams = (awaitItem() as BridgeCommand.Diagrams).diagrams
             assertEquals("HOOOOO", diagrams[2]!!.holes)
             expectNoEvents()

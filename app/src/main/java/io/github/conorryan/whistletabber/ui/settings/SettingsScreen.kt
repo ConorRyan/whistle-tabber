@@ -83,7 +83,7 @@ fun SettingsScreen(vm: SettingsViewModel, onBack: () -> Unit) {
                         TabSettingsContent(
                             settings = settings,
                             onWhistle = vm.settingsEditor::setWhistle,
-                            onCNatural = vm.settingsEditor::setCNatural,
+                            onFingering = vm.settingsEditor::setFingering,
                             onFold = vm.settingsEditor::setFoldOutOfRange,
                             onMode = vm.settingsEditor::setMode,
                             onNoteNames = vm.settingsEditor::setNoteNames,

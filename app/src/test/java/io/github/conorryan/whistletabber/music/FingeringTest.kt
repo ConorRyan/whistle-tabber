@@ -50,11 +50,4 @@ class FingeringTest {
         assertThrows(IllegalArgumentException::class.java) { Fingering.parse("XXX XXX+++") }
     }
 
-    @Test
-    fun `every C natural choice is a distinct first-octave fingering`() {
-        val all = CNatural.entries.map { it.fingering }
-        assertEquals(all.size, all.toSet().size)
-        assertTrue(all.all { it.octave == 0 && !it.hard })
-        assertEquals("OXX OOO", CNatural.DEFAULT.fingering.notation())
-    }
 }

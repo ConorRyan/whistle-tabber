@@ -2,9 +2,11 @@ package io.github.conorryan.whistletabber.scan
 
 import io.github.conorryan.whistletabber.music.AbcBook
 import io.github.conorryan.whistletabber.music.AbcNotes
-import io.github.conorryan.whistletabber.music.CNatural
 import io.github.conorryan.whistletabber.music.Fingering
+import io.github.conorryan.whistletabber.music.FingeringChoices
 import io.github.conorryan.whistletabber.music.FingeringEngine
+import io.github.conorryan.whistletabber.music.FingeringOptions
+import io.github.conorryan.whistletabber.music.sameShape
 import io.github.conorryan.whistletabber.music.WhistleKey
 
 /**
@@ -16,28 +18,26 @@ import io.github.conorryan.whistletabber.music.WhistleKey
  */
 object TabTune {
 
-    /** Fingerings charts use besides the ones [FingeringEngine] draws: vented second-octave D. */
-    private val ALTERNATES: Map<Fingering, Int> = mapOf(
-        Fingering.parse("OXX XXX+") to 12,
-    )
-
-    /** Semitones above the whistle's bottom note, or null for an unknown fingering. */
-    fun offsetOf(column: TabColumn, cNatural: CNatural): Int? {
+    /**
+     * Semitones above the whistle's bottom note, or null for an unknown
+     * fingering. A shape some notes share (`OXX XXX+` is a vented D and a C
+     * natural) is read as the user's own fingering first, then as a default,
+     * then as the lowest note offering it: a chart may use other fingerings
+     * than the user's.
+     */
+    fun offsetOf(column: TabColumn, choices: FingeringChoices): Int? {
         val read = Fingering(column.holes, column.octave.coerceIn(0, 2))
-        (0..FingeringEngine.HIGHEST_OFFSET).firstOrNull { offset ->
-            FingeringEngine.fingeringAt(offset, cNatural)?.let { it.holes == read.holes && it.octave == read.octave } == true
-        }?.let { return it }
-        ALTERNATES[read]?.let { return it }
-        // A chart may use another C natural fingering than the user's.
-        if (read.octave < 2 && CNatural.entries.any { it.fingering.holes == read.holes }) return 10 + 12 * read.octave
-        return null
+        val offsets = 0..FingeringEngine.HIGHEST_OFFSET
+        return offsets.firstOrNull { FingeringEngine.fingeringAt(it, choices)?.sameShape(read) == true }
+            ?: offsets.firstOrNull { FingeringEngine.fingeringAt(it)?.sameShape(read) == true }
+            ?: offsets.firstOrNull { o -> FingeringOptions.at(o).any { it.fingering.sameShape(read) } }
     }
 
-    fun toAbc(reading: TabReading, whistle: WhistleKey, title: String, cNatural: CNatural): String {
+    fun toAbc(reading: TabReading, whistle: WhistleKey, title: String, choices: FingeringChoices): String {
         val key = whistle.letter
         val body = reading.lines.joinToString(" |\n") { line ->
             line.chunked(GROUP).joinToString(" | ") { group ->
-                val midis = group.map { column -> offsetOf(column, cNatural)?.let { whistle.writtenTonic + it } }
+                val midis = group.map { column -> offsetOf(column, choices)?.let { whistle.writtenTonic + it } }
                 AbcNotes.spellBar(midis, key, rest = UNKNOWN).joinToString(" ")
             }
         }

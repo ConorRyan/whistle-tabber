@@ -61,7 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.conorryan.whistletabber.R
 import io.github.conorryan.whistletabber.data.tunes.PastedTunes
-import io.github.conorryan.whistletabber.music.CNatural
+import io.github.conorryan.whistletabber.music.FingeringChoices
 import io.github.conorryan.whistletabber.music.WhistleKey
 import io.github.conorryan.whistletabber.scan.GrayImage
 import io.github.conorryan.whistletabber.scan.TabReading
@@ -201,7 +201,7 @@ fun ScanTabContent(
                     Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.padding(start = 8.dp).size(20.dp))
                 }
             }
-            state.images.forEach { scanned -> ReadImage(scanned.image, scanned.reading, state.cNatural) }
+            state.images.forEach { scanned -> ReadImage(scanned.image, scanned.reading, state.fingerings) }
         }
     }
 }
@@ -212,7 +212,7 @@ private fun ErrorText(text: String, tag: String) =
 
 /** The picked image with each diagram outlined: recognised in the primary colour, unknown in the error colour. */
 @Composable
-private fun ReadImage(image: GrayImage, reading: TabReading?, cNatural: CNatural) {
+private fun ReadImage(image: GrayImage, reading: TabReading?, fingerings: FingeringChoices) {
     val bitmap = remember(image) {
         val argb = IntArray(image.luma.size) { val l = image.luma[it]; (0xFF shl 24) or (l shl 16) or (l shl 8) or l }
         Bitmap.createBitmap(argb, image.width, image.height, Bitmap.Config.ARGB_8888).asImageBitmap()
@@ -236,7 +236,7 @@ private fun ReadImage(image: GrayImage, reading: TabReading?, cNatural: CNatural
                 for (column in reading?.columns.orEmpty()) {
                     val b = column.box
                     drawRect(
-                        color = if (TabTune.offsetOf(column, cNatural) == null) unknown else known,
+                        color = if (TabTune.offsetOf(column, fingerings) == null) unknown else known,
                         topLeft = Offset(b.left * scale - 2, b.top * scale - 2),
                         size = Size((b.right - b.left + 1) * scale + 4, (b.bottom - b.top + 1) * scale + 4),
                         style = stroke,

@@ -24,7 +24,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.conorryan.whistletabber.R
-import io.github.conorryan.whistletabber.music.CNatural
+import io.github.conorryan.whistletabber.music.FingeringChoices
 import io.github.conorryan.whistletabber.music.Fingering
 import io.github.conorryan.whistletabber.music.FingeringEngine
 import io.github.conorryan.whistletabber.music.TICKS_PER_EIGHTH
@@ -45,7 +45,7 @@ import io.github.conorryan.whistletabber.ui.theme.LocalWhistleColors
 internal fun NoteStrip(
     draft: TapDraft,
     cursor: Int,
-    cNatural: CNatural,
+    fingerings: FingeringChoices,
     onCursor: (Int) -> Unit,
     highlight: Int? = null,
 ) {
@@ -74,7 +74,7 @@ internal fun NoteStrip(
             }
             if (i == notes.size) break
             val units = timing?.lengths?.getOrNull(i)
-            val fingering = notes[i]?.let { FingeringEngine.fingeringAt(it, cNatural) }
+            val fingering = notes[i]?.let { FingeringEngine.fingeringAt(it, fingerings) }
             Column(
                 Modifier
                     .then(

@@ -98,7 +98,7 @@ class TapTuneTimedTest {
     @Test
     fun `two hundred random timed tunes read back exactly`() {
         val random = Random(20260518)
-        val playable = (0..FingeringEngine.HIGHEST_OFFSET).filter { FingeringEngine.fingeringAt(it, CNatural.DEFAULT) != null }
+        val playable = (0..FingeringEngine.HIGHEST_OFFSET).filter { FingeringEngine.fingeringAt(it) != null }
         repeat(200) { n ->
             val whistle = WhistleKey.entries.random(random)
             val count = 1 + random.nextInt(24)

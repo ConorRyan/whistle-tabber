@@ -1,6 +1,6 @@
 package io.github.conorryan.whistletabber.render
 
-import io.github.conorryan.whistletabber.music.CNatural
+import io.github.conorryan.whistletabber.music.FingeringChoices
 import io.github.conorryan.whistletabber.music.TabSettings
 import io.github.conorryan.whistletabber.music.WhistleKey
 import io.github.conorryan.whistletabber.web.BridgeCommand
@@ -76,7 +76,7 @@ class TuneRendererTest {
         assertEquals(BridgeCommand.Render::class, page.sent[0]::class)
         assertEquals(BridgeCommand.Diagrams::class, page.sent[1]::class)
 
-        r.show(TuneRenderer.RenderRequest(abc, midiTranspose = 12, fingering = dWhistle.copy(settings = TabSettings(cNatural = CNatural.HALF_TOP))))
+        r.show(TuneRenderer.RenderRequest(abc, midiTranspose = 12, fingering = dWhistle.copy(settings = TabSettings(fingerings = FingeringChoices.DEFAULT.with(10, 1)))))
         runCurrent()
         assertEquals(3, page.sent.size) // no second Render
         val diagrams = (page.sent[2] as BridgeCommand.Diagrams).diagrams

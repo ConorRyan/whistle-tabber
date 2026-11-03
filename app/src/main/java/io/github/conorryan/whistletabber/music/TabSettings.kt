@@ -11,7 +11,7 @@ enum class TransposeMode { SAME_PITCHES, SAME_FINGERINGS }
 
 data class TabSettings(
     val whistle: WhistleKey = WhistleKey.DEFAULT,
-    val cNatural: CNatural = CNatural.DEFAULT,
+    val fingerings: FingeringChoices = FingeringChoices.DEFAULT,
     val foldOutOfRange: Boolean = true,
     val mode: TransposeMode = TransposeMode.SAME_PITCHES,
     val noteNames: NoteNames = NoteNames.DEFAULT,

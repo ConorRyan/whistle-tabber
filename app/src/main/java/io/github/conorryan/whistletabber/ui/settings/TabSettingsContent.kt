@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -21,12 +19,10 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.conorryan.whistletabber.R
-import io.github.conorryan.whistletabber.music.CNatural
 import io.github.conorryan.whistletabber.music.NoteNames
 import io.github.conorryan.whistletabber.music.TabSettings
 import io.github.conorryan.whistletabber.music.TransposeMode
 import io.github.conorryan.whistletabber.music.WhistleKey
-import io.github.conorryan.whistletabber.ui.components.FingeringDiagram
 import io.github.conorryan.whistletabber.ui.components.PillChip
 import io.github.conorryan.whistletabber.ui.components.whistleLabel
 
@@ -48,14 +44,14 @@ fun WhistleChips(selected: WhistleKey?, onSelect: (WhistleKey) -> Unit, tagPrefi
 
 /**
  * The tab settings that apply to every tune: my whistle, transpose mode,
- * C natural, folding and note names. Shown in Settings and in the tune screen's sheet.
+ * fingerings, folding and note names. Shown in Settings and in the tune screen's sheet.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun TabSettingsContent(
     settings: TabSettings,
     onWhistle: (WhistleKey) -> Unit,
-    onCNatural: (CNatural) -> Unit,
+    onFingering: (offset: Int, index: Int) -> Unit,
     onFold: (Boolean) -> Unit,
     onMode: (TransposeMode) -> Unit,
     onNoteNames: (NoteNames) -> Unit,
@@ -83,22 +79,7 @@ fun TabSettingsContent(
             style = MaterialTheme.typography.bodySmall,
         )
 
-        Text(stringResource(R.string.settings_c_natural), style = MaterialTheme.typography.titleMedium)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            CNatural.entries.forEach { c ->
-                FilterChip(
-                    selected = settings.cNatural == c,
-                    onClick = { onCNatural(c) },
-                    label = {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(vertical = 6.dp)) {
-                            FingeringDiagram(c.fingering, holeSize = 8.dp)
-                            Text(c.fingering.notation(), style = MaterialTheme.typography.labelSmall)
-                        }
-                    },
-                    modifier = Modifier.testTag("cnat-${c.name}"),
-                )
-            }
-        }
+        FingeringsSection(settings.whistle, settings.fingerings, onFingering)
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {

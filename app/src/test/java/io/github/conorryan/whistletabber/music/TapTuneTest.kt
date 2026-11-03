@@ -8,7 +8,7 @@ import org.junit.Test
 
 class TapTuneTest {
 
-    private val playable = (0..FingeringEngine.HIGHEST_OFFSET).filter { FingeringEngine.fingeringAt(it, CNatural.DEFAULT) != null }
+    private val playable = (0..FingeringEngine.HIGHEST_OFFSET).filter { FingeringEngine.fingeringAt(it) != null }
 
     @Test
     fun `notes go four to a bar and four bars to a line`() {

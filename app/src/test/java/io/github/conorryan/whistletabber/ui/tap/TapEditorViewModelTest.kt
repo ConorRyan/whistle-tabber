@@ -97,7 +97,7 @@ class TapEditorViewModelTest {
         assertEquals(listOf(4, null), vm.state.value.draft!!.notes)
         vm.moveCursor(99)
         assertEquals(2, vm.state.value.cursor)
-        vm.tap(25) // no fingering
+        vm.tap(35) // no fingering
         assertEquals(listOf(4, null), vm.state.value.draft!!.notes)
         assertTrue(vm.state.value.dirty)
     }

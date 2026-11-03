@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.conorryan.whistletabber.audio.PadSound
 import io.github.conorryan.whistletabber.data.tunes.TuneRepository
-import io.github.conorryan.whistletabber.music.CNatural
 import io.github.conorryan.whistletabber.music.FingeringEngine
 import io.github.conorryan.whistletabber.music.Loss
 import io.github.conorryan.whistletabber.music.Meter
@@ -127,7 +126,7 @@ class TapEditorViewModel(
     /** Inserts the fingering [offset] semitones above the whistle's bottom note at the cursor. */
     fun tap(offset: Int) {
         // Which offsets have a fingering doesn't depend on the C natural choice.
-        if (FingeringEngine.fingeringAt(offset, CNatural.DEFAULT) == null) return
+        if (FingeringEngine.fingeringAt(offset) == null) return
         insert(offset)
     }
 

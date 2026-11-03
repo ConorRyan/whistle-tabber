@@ -203,3 +203,9 @@ Key design points:
   2. Triplets while tapping: in simple meters, three presses that clearly fall on thirds of a quarter (or of an eighth on the sixteenth grid) are a triplet, written `(3ABC`; a "Detect triplets" switch in the setup sheet, on by default.
 - Limits: beams are regrouped by beat on save (`E2 (BE` becomes `E2(BE` in `C|`). Repeats are tapped once, in written order. On the sixteenth grid an unevenly played triplet may snap to sixteenths instead.
 - Tests: 387 JVM and 50 node, all green. Not yet run on the emulator or a phone.
+
+### Between S3 and S4 (2026-11-03): a fingering choice for every note
+- Asked: choose how to play second-octave D (vented, top hole open) and, more broadly, any note that has more than one way to play it, not just C natural.
+- Done: `FingeringOptions` lists every sourced fingering per note (Woodwind Fingering Guide's three charts plus the C naturals already offered): vented D+, forked B♭, three more C naturals, C♯ and C♯+ alternates, and third-octave alternates for D♯ (now playable), E, F, G♯ and A. Fife-only entries are offered with a note. Defaults are unchanged. Settings has a collapsible Fingerings section (closed by default): every note of all three octaves with its current fingering; a dot marks the choosable ones and a tap opens a sheet to pick. Picks are stored as shapes; the old C natural setting carries over to both octaves. Scanned tab reads every listed shape.
+- Not added yet, for want of a source: forked F natural and forked G♯ (Grey Larsen's chart PDF may have more).
+- Tests: 402 JVM and 50 node, all green. Not yet run on the emulator or a phone.

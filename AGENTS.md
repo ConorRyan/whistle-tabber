@@ -84,11 +84,17 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     re-attach re-shows the last request to the fresh page.
 - `music/` — pure Kotlin music logic.
   - `Fingering`/`Hole`: six holes, top first, octave 0–2 ("+", "++"), `hard`.
-  - `FingeringEngine`: semitones above the whistle's written bottom note →
-    fingering. First octave written by hand; second repeats it with "+";
-    third octave from the Woodwind Fingering Guide (cited in the file), all
-    `hard`. C natural comes from the `CNatural` preference. Out-of-range notes
-    fold by octaves when enabled (`Playable.folded`) or report `OutOfRange`.
+  - `FingeringOptions`: every sourced fingering per note (semitones above
+    the whistle's written bottom note, 0–34), default first: the first octave
+    by hand, the second repeats it with "+" (own lists for D and C♯), the
+    third from the Woodwind Fingering Guide, all `hard`; alternates from the
+    same charts (fife-only ones flagged `fife`) and the C naturals. Rule: if
+    a sourced way to play a note exists, offer it. `FingeringChoices` is the
+    user's pick per note, stored as shapes (`"12=OXXXXX+;…"`), anything
+    unknown falling back to the default.
+  - `FingeringEngine`: offset → fingering through `FingeringChoices`.
+    Out-of-range notes fold by octaves when enabled (`Playable.folded`) or
+    report `OutOfRange`.
   - `WhistleKey`: `writtenTonic` (fingering) and `soundingShift` (+12 for
     soprano whistles: whistle music is written an octave below sounding),
     plus `letter` and `register` (high/normal/low) for its name.
@@ -167,8 +173,8 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     split per image) and column first (tall thin blobs of small or blurry
     tab, cut into six cells). Dark-mode images (dark paper) are inverted
     first. No OpenCV.
-  - `TabTune`: fingering → note through `FingeringEngine` (plus vented
-    `OXX XXX+` and every `CNatural`), and the reading → ABC: equal notes
+  - `TabTune`: fingering → note (the user's fingerings first, then the
+    defaults, then any `FingeringOptions` shape), and the reading → ABC: equal notes
     (`L:1/4`, `M:none`), one ABC line per tab line, the whistle's major key,
     `%whistle_tab_key`, unknown fingerings as `"^?"z`.
   - `TabImageLoader`: picked image → `GrayImage` (longest side ≤ 2400).
@@ -192,7 +198,8 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
   Kotlin) on Android 8.1+, else `AudioTrackOutput`. The writer thread owns
   the output once started and closes it.
 - `data/settings/` — `TabSettingsStore` (DataStore, injected; enums stored by
-  name, unknown names fall back to defaults); `SettingsDataStores` owns the
+  name, unknown names fall back to defaults; fingering picks in
+  `fingerings`, an old `cNatural` read into both octaves' C); `SettingsDataStores` owns the
   process-wide instance. `AppGraph` in `WhistleTabberApplication.kt` is the
   manual DI root, with an `appScope` for work that outlives a screen.
 - `data/tunes/` — Room (`AppDatabase`, `whistle-tabber.db`, schemas exported
@@ -312,7 +319,9 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
   - `findtunes/`: "Find tunes online", links (`TUNE_SITES`) opened in the
     browser with `ACTION_VIEW`; downloads come back through `IncomingTunes`.
     Never list TheSession.org (a test checks).
-  - `settings/`: `TabSettingsContent` (shared with the tune screen's sheet),
+  - `settings/`: `TabSettingsContent` (with `FingeringsSection`, collapsed
+    by default, opening `FingeringChoicesGrid`: every
+    note with its fingering, a dot on the choosable ones, a sheet to pick),
     `TabSettingsEditor` (one owner for tab-settings writes; injected from
     `AppGraph`, exposed by both ViewModels), starter set, licences.
   The tune screen owns the one remaining `TuneWebController`, attaches it to

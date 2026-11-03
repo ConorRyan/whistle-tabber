@@ -11,17 +11,17 @@ import org.junit.Test
 
 class FingeringEngineTest {
 
-    /** Chromatic chart for a D whistle, written D (62) upwards, default C natural. */
+    /** Chromatic chart for a D whistle, written D (62) upwards, default fingerings. */
     private val dWhistleChart = listOf(
         "XXX XXX", "XXX XX½", "XXX XXO", "XXX X½O", "XXX XOO", "XXX OOO",
         "XX½ OOO", "XXO OOO", "X½O OOO", "XOO OOO", "OXX OOO", "OOO OOO",
         "XXX XXX+", "XXX XX½+", "XXX XXO+", "XXX X½O+", "XXX XOO+", "XXX OOO+",
         "XX½ OOO+", "XXO OOO+", "X½O OOO+", "XOO OOO+", "OXX OOO+", "OOO OOO+",
-        "OXX XXX++", null, "XXX XXO++", "XXX X½X++", "XXX XOX++", "XXX OOX++",
+        "OXX XXX++", "XXO XOX++", "XXX XXO++", "XXX X½X++", "XXX XOX++", "XXX OOX++",
         "XX½ OOX++", "XXO OOX++", "OXO XOO++", "XOX OXO++", "XOX OXX++",
     )
 
-    private fun noteFor(midi: Int, whistle: WhistleKey = WhistleKey.D, c: CNatural = CNatural.DEFAULT, fold: Boolean = false) =
+    private fun noteFor(midi: Int, whistle: WhistleKey = WhistleKey.D, c: FingeringChoices = FingeringChoices.DEFAULT, fold: Boolean = false) =
         FingeringEngine.fingeringFor(midi, whistle, c, fold)
 
     @Test
@@ -69,23 +69,31 @@ class FingeringEngineTest {
     }
 
     @Test
-    fun `C natural preference applies in both octaves`() {
-        for (c in CNatural.entries) {
-            val low = (noteFor(72, c = c) as Playable).fingering
-            val high = (noteFor(84, c = c) as Playable).fingering
-            assertEquals(c.fingering.holes, low.holes)
-            assertEquals(0, low.octave)
-            assertEquals(c.fingering.holes, high.holes)
-            assertEquals(1, high.octave)
+    fun `each C natural choice is its octave's own`() {
+        FingeringOptions.at(10).forEachIndexed { i, option ->
+            val low = (noteFor(72, c = FingeringChoices.DEFAULT.with(10, i)) as Playable).fingering
+            assertEquals(option.fingering, low)
+            assertEquals("OXX OOO+", (noteFor(84, c = FingeringChoices.DEFAULT.with(10, i)) as Playable).fingering.notation())
+        }
+        FingeringOptions.at(22).forEachIndexed { i, option ->
+            assertEquals(option.fingering, (noteFor(84, c = FingeringChoices.DEFAULT.with(22, i)) as Playable).fingering)
+            assertEquals(1, option.fingering.octave)
         }
     }
 
     @Test
-    fun `C natural preference does not touch other notes`() {
-        val withDefault = (62..86).map { noteFor(it) }
-        val withHalf = (62..86).map { noteFor(it, c = CNatural.HALF_TOP) }
+    fun `second-octave D can be vented`() {
+        val vented = FingeringChoices.DEFAULT.with(12, 1)
+        assertEquals("OXX XXX+", (noteFor(74, c = vented) as Playable).fingering.notation())
+        assertEquals("XXX XXX", (noteFor(62, c = vented) as Playable).fingering.notation())
+    }
+
+    @Test
+    fun `a choice does not touch other notes`() {
+        val withDefault = (62..96).map { noteFor(it) }
+        val withHalf = (62..96).map { noteFor(it, c = FingeringChoices.DEFAULT.with(10, 1)) }
         withDefault.zip(withHalf).forEachIndexed { offset, (a, b) ->
-            if (offset % 12 != 10) assertEquals("offset $offset", a, b)
+            if (offset != 10) assertEquals("offset $offset", a, b)
         }
     }
 
@@ -94,7 +102,6 @@ class FingeringEngineTest {
         assertEquals(OutOfRange(tooHigh = false), noteFor(61))
         assertEquals(OutOfRange(tooHigh = false), noteFor(50))
         assertEquals(OutOfRange(tooHigh = true), noteFor(62 + 35))
-        assertEquals(OutOfRange(tooHigh = true), noteFor(62 + 25))
     }
 
     @Test
@@ -107,8 +114,8 @@ class FingeringEngineTest {
 
     @Test
     fun `folding moves high notes down by octaves`() {
-        // Third-octave D sharp has no whistle fingering: down one octave.
-        assertEquals(Playable(Fingering.parse("XXX XX½+"), folded = -1), noteFor(62 + 25, fold = true))
+        // Two octaves above the third octave's E: down two.
+        assertEquals(Playable(Fingering.parse("XXX XXO++", hard = true), folded = -2), noteFor(62 + 50, fold = true))
         // Offset 35 (C# above the top C) folds to the second octave's C#.
         assertEquals(Playable(Fingering.parse("OOO OOO+"), folded = -1), noteFor(62 + 35, fold = true))
     }

@@ -9,7 +9,8 @@ class TabSettingsTest {
     fun `defaults are a D whistle, OXX OOO, folding on, same pitches`() {
         val s = TabSettings()
         assertEquals(WhistleKey.D, s.whistle)
-        assertEquals(CNatural.OXX_OOO, s.cNatural)
+        assertEquals(FingeringChoices.DEFAULT, s.fingerings)
+        assertEquals("OXX OOO", s.fingerings.fingeringAt(10)?.notation())
         assertEquals(true, s.foldOutOfRange)
         assertEquals(TransposeMode.SAME_PITCHES, s.mode)
     }

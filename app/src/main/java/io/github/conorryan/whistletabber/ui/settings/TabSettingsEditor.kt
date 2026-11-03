@@ -1,7 +1,6 @@
 package io.github.conorryan.whistletabber.ui.settings
 
 import io.github.conorryan.whistletabber.data.settings.TabSettingsStore
-import io.github.conorryan.whistletabber.music.CNatural
 import io.github.conorryan.whistletabber.music.NoteNames
 import io.github.conorryan.whistletabber.music.TabSettings
 import io.github.conorryan.whistletabber.music.TransposeMode
@@ -23,7 +22,7 @@ class TabSettingsEditor(
     val settings: Flow<TabSettings> = store.settings
 
     fun setWhistle(whistle: WhistleKey) = scope.launch { store.setWhistle(whistle) }
-    fun setCNatural(cNatural: CNatural) = scope.launch { store.setCNatural(cNatural) }
+    fun setFingering(offset: Int, index: Int) = scope.launch { store.setFingering(offset, index) }
     fun setFoldOutOfRange(fold: Boolean) = scope.launch { store.setFoldOutOfRange(fold) }
     fun setMode(mode: TransposeMode) = scope.launch { store.setMode(mode) }
     fun setNoteNames(noteNames: NoteNames) = scope.launch { store.setNoteNames(noteNames) }

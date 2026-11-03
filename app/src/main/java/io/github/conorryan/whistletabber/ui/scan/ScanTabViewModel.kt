@@ -3,7 +3,7 @@ package io.github.conorryan.whistletabber.ui.scan
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.github.conorryan.whistletabber.music.CNatural
+import io.github.conorryan.whistletabber.music.FingeringChoices
 import io.github.conorryan.whistletabber.music.TabSettings
 import io.github.conorryan.whistletabber.music.WhistleKey
 import io.github.conorryan.whistletabber.scan.GrayImage
@@ -36,15 +36,15 @@ data class ScanTabUiState(
     /** The whistle the tab is written for; starts as my whistle. */
     val whistle: WhistleKey = WhistleKey.DEFAULT,
     val title: String = "",
-    val cNatural: CNatural = CNatural.DEFAULT,
+    val fingerings: FingeringChoices = FingeringChoices.DEFAULT,
 ) {
     val found: Int get() = images.sumOf { it.reading.columns.size }
-    val unknown: Int get() = images.sumOf { r -> r.reading.columns.count { TabTune.offsetOf(it, cNatural) == null } }
+    val unknown: Int get() = images.sumOf { r -> r.reading.columns.count { TabTune.offsetOf(it, fingerings) == null } }
     val canOpen: Boolean get() = !busy && found > 0 && title.isNotBlank()
 
     /** The tune to open in the editor, or null before anything was read. */
     fun abc(): String? = images.takeIf { found > 0 }?.let {
-        TabTune.toAbc(TabTune.combine(it.map { s -> s.reading }), whistle, title.trim(), cNatural)
+        TabTune.toAbc(TabTune.combine(it.map { s -> s.reading }), whistle, title.trim(), fingerings)
     }
 }
 
@@ -68,7 +68,7 @@ class ScanTabViewModel(
     init {
         viewModelScope.launch {
             val s = settings.first()
-            _state.update { it.copy(whistle = s.whistle, cNatural = s.cNatural) }
+            _state.update { it.copy(whistle = s.whistle, fingerings = s.fingerings) }
         }
     }
 

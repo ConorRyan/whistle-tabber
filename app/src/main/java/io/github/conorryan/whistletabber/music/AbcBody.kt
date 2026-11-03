@@ -885,7 +885,7 @@ internal object AbcBody {
         else -> 2
     }
 
-    private fun playable(offset: Int): Boolean = FingeringEngine.fingeringAt(offset, CNatural.DEFAULT) != null
+    private fun playable(offset: Int): Boolean = FingeringEngine.fingeringAt(offset) != null
 
     private fun stripComment(value: String): String {
         val i = value.indexOf('%')

@@ -39,7 +39,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.unit.dp
 import io.github.conorryan.whistletabber.R
 import io.github.conorryan.whistletabber.music.AbcNotes
-import io.github.conorryan.whistletabber.music.CNatural
+import io.github.conorryan.whistletabber.music.FingeringChoices
 import io.github.conorryan.whistletabber.music.FingeringEngine
 import io.github.conorryan.whistletabber.music.WhistleKey
 import io.github.conorryan.whistletabber.ui.components.FingeringDiagram
@@ -58,7 +58,7 @@ internal val PALETTE_OFFSETS: List<Int> = (0 until 3).flatMap { octave -> (SCALE
 internal fun Palette(
     whistle: WhistleKey,
     octave: Int,
-    cNatural: CNatural,
+    fingerings: FingeringChoices,
     canDelete: Boolean,
     canLeft: Boolean,
     canRight: Boolean,
@@ -90,8 +90,8 @@ internal fun Palette(
                 )
             }
         }
-        KeyRow(SCALE, whistle, octave, cNatural, onTap)
-        if (more) KeyRow(CHROMATIC, whistle, octave, cNatural, onTap)
+        KeyRow(SCALE, whistle, octave, fingerings, onTap)
+        if (more) KeyRow(CHROMATIC, whistle, octave, fingerings, onTap)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             val keyShape = MaterialTheme.shapes.medium
             OutlinedIconButton(onClick = onLeft, enabled = canLeft, shape = keyShape, modifier = Modifier.size(52.dp).testTag("left")) {
@@ -123,9 +123,9 @@ internal fun Palette(
  * equal slots, so keys line up and a short row is centred.
  */
 @Composable
-private fun KeyRow(offsets: List<Int>, whistle: WhistleKey, octave: Int, cNatural: CNatural, onTap: (Int) -> Unit) {
+private fun KeyRow(offsets: List<Int>, whistle: WhistleKey, octave: Int, fingerings: FingeringChoices, onTap: (Int) -> Unit) {
     val names = LocalNoteNames.current
-    val keys = offsets.map { it + 12 * octave }.mapNotNull { offset -> FingeringEngine.fingeringAt(offset, cNatural)?.let { offset to it } }
+    val keys = offsets.map { it + 12 * octave }.mapNotNull { offset -> FingeringEngine.fingeringAt(offset, fingerings)?.let { offset to it } }
     val empty = SCALE.size - keys.size
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         if (empty > 0) Box(Modifier.weight(empty / 2f))

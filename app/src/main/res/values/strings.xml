@@ -122,7 +122,13 @@
     <string name="mode_same_fingerings">The fingerings</string>
     <string name="mode_same_pitches_help">Fingerings are worked out for your whistle. The tune sounds the same.</string>
     <string name="mode_same_fingerings_help">Fingerings stay as written for the tune\'s whistle. The tune sounds in your whistle\'s key.</string>
-    <string name="settings_c_natural">C natural fingering</string>
+    <string name="settings_fingerings">Fingerings</string>
+    <string name="settings_fingerings_summary">Choose how to play notes that have more than one fingering</string>
+    <string name="fingerings_show">Show fingerings</string>
+    <string name="fingerings_hide">Hide fingerings</string>
+    <string name="settings_fingerings_help">Notes with a dot can be played more than one way. Tap one to choose.</string>
+    <string name="fingering_sheet_title">How to play %1$s</string>
+    <string name="fingering_fife">From a fife chart: may not suit every whistle</string>
     <string name="settings_fold">Fold out-of-range notes</string>
     <string name="settings_fold_help">Move notes the whistle can\'t play by an octave. Folded notes are faded with an arrow.</string>
     <string name="settings_note_names">Note names</string>

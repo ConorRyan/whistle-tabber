@@ -11,6 +11,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import io.github.conorryan.whistletabber.music.FingeringChoices
 import io.github.conorryan.whistletabber.music.NoteNames
 import io.github.conorryan.whistletabber.music.TabSettings
 import io.github.conorryan.whistletabber.ui.components.LocalNoteNames
@@ -30,13 +31,17 @@ class TabSettingsContentTest {
     @get:Rule
     val compose = createComposeRule()
 
-    private fun show(noteNames: NoteNames, onNoteNames: (NoteNames) -> Unit = {}) {
-        val settings = TabSettings(noteNames = noteNames)
+    private fun show(
+        noteNames: NoteNames,
+        onNoteNames: (NoteNames) -> Unit = {},
+        settings: TabSettings = TabSettings(noteNames = noteNames),
+        onFingering: (Int, Int) -> Unit = { _, _ -> },
+    ) {
         compose.setContent {
             WhistleTabberTheme {
                 CompositionLocalProvider(LocalNoteNames provides resolvedNoteNames(settings.noteNames)) {
                     Column(Modifier.verticalScroll(rememberScrollState())) {
-                        TabSettingsContent(settings, {}, {}, {}, {}, onNoteNames)
+                        TabSettingsContent(settings, {}, onFingering, {}, {}, onNoteNames)
                     }
                 }
             }
@@ -85,8 +90,60 @@ class TabSettingsContentTest {
     @Test
     fun `picking a style reports it`() {
         var picked: NoteNames? = null
-        show(NoteNames.LETTERS) { picked = it }
+        show(NoteNames.LETTERS, onNoteNames = { picked = it })
         compose.onNodeWithTag("notes-SOLFEGE").performScrollTo().performClick()
         assertEquals(NoteNames.SOLFEGE, picked)
+    }
+
+    @Test
+    fun `fingerings are folded away until the heading is tapped`() {
+        show(NoteNames.LETTERS)
+        compose.onNodeWithTag("fingering-0").assertDoesNotExist()
+        compose.onNodeWithTag("fingeringsToggle").performScrollTo().performClick()
+        compose.onNodeWithTag("fingering-0").assertExists()
+        compose.onNodeWithTag("fingeringsToggle").performScrollTo().performClick()
+        compose.onNodeWithTag("fingering-0").assertDoesNotExist()
+    }
+
+    private fun expandFingerings() {
+        compose.onNodeWithTag("fingeringsToggle").performScrollTo().performClick()
+    }
+
+    @Test
+    fun `every note shows, named in my whistle's key, and a dot marks the choosable ones`() {
+        show(NoteNames.LETTERS)
+        expandFingerings()
+        compose.onNodeWithTag("fingering-0").performScrollTo().assertTextEquals("D")
+        compose.onNodeWithTag("fingering-12").performScrollTo().assertTextEquals("D+")
+        compose.onNodeWithTag("fingering-34").performScrollTo().assertTextEquals("C++")
+        compose.onNodeWithTag("fingeringDot-12", useUnmergedTree = true).assertExists()
+        compose.onNodeWithTag("fingeringDot-0", useUnmergedTree = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun `tapping a note offers its fingerings and reports the pick`() {
+        var picked: Pair<Int, Int>? = null
+        show(NoteNames.LETTERS, onFingering = { o, i -> picked = o to i })
+        expandFingerings()
+        compose.onNodeWithTag("fingering-12").performScrollTo().performClick()
+        compose.onNodeWithTag("fingering-12-0").assertIsSelected()
+        compose.onNodeWithTag("fingering-12-1").performClick()
+        assertEquals(12 to 1, picked)
+    }
+
+    @Test
+    fun `the chosen fingering is the one selected`() {
+        show(NoteNames.LETTERS, settings = TabSettings(fingerings = FingeringChoices.DEFAULT.with(12, 1)))
+        expandFingerings()
+        compose.onNodeWithTag("fingering-12").performScrollTo().performClick()
+        compose.onNodeWithTag("fingering-12-1").assertIsSelected()
+    }
+
+    @Test
+    fun `a note with one fingering opens nothing`() {
+        show(NoteNames.LETTERS)
+        expandFingerings()
+        compose.onNodeWithTag("fingering-0").performScrollTo().performClick()
+        compose.onNodeWithTag("fingering-0-0").assertDoesNotExist()
     }
 }
