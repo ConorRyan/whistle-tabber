@@ -1,0 +1,7 @@
+The fingering editor opens any stored tune, keeping repeats, ornaments
+and bar lines (a tune it must convert opens as a copy, with a notice).
+Tapping the rhythm detects triplets. Every note that has more than one
+fingering gets its choice in Settings. The library exports the selected
+tunes from the selection bar, and pasted sets without X: lines split
+into their tunes. The tune screen scrolls its title away with the music
+and plays from one row in landscape.

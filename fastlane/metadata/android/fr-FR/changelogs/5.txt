@@ -1,0 +1,7 @@
+L'éditeur de doigtés ouvre tout air enregistré, en gardant les reprises,
+les ornements et les barres de mesure (un air à convertir s'ouvre en
+copie, avec un avis). Taper le rythme détecte les triolets. Chaque note
+qui a plusieurs doigtés a son choix dans les réglages. La bibliothèque
+exporte les airs choisis dans la barre de sélection, et les sets collés
+sans lignes X: se séparent en leurs airs. L'écran d'air fait défiler son
+titre avec la musique et joue sur une seule rangée en paysage.
