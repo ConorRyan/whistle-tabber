@@ -137,7 +137,7 @@
     <string name="fingerings_hide">Masquer les doigtés</string>
     <string name="settings_fingerings_help">Les notes marquées d\'un point se jouent de plusieurs façons. Touchez-en une pour choisir.</string>
     <string name="fingering_sheet_title">Comment jouer %1$s</string>
-    <string name="fingering_fife">Tirée d\'une tablature de fifre\u00A0: peut ne pas convenir à tous les whistles</string>
+    <string name="fingering_fife">Tiré d\'une tablature de fifre\u00A0: peut ne pas convenir à tous les whistles</string>
     <string name="settings_fold">Ramener les notes hors tessiture</string>
     <string name="settings_fold_help">Décale d\'une octave les notes que le whistle ne peut pas jouer. Elles sont estompées et marquées d\'une flèche.</string>
     <string name="settings_note_names">Noms des notes</string>
@@ -192,7 +192,7 @@
     <string name="tap_delete">Supprimer la note</string>
     <string name="tap_cursor_left">Vers la gauche</string>
     <string name="tap_cursor_right">Vers la droite</string>
-    <string name="tap_unsupported">L\'éditeur de doigtés ne sait pas lire la tonalité de cet air. Utilisez plutôt Modifier l\'ABC.</string>
+    <string name="tap_unsupported">L\'éditeur de doigtés ne sait pas lire cet air\u00A0: il lui faut une tonalité, un whistle et des longueurs de note ordinaires. Utilisez plutôt Modifier l\'ABC.</string>
     <string name="action_edit_fingerings_copy">Modifier les doigtés (une copie)</string>
     <string name="tap_copy_notice">L\'éditeur de doigtés ne peut pas tout garder de cet air\u00A0: il en a ouvert une copie. Enregistrer ajoute un nouvel air\u00A0; l\'original reste tel quel.</string>
     <string name="loss_chords">Accords\u00A0: seule la note du haut est gardée.</string>

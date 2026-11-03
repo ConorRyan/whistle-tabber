@@ -317,8 +317,12 @@ object TapTune {
 
     fun toAbc(draft: TapDraft): String = AbcBody.write(draft)
 
-    /** The draft [abc] reads as, and what it couldn't keep; null if it has no key or whistle the editor can use. */
-    fun read(abc: String): TapRead? = AbcBody.read(abc)
+    /**
+     * The draft [abc] reads as, and what it couldn't keep; null if it has no
+     * key or whistle the editor can use. Reading text from anywhere, it never
+     * throws: a surprise is null, the same as unreadable.
+     */
+    fun read(abc: String): TapRead? = runCatching { AbcBody.read(abc) }.getOrNull()
 
     /** The draft [abc] reads as without losing anything, or null. */
     fun parse(abc: String): TapDraft? = read(abc)?.takeIf { it.losses.isEmpty() }?.draft

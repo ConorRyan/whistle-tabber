@@ -184,7 +184,7 @@
     <string name="tap_delete">Delete note</string>
     <string name="tap_cursor_left">Move left</string>
     <string name="tap_cursor_right">Move right</string>
-    <string name="tap_unsupported">This tune has no key the fingering editor can read. Use Edit ABC instead.</string>
+    <string name="tap_unsupported">The fingering editor can\'t read this tune: it needs a key, a whistle and ordinary note lengths. Use Edit ABC instead.</string>
     <string name="action_edit_fingerings_copy">Edit fingerings (as a copy)</string>
     <string name="tap_copy_notice">The fingering editor can\'t keep all of this tune, so it opened a copy. Saving adds a new tune; the original stays as it is.</string>
     <string name="loss_chords">Chords: only the top note of each is kept.</string>

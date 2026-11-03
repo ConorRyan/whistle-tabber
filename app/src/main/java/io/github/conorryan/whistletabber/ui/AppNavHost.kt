@@ -7,6 +7,7 @@ import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.navigation.NavHostController
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -52,6 +53,19 @@ data object FindTunesRoute
 /** The scan screen; [image]: a URI pasted from the clipboard, read on entry instead of opening the picker. */
 @Serializable
 data class ScanTabRoute(val image: String? = null)
+
+/**
+ * Where Save from the tap editor goes. A converted copy saves as a *new*
+ * tune, so the result is not the route's [id] and the new tune is opened;
+ * anything else is this tune and goes back to it.
+ */
+internal fun onTapEditorSaved(nav: NavHostController, id: Long?, savedId: Long) {
+    if (savedId != id) {
+        nav.navigate(TuneRoute(savedId)) { popUpTo<TapEditorRoute> { inclusive = true } }
+    } else {
+        nav.popBackStack()
+    }
+}
 
 @Composable
 fun AppNavHost(graph: AppGraph) {
@@ -136,13 +150,7 @@ fun AppNavHost(graph: AppGraph) {
                 vm = vm,
                 isNew = id == null,
                 onClose = { nav.popBackStack() },
-                onSaved = { savedId ->
-                    if (id == null) {
-                        nav.navigate(TuneRoute(savedId)) { popUpTo<TapEditorRoute> { inclusive = true } }
-                    } else {
-                        nav.popBackStack()
-                    }
-                },
+                onSaved = { savedId -> onTapEditorSaved(nav, id, savedId) },
             )
         }
         composable<SettingsRoute> {

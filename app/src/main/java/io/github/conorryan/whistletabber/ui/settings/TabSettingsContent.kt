@@ -44,7 +44,7 @@ fun WhistleChips(selected: WhistleKey?, onSelect: (WhistleKey) -> Unit, tagPrefi
 
 /**
  * The tab settings that apply to every tune: my whistle, transpose mode,
- * fingerings, folding and note names. Shown in Settings and in the tune screen's sheet.
+ * fingerings, folding and note names. Shown in Settings.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable

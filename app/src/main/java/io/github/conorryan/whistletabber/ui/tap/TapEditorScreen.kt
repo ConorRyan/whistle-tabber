@@ -59,9 +59,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.conorryan.whistletabber.R
-import io.github.conorryan.whistletabber.music.Loss
 import io.github.conorryan.whistletabber.audio.PadSound
 import io.github.conorryan.whistletabber.audio.TapAudio
+import io.github.conorryan.whistletabber.music.Loss
 import io.github.conorryan.whistletabber.music.RhythmSetup
 import io.github.conorryan.whistletabber.music.WhistleKey
 import io.github.conorryan.whistletabber.ui.components.HeaderChip
@@ -361,7 +361,8 @@ fun TapEditorContent(
                             whistle = draft.whistle,
                             octave = state.octave,
                             fingerings = state.settings.fingerings,
-                            canDelete = state.cursor > 0,
+                            // Nothing to delete when only anchors stand before the cursor (a leading |:).
+                            canDelete = draft.gapOf(state.cursor).first > 0,
                             canLeft = state.cursor > 0,
                             canRight = state.cursor < draft.lastSlot,
                             onOctave = onOctave,

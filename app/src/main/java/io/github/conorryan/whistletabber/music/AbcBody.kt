@@ -209,9 +209,14 @@ internal object AbcBody {
                     c == '[' -> i = chord(text, i)
                     c == '(' && text.getOrNull(i + 1)?.isDigit() == true -> {
                         val m = TUPLET.matchAt(text, i)!!
-                        tupletP = m.groupValues[1].toInt()
-                        tupletQ = m.groupValues[2].toIntOrNull() ?: defaultTupletQ(tupletP)
-                        tupletLeft = m.groupValues[3].toIntOrNull() ?: tupletP
+                        // A count of zero or fewer, or too big to be real, is
+                        // skipped, not a crash (`(0:2:3`, `(99999999999`).
+                        val p = m.groupValues[1].toIntOrNull()
+                        if (p != null && p in 2..64) {
+                            tupletP = p
+                            tupletQ = m.groupValues[2].toIntOrNull()?.coerceAtLeast(1) ?: defaultTupletQ(p)
+                            tupletLeft = m.groupValues[3].toIntOrNull() ?: p
+                        }
                         i = m.range.last + 1
                     }
                     c == ')' -> {
@@ -351,8 +356,13 @@ internal object AbcBody {
         }
 
         private fun scaled(ticks: Int, num: Int, den: Int): Int {
-            if (ticks * num % den != 0) losses += Loss.ROUNDED
-            return maxOf(1, Math.round(ticks.toDouble() * num / den).toInt())
+            // Long math, then a cap, so an absurd written length (`A2000000000`)
+            // is rounded down instead of overflowing Int.
+            val scaled = ticks.toLong() * num
+            if (scaled % den.toLong() != 0L) losses += Loss.ROUNDED
+            val out = Math.round(scaled.toDouble() / den)
+            if (out > MAX_ITEM_TICKS) losses += Loss.ROUNDED
+            return out.coerceIn(1, MAX_ITEM_TICKS).toInt()
         }
 
         /** A length after a note or rest, in ticks of the current unit, and where it ends. */
@@ -362,7 +372,8 @@ internal object AbcBody {
             val num = digits.toIntOrNull()?.takeIf { it > 0 } ?: 1
             val den = when {
                 slashes.isEmpty() -> 1
-                below.isNotEmpty() && slashes.length == 1 -> below.toInt().coerceAtLeast(1)
+                // A denominator too big for an Int (`A/99999999999`) counts as its slashes.
+                below.isNotEmpty() && slashes.length == 1 -> below.toIntOrNull()?.coerceAtLeast(1) ?: (1 shl slashes.length)
                 else -> 1 shl slashes.length
             }
             return scaled(unit, num, den) to m.range.last + 1
@@ -388,7 +399,7 @@ internal object AbcBody {
             if (c == 'Z') {
                 val m = Regex("""\d*""").matchAt(text, at + 1)!!
                 val bars = m.value.toIntOrNull() ?: 1
-                add(null, bars * (meter ?: Meter.FOUR_FOUR).ticksPerBar)
+                add(null, scaled((meter ?: Meter.FOUR_FOUR).ticksPerBar, bars, 1))
                 return m.range.last + 1
             }
             val (ticks, end) = length(text, at + 1)
@@ -830,9 +841,12 @@ internal object AbcBody {
     /** [text] (`1/8`) in ticks, if it is a whole number of them. */
     fun ticksOf(text: String): Int? {
         val m = Regex("""^\s*(\d+)\s*/\s*(\d+)\s*$""").find(text) ?: return null
-        val (num, den) = m.destructured.toList().map { it.toInt() }
-        if (den == 0 || TICKS_PER_WHOLE * num % den != 0) return null
-        return TICKS_PER_WHOLE * num / den
+        val num = m.groupValues[1].toIntOrNull() ?: return null
+        val den = m.groupValues[2].toIntOrNull() ?: return null
+        if (num == 0 || den == 0) return null
+        val ticks = TICKS_PER_WHOLE.toLong() * num
+        if (ticks % den.toLong() != 0L || ticks / den > MAX_ITEM_TICKS) return null
+        return (ticks / den).toInt()
     }
 
     /** [ticks] as an ABC length after a note in [unit]-tick units: "", "2", "/", "3/2". */
@@ -859,7 +873,9 @@ internal object AbcBody {
     /** The `Q:` tempo [q] as beats a minute, if it says. */
     private fun bpmOf(q: String, meter: Meter, unit: Int): Int? {
         Regex("""(\d+)\s*/\s*(\d+)\s*=\s*(\d+)""").find(q)?.let { m ->
-            val (num, den, bpm) = m.destructured.toList().map { it.toInt() }
+            val num = m.groupValues[1].toIntOrNull() ?: return null
+            val den = m.groupValues[2].toIntOrNull() ?: return null
+            val bpm = m.groupValues[3].toIntOrNull() ?: return null
             if (den == 0) return null
             return Math.round(bpm.toDouble() * TICKS_PER_WHOLE * num / den / meter.ticksPerBeat).toInt()
         }
@@ -898,6 +914,9 @@ internal object AbcBody {
 
     const val UNTIMED_UNIT = "1/4"
     const val UNTIMED_TICKS = TICKS_PER_WHOLE / 4
+
+    /** The longest one item can be, 64 whole notes, so written lengths can't overflow Int. */
+    private const val MAX_ITEM_TICKS = TICKS_PER_WHOLE * 64L
 
     private const val LETTERS = "CDEFGAB"
     private val NATURAL_PC = intArrayOf(0, 2, 4, 5, 7, 9, 11)

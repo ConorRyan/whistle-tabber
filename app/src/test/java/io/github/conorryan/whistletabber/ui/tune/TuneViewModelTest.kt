@@ -290,4 +290,20 @@ class TuneViewModelTest {
         vm.dismissError()
         assertNull(vm.renderState.value.error)
     }
+
+    @Test
+    fun `TapEdit decides without throwing on malformed ABC`() {
+        val hostile = listOf(
+            "X:1\nT:T\nM:4/4\nL:1/99999999999\nK:D\nA|\n", // an L: too big for an Int
+            "X:1\nT:T\nK:none\n", // no key the editor can read
+            "X:1\nT:T\nM:4/4\nL:1/8\nK:D\n(0:2:3A B c|\n", // a tuplet of zero
+            "X:1\nT:T\nM:4/4\nL:1/8\nK:D\nA2000000000 z|\n", // an absurd written length
+        )
+        for (text in hostile) TapEdit.of(text) // never throws
+        assertEquals(TapEdit.NONE, TapEdit.of(hostile[0]))
+        assertEquals(TapEdit.NONE, TapEdit.of(hostile[1]))
+        assertEquals(TapEdit.IN_PLACE, TapEdit.of(hostile[2]))
+        assertEquals(TapEdit.AS_COPY, TapEdit.of(hostile[3]))
+        assertEquals(TapEdit.IN_PLACE, TapEdit.of(abc))
+    }
 }

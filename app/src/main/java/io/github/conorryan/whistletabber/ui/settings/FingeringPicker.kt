@@ -97,6 +97,13 @@ fun FingeringChoicesGrid(whistle: WhistleKey, choices: FingeringChoices, onFinge
             }
         }
     }
+    if (FingeringOptions.offsets.any { o -> FingeringOptions.at(o).any { it.fife } }) {
+        Text(
+            "* " + stringResource(R.string.fingering_fife),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
     open?.let { offset ->
         ModalBottomSheet(onDismissRequest = { open = null }) {
             FingeringSheet(whistle, offset, choices) { index ->
@@ -109,13 +116,26 @@ fun FingeringChoicesGrid(whistle: WhistleKey, choices: FingeringChoices, onFinge
 
 @Composable
 private fun NoteTile(whistle: WhistleKey, offset: Int, choices: FingeringChoices, onOpen: () -> Unit) {
+    val options = FingeringOptions.at(offset)
     val fingering = choices.fingeringAt(offset) ?: return
-    val choosable = FingeringOptions.at(offset).size > 1
+    // A note drawn with a fife fingering says so, even when it is the only one.
+    val drawn = options.getOrNull(choices.index(offset))?.fife == true
+    val choosable = options.size > 1
+    // A single fife option still opens the sheet, which explains the "*".
+    val opens = choosable || options.any { it.fife }
     val content: @Composable () -> Unit = {
         Box(Modifier.width(44.dp)) {
             Column(Modifier.fillMaxWidth().padding(vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(noteLabel(whistle, offset), style = MaterialTheme.typography.labelMedium, maxLines = 1)
                 FingeringDiagram(fingering, holeSize = 6.dp)
+            }
+            if (drawn) {
+                Text(
+                    "*",
+                    Modifier.align(Alignment.TopStart).padding(4.dp),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             if (choosable) {
                 Box(Modifier.align(Alignment.TopEnd).padding(4.dp).size(6.dp).testTag("fingeringDot-$offset")) {
@@ -126,7 +146,7 @@ private fun NoteTile(whistle: WhistleKey, offset: Int, choices: FingeringChoices
     }
     val shape = MaterialTheme.shapes.small
     val border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-    if (choosable) {
+    if (opens) {
         Surface(onClick = onOpen, shape = shape, border = border, color = MaterialTheme.colorScheme.surfaceContainerHigh, modifier = Modifier.testTag("fingering-$offset"), content = content)
     } else {
         Surface(shape = shape, border = border, color = MaterialTheme.colorScheme.surface, contentColor = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.semantics(mergeDescendants = true) {}.testTag("fingering-$offset"), content = content)

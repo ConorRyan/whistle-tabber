@@ -136,7 +136,7 @@ class TapEditorViewModel(
     fun deleteBack() {
         val s = _state.value
         val draft = s.draft ?: return
-        if (s.cursor == 0) return
+        if (draft.gapOf(s.cursor).first == 0) return
         val (removed, cursor) = draft.removedBefore(s.cursor)
         edit(removed, cursor)
     }
