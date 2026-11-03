@@ -134,6 +134,50 @@ class RhythmFitTest {
     }
 
     @Test
+    fun `a note pushed onto a triplet's first slot doesn't crash`() {
+        // Two eighths snap to the same slot (24), so the second is pushed onto
+        // beat 2 (48), where a triplet would start: the triplet is read as plain
+        // eighths, never as a note shorter than its step.
+        val ps = listOf(
+            Press(50, 335), Press(194, 328), Press(289, 620),
+            Press(542, 618), Press(694, 1013), Press(830, 1138),
+            Press(992, 1130), Press(1459, 1582),
+        )
+        val r = RhythmFit.fit(ps, ps.size, common)
+        assertWellFormed(r, ps.size)
+        assertEquals(List(8) { 24 }, ticks(r))
+    }
+
+    /** Every note once, in order, and no event of zero or negative length. */
+    private fun assertWellFormed(r: Rhythm, noteCount: Int) {
+        assertTrue(r.toString(), r.events.all { it.ticks > 0 })
+        assertEquals(r.toString(), (0 until noteCount).toList(), r.events.mapNotNull { it.note })
+    }
+
+    @Test
+    fun `any presses fit, triplets or not`() {
+        val rnd = java.util.Random(1)
+        val setups = listOf(common, common.copy(grid = RhythmGrid.SIXTEENTH), common.copy(bpm = 60, grid = RhythmGrid.SIXTEENTH))
+        repeat(5_000) {
+            val setup = setups[it % setups.size]
+            val beat = setup.beatMs
+            // Eighths, quarters and quarter-note triplets, each press a little off.
+            val downs = mutableListOf<Double>()
+            var t = 0.0
+            while (downs.size < 8) {
+                when (rnd.nextInt(3)) {
+                    0 -> { downs += t; t += beat / 2 }
+                    1 -> { downs += t; t += beat }
+                    else -> { for (k in 0 until 3) downs += t + k * beat / 3; t += beat }
+                }
+            }
+            val ps = downs.map { d -> d.toLong() + rnd.nextInt(161) - 80 }.sorted()
+                .map { d -> Press(d, d + 40 + rnd.nextInt(300)) }
+            assertWellFormed(RhythmFit.fit(ps, ps.size, setup), ps.size)
+        }
+    }
+
+    @Test
     fun `a tapped triplet is written as one`() {
         val draft = TapDraft("T", WhistleKey.D, listOf(0, 2, 4, 5, 7, 9)).withRhythm(RhythmFit.fit(withTriplet(), 6, common), common)
         val abc = TapTune.toAbc(draft)

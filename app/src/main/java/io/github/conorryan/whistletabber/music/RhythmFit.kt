@@ -178,33 +178,48 @@ object RhythmFit {
     /** Onsets in ticks, and for each the triplet span it is a third of (0: on the grid). */
     private class Snapped(val onsets: IntArray, val span: IntArray)
 
-    /** Snaps [times] (ticks from the first downbeat, latency off) to the grid, or to triplets. */
+    /**
+     * Snaps [times] (ticks from the first downbeat, latency off) to the grid,
+     * or to triplets, in one pass from the left. Every onset is at least the
+     * one before plus that note's step (a grid unit, or a third in a
+     * triplet), so no note is shorter than its step; a triplet keeps its
+     * whole span, the next note starting at its end or later. A press that
+     * would land before that moves on, and a triplet that would start on or
+     * before a note already placed is read as plain notes.
+     */
     private fun snap(times: List<Double>, setup: RhythmSetup): Snapped {
         val grid = setup.grid.ticks
         val n = times.size
-        val onsets = IntArray(n) { Math.round(times[it] / grid).toInt() * grid }
+        val straight = IntArray(n) { Math.round(times[it] / grid).toInt() * grid }
+        val onsets = straight.copyOf()
         val span = IntArray(n)
-        if (setup.triplets && !setup.meter.compound) {
-            val spans = listOfNotNull(TICKS_PER_WHOLE / 4, (TICKS_PER_WHOLE / 8).takeIf { setup.grid == RhythmGrid.SIXTEENTH })
-            var i = 0
-            while (i + 2 < n) {
-                val found = spans.firstOrNull { s -> triplet(times, onsets, i, s) }
-                if (found == null) {
-                    i++
-                    continue
-                }
-                val w = Math.round(times[i] / found).toInt() * found
+        val spans = if (setup.triplets && !setup.meter.compound) {
+            listOfNotNull(TICKS_PER_WHOLE / 4, (TICKS_PER_WHOLE / 8).takeIf { setup.grid == RhythmGrid.SIXTEENTH })
+        } else {
+            emptyList()
+        }
+        fun start(i: Int, s: Int): Int = Math.round(times[i] / s).toInt() * s
+        var floor = Int.MIN_VALUE
+        var i = 0
+        while (i < n) {
+            val found = if (i + 2 < n) {
+                spans.firstOrNull { s -> start(i, s) >= floor && triplet(times, straight, i, s) }
+            } else {
+                null
+            }
+            if (found != null) {
+                val w = start(i, found)
                 for (k in 0 until 3) {
                     onsets[i + k] = w + k * found / 3
                     span[i + k] = found
                 }
+                floor = w + found
                 i += 3
+            } else {
+                onsets[i] = maxOf(onsets[i], floor)
+                floor = onsets[i] + grid
+                i++
             }
-        }
-        // Two presses never share a slot: a later one moves on by a step (a third, in a triplet).
-        fun step(i: Int): Int = if (span[i] != 0) span[i] / 3 else grid
-        for (i in 1 until n) {
-            if (onsets[i] < onsets[i - 1] + minOf(step(i), step(i - 1))) onsets[i] = onsets[i - 1] + step(i)
         }
         return Snapped(onsets, span)
     }
