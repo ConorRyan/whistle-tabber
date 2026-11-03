@@ -134,6 +134,9 @@ fun LibraryScreen(
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
         if (uri != null) vm.exportAll(uri)
     }
+    val exportSelectedLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
+        if (uri != null) vm.exportSelected(uri)
+    }
     val paste: () -> Unit = {
         when (val pasted = PastedTunes.from(context.getSystemService(ClipboardManager::class.java)?.primaryClip)) {
             null -> scope.launch { snackbar.showSnackbar(context.getString(R.string.paste_empty)) }
@@ -174,6 +177,10 @@ fun LibraryScreen(
         onSelectAll = vm::selectAll,
         onClearSelection = vm::clearSelection,
         onDeleteSelected = vm::deleteSelected,
+        onExportSelected = {
+            val single = state.tunes.filter { it.id in state.selected }.singleOrNull()
+            exportSelectedLauncher.launch(single?.let { ExportNames.tune(it.title) } ?: ExportNames.library(LocalDate.now()))
+        },
         onOpenTune = onOpenTune,
         onNewTune = onNewTune,
         onSettings = onSettings,
@@ -202,6 +209,7 @@ fun LibraryContent(
     onSelectAll: () -> Unit = {},
     onClearSelection: () -> Unit = {},
     onDeleteSelected: () -> Unit = {},
+    onExportSelected: () -> Unit = {},
     onOpenTune: (Long) -> Unit = {},
     onNewTune: () -> Unit = {},
     onSettings: () -> Unit = {},
@@ -219,7 +227,7 @@ fun LibraryContent(
     Scaffold(
         topBar = {
             if (state.selecting) {
-                SelectionBar(state.selected.size, onClearSelection, onSelectAll, onDeleteSelected)
+                SelectionBar(state.selected.size, onClearSelection, onSelectAll, onExportSelected, onDeleteSelected)
             } else Row(
                 Modifier.fillMaxWidth().statusBarsPadding().padding(start = 20.dp, end = 8.dp, top = 16.dp, bottom = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -419,7 +427,7 @@ private fun Filters(
 /** The top bar while tunes are selected: cancel, how many, select all, delete. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SelectionBar(count: Int, onClear: () -> Unit, onSelectAll: () -> Unit, onDelete: () -> Unit) {
+private fun SelectionBar(count: Int, onClear: () -> Unit, onSelectAll: () -> Unit, onExport: () -> Unit, onDelete: () -> Unit) {
     TopAppBar(
         title = { Text(pluralStringResource(R.plurals.selected_count, count, count), Modifier.testTag("selectedCount")) },
         navigationIcon = {
@@ -430,6 +438,9 @@ private fun SelectionBar(count: Int, onClear: () -> Unit, onSelectAll: () -> Uni
         actions = {
             IconButton(onClick = onSelectAll, modifier = Modifier.testTag("selectAll")) {
                 Icon(Icons.Filled.SelectAll, contentDescription = stringResource(R.string.select_all))
+            }
+            IconButton(onClick = onExport, modifier = Modifier.testTag("exportSelected")) {
+                Icon(Icons.Filled.FileUpload, contentDescription = stringResource(R.string.action_export_selected))
             }
             IconButton(onClick = onDelete, modifier = Modifier.testTag("deleteSelected")) {
                 Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.action_delete))

@@ -164,6 +164,25 @@ class LibraryViewModelTest {
     }
 
     @Test
+    fun `export of the selection writes only the selected tunes and ends the selection`() = runTest {
+        save(tune("A"), tune("B"), tune("Left out"))
+        File(graph.context.cacheDir, "sel.abc").writeText("")
+        val vm = vm()
+        val ids = vm.state.first { it.tunes.size == 3 }.tunes.associate { it.title to it.id }
+        vm.toggleSelected(ids.getValue("A"))
+        vm.toggleSelected(ids.getValue("B"))
+        vm.state.first { it.selected.size == 2 }
+        vm.messages.test {
+            vm.exportSelected(FakeDocumentsProvider.uri("sel.abc"))
+            assertEquals(LibraryMessage.Exported(2), awaitItem())
+        }
+        val lines = File(graph.context.cacheDir, "sel.abc").readText().lines()
+        assertEquals(listOf("X:1", "X:2"), lines.filter { it.startsWith("X:") })
+        assertEquals(listOf("T:A", "T:B"), lines.filter { it.startsWith("T:") })
+        assertFalse(vm.state.first { it.selected.isEmpty() }.selecting)
+    }
+
+    @Test
     fun `a deletion elsewhere is offered for undo, and undo restores it`() = runTest {
         save(tune("Gone"))
         val vm = vm()

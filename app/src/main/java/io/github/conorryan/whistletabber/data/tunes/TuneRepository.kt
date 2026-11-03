@@ -138,6 +138,10 @@ class TuneRepository(
     /** The whole library as one tune book, sorted by title. */
     suspend fun exportAll(): String = AbcBook.join(dao.getAll().map { it.abc })
 
+    /** The tunes with [ids], in library order, as one book (`X:` renumbered). */
+    suspend fun export(ids: Collection<Long>): String =
+        AbcBook.join(dao.getAll().filter { it.id in ids }.map { it.abc })
+
     suspend fun export(id: Long): String? = dao.get(id)?.let { AbcBook.join(listOf(it.abc)) }
 
     private fun blank(source: String, time: Long) = TuneEntity(

@@ -262,7 +262,8 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     the scan screen, files and text import through `TuneImporter`).
     Multi-select: a long press
     starts selecting (`LibraryUiState.selected`, only tunes the filters
-    show), the top bar offers select all and delete. Deletes from here
+    show), the top bar offers select all, export (`exportSelected`, one file of the
+    selected tunes) and delete. Deletes from here
     (`deleteSelected`) or the tune screen arrive as `RecentlyDeleted.offer`;
     the snackbar answers with `undo` or `dismiss`.
   - `tune/TuneViewModel`: the tune and its settings; the render cycle

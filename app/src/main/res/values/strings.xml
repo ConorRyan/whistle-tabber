@@ -71,6 +71,7 @@
         <item quantity="other">%d selected</item>
     </plurals>
     <string name="select_all">Select all</string>
+    <string name="action_export_selected">Export selected</string>
     <string name="clear_selection">Cancel selection</string>
 
     <!-- Find tunes -->

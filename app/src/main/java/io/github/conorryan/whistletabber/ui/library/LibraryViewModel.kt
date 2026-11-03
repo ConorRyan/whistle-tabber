@@ -58,8 +58,8 @@ sealed interface LibraryMessage {
 }
 
 /**
- * The tune list with search and filters, selection for deleting several
- * tunes at once, the starter-set offer, and import and export of whole files.
+ * The tune list with search and filters, selection for deleting or exporting
+ * several tunes at once, the starter-set offer, and import and export of whole files.
  * It also reports imports shared from other apps ([IncomingTunes]).
  * Imports and deletes run in [appScope] so leaving the screen doesn't cancel
  * them half way.
@@ -162,6 +162,20 @@ class LibraryViewModel(
             val message = runCatching {
                 files.write(uri, repository.exportAll())
                 LibraryMessage.Exported(repository.count.first())
+            }.getOrElse { LibraryMessage.ExportFailed }
+            _messages.send(message)
+        }
+    }
+
+    /** Writes the selected tunes to [uri] as one file and ends the selection. */
+    fun exportSelected(uri: Uri) {
+        val ids = state.value.selected
+        if (ids.isEmpty()) return
+        clearSelection()
+        appScope.launch {
+            val message = runCatching {
+                files.write(uri, repository.export(ids))
+                LibraryMessage.Exported(ids.size)
             }.getOrElse { LibraryMessage.ExportFailed }
             _messages.send(message)
         }

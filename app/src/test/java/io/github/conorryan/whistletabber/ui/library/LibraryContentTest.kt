@@ -220,6 +220,7 @@ class LibraryContentTest {
         var toggled: Long? = null
         var selectedAll = false
         var deleted = false
+        var exported = false
         var cleared = false
         compose.setContent {
             WhistleTabberTheme {
@@ -229,6 +230,7 @@ class LibraryContentTest {
                     onToggleSelected = { toggled = it },
                     onSelectAll = { selectedAll = true },
                     onDeleteSelected = { deleted = true },
+                    onExportSelected = { exported = true },
                     onClearSelection = { cleared = true },
                 )
             }
@@ -247,6 +249,8 @@ class LibraryContentTest {
 
         compose.onNodeWithTag("selectAll").performClick()
         assertTrue(selectedAll)
+        compose.onNodeWithTag("exportSelected").performClick()
+        assertTrue(exported)
         compose.onNodeWithTag("deleteSelected").performClick()
         assertTrue(deleted)
         compose.onNodeWithTag("clearSelection").performClick()

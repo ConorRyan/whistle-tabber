@@ -79,6 +79,7 @@
         <item quantity="many">%d sélectionnés</item>
     </plurals>
     <string name="select_all">Tout sélectionner</string>
+    <string name="action_export_selected">Exporter la sélection</string>
     <string name="clear_selection">Annuler la sélection</string>
 
     <!-- Find tunes -->
