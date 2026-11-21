@@ -61,7 +61,7 @@ setup is already done for 1.0.0: the release keystore exists.
      --ks-key-alias whistletabber \
      --v1-signing-enabled false \
      --alignment-preserved true \
-     --out whistle-tabber.<versionName>.apk \
+     --out app/build/outputs/apk/release/whistle-tabber.<versionName>.apk \
      app/build/outputs/apk/release/app-release-unsigned.apk
    ```
 
@@ -73,8 +73,12 @@ setup is already done for 1.0.0: the release keystore exists.
 
    Verify the signature with `apksigner verify` on the output file.
 
+   The signed APK (and the `.idsig` apksigner writes beside it) stays in
+   `app/build/`, which git ignores and `./gradlew clean` removes, so nothing
+   is left in the project folder after a release.
+
 6. **Create the GitHub release** on the tag and upload
-   `whistle-tabber.<versionName>.apk` as a release asset. The filename must
+   `app/build/outputs/apk/release/whistle-tabber.<versionName>.apk` as a release asset. The filename must
    follow the pattern exactly: `whistle-tabber.<versionName>.apk`. Use the
    en-US changelog file as the release notes.
 
