@@ -34,7 +34,12 @@ data class TuneUiState(
     val preview: KeyChangePreview.Preview? = null,
     /** How the tap editor can open the tune ([TapTune.read]). */
     val tapEdit: TapEdit = TapEdit.NONE,
+    /** The whistle shown instead of Settings' own, or null when Settings is shown. */
+    val whistleOverride: WhistleKey? = null,
 ) {
+    /** The tune is shown on this whistle: the override if set, else Settings' own. */
+    val shownWhistle: WhistleKey get() = whistleOverride ?: settings.whistle
+
     /** The whistle the tune is written for: its directive, else its key's suggestion, else D. */
     val tuneWhistle: WhistleKey get() = tune?.whistle ?: WhistleKey.DEFAULT
 }
@@ -101,25 +106,53 @@ class TuneViewModel(
     private val keyChange = KeyChangePreview(viewModelScope)
     private var deleting = false
 
+    /**
+     * The whistle picked on the tune screen, standing in for Settings' own.
+     * In memory only: it is never saved, and picking Settings' own whistle
+     * clears it. Null while no override is in effect (also when it stops
+     * differing from Settings, since only a different whistle is an override).
+     */
+    private val override = MutableStateFlow<WhistleKey?>(null)
+
     init {
         viewModelScope.launch {
-            combine(repository.observe(id), settingsEditor.settings, keyChange.preview, ::Triple).collect { (tune, settings, preview) ->
+            combine(repository.observe(id), settingsEditor.settings, keyChange.preview, override) { tune, settings, preview, whistlePick ->
+                TuneAndSettings(tune, settings, preview, whistlePick)
+            }.collect { (tune, settings, preview, whistlePick) ->
+                // Only a whistle that differs from Settings is an override.
+                val shown = whistlePick?.takeIf { it != settings.whistle }
                 if (tune == null) {
                     if (!deleting) _state.update { it.copy(missing = true) }
                     return@collect
                 }
-                _state.update { it.copy(tune = tune, settings = settings, preview = preview, missing = false, tapEdit = TapEdit.of(tune.abc)) }
+                _state.update {
+                    it.copy(tune = tune, settings = settings, preview = preview, missing = false, tapEdit = TapEdit.of(tune.abc), whistleOverride = shown)
+                }
                 val whistle = _state.value.tuneWhistle
+                val shownSettings = if (shown != null) settings.copy(whistle = shown) else settings
                 renderer.show(
                     TuneRenderer.RenderRequest(
                         abc = preview?.abc ?: tune.abc,
-                        midiTranspose = settings.midiTranspose(whistle),
-                        fingering = TuneRenderer.FingeringInputs(settings, whistle),
+                        midiTranspose = shownSettings.midiTranspose(whistle),
+                        fingering = TuneRenderer.FingeringInputs(shownSettings, whistle),
                     ),
                 )
             }
         }
     }
+
+    /** Shows the tune on [whistle] instead of Settings' own; picking Settings' own clears it. */
+    fun showOn(whistle: WhistleKey) {
+        override.value = whistle.takeIf { it != _state.value.settings.whistle }
+    }
+
+    /** A tune with the picked whistle override, collected from four flows. */
+    private data class TuneAndSettings(
+        val tune: Tune?,
+        val settings: TabSettings,
+        val preview: KeyChangePreview.Preview?,
+        val whistlePick: WhistleKey?,
+    )
 
     fun togglePlay() = renderer.togglePlay()
 

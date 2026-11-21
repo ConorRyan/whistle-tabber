@@ -130,6 +130,68 @@ class TuneViewModelTest {
     }
 
     @Test
+    fun `the whistle override acts as my whistle and re-sends diagrams only`() = runTest {
+        val id = saved()
+        val (vm, page) = bound(id, editor(backgroundScope))
+        page.commands.test {
+            awaitItem() // render
+            page.emit(BridgeEvent.Rendered(notes, emptyList()))
+            awaitItem() // first diagrams
+            vm.showOn(WhistleKey.C) // C soprano: same +12 transpose, other fingerings
+            val diagrams = (awaitItem() as BridgeCommand.Diagrams).diagrams
+            assertEquals("CCOOOO", diagrams[0]!!.holes) // G on a C whistle
+            expectNoEvents()
+        }
+        assertEquals(WhistleKey.C, vm.state.value.shownWhistle)
+        assertEquals(abc, graph.repository.get(id)!!.abc) // the stored tune is untouched
+    }
+
+    @Test
+    fun `the whistle override moves playback in same-fingerings mode`() = runTest {
+        graph.store.setMode(TransposeMode.SAME_FINGERINGS)
+        val (vm, page) = bound(saved(), editor(backgroundScope))
+        page.commands.test {
+            awaitItem()
+            page.emit(BridgeEvent.Rendered(notes, emptyList()))
+            awaitItem() // first diagrams
+            vm.showOn(WhistleKey.C) // plays a tone lower on a C whistle
+            assertEquals(BridgeCommand.Render(abc, midiTranspose = 10), awaitItem())
+            page.emit(BridgeEvent.Rendered(notes, emptyList()))
+            assertEquals("CCCOOO", (awaitItem() as BridgeCommand.Diagrams).diagrams[0]!!.holes) // still D-whistle fingerings
+        }
+        assertEquals(WhistleKey.C, vm.state.value.shownWhistle)
+    }
+
+    @Test
+    fun `picking the Settings whistle clears the override, and Settings catching up is no override`() = runTest {
+        val (vm, _) = bound(saved(), editor(backgroundScope))
+        vm.showOn(WhistleKey.C)
+        assertEquals(WhistleKey.C, vm.state.first { it.tune != null }.shownWhistle)
+        vm.showOn(WhistleKey.D) // my own whistle again
+        val cleared = vm.state.first { it.tune != null && it.whistleOverride == null }
+        assertNull(cleared.whistleOverride)
+        assertEquals(WhistleKey.D, cleared.shownWhistle)
+        vm.showOn(WhistleKey.C)
+        vm.settingsEditor.setWhistle(WhistleKey.C) // Settings later holds the same whistle
+        val caughtUp = vm.state.first { it.settings.whistle == WhistleKey.C }
+        assertNull(caughtUp.whistleOverride)
+        assertEquals(WhistleKey.C, caughtUp.shownWhistle)
+    }
+
+    @Test
+    fun `sharing with an override still sends the stored tune`() = runTest {
+        val (vm, _) = bound(saved(), editor(backgroundScope))
+        vm.showOn(WhistleKey.C)
+        assertEquals(WhistleKey.C, vm.state.first { it.tune != null }.shownWhistle)
+        vm.effects.test {
+            vm.share()
+            val share = awaitItem() as TuneEffect.Share
+            assertEquals("Test Tune", share.title)
+            assertEquals(abc, graph.files.read(share.uri))
+        }
+    }
+
+    @Test
     fun `a change of playback transpose re-renders, and diagrams follow the new render`() = runTest {
         val (vm, page) = bound(saved(), editor(backgroundScope))
         page.commands.test {

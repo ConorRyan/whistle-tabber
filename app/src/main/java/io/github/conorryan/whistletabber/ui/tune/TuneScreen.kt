@@ -42,7 +42,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.FileUpload
@@ -208,13 +210,17 @@ fun TuneScreen(
                     onTempo = vm::setTempo,
                     onDismissError = vm::dismissError,
                     edit = {
-                        EditTuneMenu(
-                            open = editOpen,
-                            onOpen = { editOpen = it },
-                            tapEdit = state.tapEdit,
-                            onEdit = onEdit,
-                            onEditTaps = onEditTaps,
-                        )
+                        if (tune != null) {
+                            EditTuneMenu(
+                                open = editOpen,
+                                onOpen = { editOpen = it },
+                                tapEdit = state.tapEdit,
+                                canChangeKey = KeyChange.steps(tune.key, "C") != null,
+                                onEdit = onEdit,
+                                onEditTaps = onEditTaps,
+                                onChangeKey = { keyDialog = true },
+                            )
+                        }
                     },
                 )
             }
@@ -280,7 +286,9 @@ fun TuneScreen(
                     TuneHeader(
                         tune = tune,
                         tuneWhistle = state.tuneWhistle,
-                        onKey = { keyDialog = true },
+                        shownWhistle = state.shownWhistle,
+                        settingsWhistle = state.settings.whistle,
+                        onShowOn = vm::showOn,
                     )
                 }
                 state.preview?.let { preview ->
@@ -305,16 +313,19 @@ fun TuneScreen(
 }
 
 /**
- * The tune's name in big type, then its rhythm and meter, its key (a tap
- * changes it) and the whistle it is written for (shown, chosen in the
- * editor). My whistle stays in Settings.
+ * The tune's name in big type, then its rhythm and meter, its key and the
+ * whistle it is written for (both shown, not tapped), and the whistle it is
+ * shown on, picked from [WhistleOverrideChip] and otherwise Settings' own.
+ * My whistle stays in Settings.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun TuneHeader(
+internal fun TuneHeader(
     tune: Tune,
     tuneWhistle: WhistleKey,
-    onKey: () -> Unit,
+    shownWhistle: WhistleKey,
+    settingsWhistle: WhistleKey,
+    onShowOn: (WhistleKey) -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
     ScreenTitle(tune.title, Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
@@ -335,43 +346,107 @@ private fun TuneHeader(
                         .padding(horizontal = 10.dp, vertical = 6.dp),
                 )
             }
+            // The key is only shown; changing it starts from the Edit menu.
             tune.key?.let { key ->
                 HeaderChip(
                     text = key,
-                    onClick = onKey,
-                    enabled = KeyChange.steps(tune.key, "C") != null,
+                    onClick = null,
                     container = colors.surfaceContainerLow,
                     content = colors.onSurface,
                     border = colors.outline,
                     modifier = Modifier.testTag("keyChip"),
                 )
             }
-            // Not a button: the whistle is chosen in the editor.
             HeaderChip(
-                text = stringResource(R.string.written_for_chip, whistleLabel(tuneWhistle)),
+                text = stringResource(R.string.tune_written_for_chip, whistleLabel(tuneWhistle)),
                 onClick = null,
                 container = colors.surfaceContainerLow,
                 content = colors.onSurface,
                 border = colors.outline,
                 modifier = Modifier.testTag("writtenForChip"),
             )
+            WhistleOverrideChip(
+                shown = shownWhistle,
+                settingsWhistle = settingsWhistle,
+                onShowOn = onShowOn,
+            )
         }
     }
 }
 
 /**
- * The player's pen button. A tune the tap editor can read has two edits, so
- * the pen opens a small menu above it: edit the fingerings (the tap editor;
- * as a copy when it can't keep everything) or edit the ABC. Any other tune
- * has only one edit, so the pen goes straight there. Choosing, a tap outside
- * or back closes the menu.
+ * The whistle the tune is shown on, with a drop-down of all whistles. It
+ * starts at Settings' own; picking another turns the chip brass (the theme's
+ * secondary), picking Settings' own whistle turns it back. Never saved: the
+ * choice lives only in the ViewModel's memory.
  */
 @Composable
-internal fun EditTuneMenu(open: Boolean, onOpen: (Boolean) -> Unit, tapEdit: TapEdit, onEdit: () -> Unit, onEditTaps: () -> Unit) {
+private fun WhistleOverrideChip(
+    shown: WhistleKey,
+    settingsWhistle: WhistleKey,
+    onShowOn: (WhistleKey) -> Unit,
+) {
+    var open by remember { mutableStateOf(false) }
+    val colors = MaterialTheme.colorScheme
+    val overridden = shown != settingsWhistle
+    Box {
+        HeaderChip(
+            text = stringResource(R.string.tune_on_whistle_chip, whistleLabel(shown)),
+            onClick = { open = true },
+            container = if (overridden) colors.secondary else colors.surfaceContainerLow,
+            content = if (overridden) colors.onSecondary else colors.onSurface,
+            border = if (overridden) colors.secondary else colors.outline,
+            modifier = Modifier.testTag("onWhistleChip"),
+        )
+        DropdownMenu(
+            expanded = open,
+            onDismissRequest = { open = false },
+            shape = MaterialTheme.shapes.large,
+            containerColor = colors.surfaceContainerLow,
+        ) {
+            WhistleKey.entries.forEach { whistle ->
+                DropdownMenuItem(
+                    text = {
+                        val label = if (whistle == settingsWhistle) {
+                            stringResource(R.string.whistle_settings_mark, whistleLabel(whistle))
+                        } else {
+                            whistleLabel(whistle)
+                        }
+                        Text(label)
+                    },
+                    trailingIcon = {
+                        if (whistle == shown) Icon(Icons.Filled.Check, contentDescription = null, tint = colors.primary)
+                    },
+                    onClick = { open = false; onShowOn(whistle) },
+                    modifier = Modifier.testTag("onWhistle-${whistle.name}"),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The player's pen button. A tune with more than one edit opens a small menu
+ * above it: edit the fingerings (the tap editor, as a copy when it can't
+ * keep everything), edit the ABC, or change key (when [canChangeKey]). A tune
+ * whose only edit is the ABC goes straight there. Choosing, a tap outside or
+ * back closes the menu.
+ */
+@Composable
+internal fun EditTuneMenu(
+    open: Boolean,
+    onOpen: (Boolean) -> Unit,
+    tapEdit: TapEdit,
+    canChangeKey: Boolean,
+    onEdit: () -> Unit,
+    onEditTaps: () -> Unit,
+    onChangeKey: () -> Unit,
+) {
     val tapEditable = tapEdit != TapEdit.NONE
+    val menu = tapEditable || canChangeKey
     Box {
         FilledIconButton(
-            onClick = { if (tapEditable) onOpen(!open) else onEdit() },
+            onClick = { if (menu) onOpen(!open) else onEdit() },
             colors = IconButtonDefaults.filledIconButtonColors(
                 containerColor = MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.12f),
                 contentColor = MaterialTheme.colorScheme.inverseOnSurface,
@@ -381,25 +456,35 @@ internal fun EditTuneMenu(open: Boolean, onOpen: (Boolean) -> Unit, tapEdit: Tap
             Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.action_edit))
         }
         DropdownMenu(
-            expanded = open && tapEditable,
+            expanded = open && menu,
             onDismissRequest = { onOpen(false) },
             shape = MaterialTheme.shapes.large,
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         ) {
-            DropdownMenuItem(
-                text = {
-                    Text(stringResource(if (tapEdit == TapEdit.AS_COPY) R.string.action_edit_fingerings_copy else R.string.action_edit_fingerings))
-                },
-                leadingIcon = { Icon(Icons.Filled.TouchApp, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                onClick = { onOpen(false); onEditTaps() },
-                modifier = Modifier.testTag("editTaps"),
-            )
+            if (tapEditable) {
+                DropdownMenuItem(
+                    text = {
+                        Text(stringResource(if (tapEdit == TapEdit.AS_COPY) R.string.action_edit_fingerings_copy else R.string.action_edit_fingerings))
+                    },
+                    leadingIcon = { Icon(Icons.Filled.TouchApp, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                    onClick = { onOpen(false); onEditTaps() },
+                    modifier = Modifier.testTag("editTaps"),
+                )
+            }
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.action_edit_abc)) },
                 leadingIcon = { Icon(Icons.Filled.EditNote, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                 onClick = { onOpen(false); onEdit() },
                 modifier = Modifier.testTag("editAbc"),
             )
+            if (canChangeKey) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.action_change_key_menu)) },
+                    leadingIcon = { Icon(Icons.Filled.MusicNote, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                    onClick = { onOpen(false); onChangeKey() },
+                    modifier = Modifier.testTag("changeKey"),
+                )
+            }
         }
     }
 }

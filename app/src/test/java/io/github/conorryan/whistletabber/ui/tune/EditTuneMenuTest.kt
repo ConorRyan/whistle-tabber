@@ -25,11 +25,25 @@ class EditTuneMenuTest {
     val compose = createComposeRule()
 
     /** The dial with its own open state, as TuneScreen shows it. */
-    private fun setContent(tapEdit: TapEdit, onEdit: () -> Unit = {}, onEditTaps: () -> Unit = {}) {
+    private fun setContent(
+        tapEdit: TapEdit,
+        canChangeKey: Boolean = false,
+        onEdit: () -> Unit = {},
+        onEditTaps: () -> Unit = {},
+        onChangeKey: () -> Unit = {},
+    ) {
         compose.setContent {
             WhistleTabberTheme {
                 var open by remember { mutableStateOf(false) }
-                EditTuneMenu(open = open, onOpen = { open = it }, tapEdit = tapEdit, onEdit = onEdit, onEditTaps = onEditTaps)
+                EditTuneMenu(
+                    open = open,
+                    onOpen = { open = it },
+                    tapEdit = tapEdit,
+                    canChangeKey = canChangeKey,
+                    onEdit = onEdit,
+                    onEditTaps = onEditTaps,
+                    onChangeKey = onChangeKey,
+                )
             }
         }
     }
@@ -40,6 +54,7 @@ class EditTuneMenuTest {
         var taps = 0
         setContent(tapEdit = TapEdit.IN_PLACE, onEdit = { edits++ }, onEditTaps = { taps++ })
         compose.onNodeWithTag("editTaps").assertDoesNotExist()
+        compose.onNodeWithTag("changeKey").assertDoesNotExist()
         compose.onNodeWithTag("edit").performClick()
         compose.onNodeWithTag("editTaps").assertIsDisplayed()
         compose.onNodeWithTag("editAbc").assertIsDisplayed()
@@ -58,7 +73,7 @@ class EditTuneMenuTest {
     fun `a tune that is not tap-editable goes straight to the ABC editor`() {
         var edits = 0
         var taps = 0
-        setContent(tapEdit = TapEdit.NONE, onEdit = { edits++ }, onEditTaps = { taps++ })
+        setContent(tapEdit = TapEdit.NONE, canChangeKey = false, onEdit = { edits++ }, onEditTaps = { taps++ })
         compose.onNodeWithTag("editTaps").assertDoesNotExist()
         compose.onNodeWithTag("edit").performClick()
         assertEquals(1, edits)
@@ -73,5 +88,33 @@ class EditTuneMenuTest {
         compose.onNodeWithTag("edit").performClick()
         compose.onNodeWithText("Edit fingerings (as a copy)").performClick()
         assertEquals(1, taps)
+    }
+
+    @Test
+    fun `change key appears in the menu and is chosen`() {
+        var keys = 0
+        setContent(tapEdit = TapEdit.IN_PLACE, canChangeKey = true, onChangeKey = { keys++ })
+        compose.onNodeWithTag("changeKey").assertDoesNotExist()
+        compose.onNodeWithTag("edit").performClick()
+        compose.onNodeWithText("Change key…").assertIsDisplayed()
+        compose.onNodeWithTag("changeKey").performClick()
+        assertEquals(1, keys)
+        compose.onNodeWithTag("changeKey").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a tune only the key can change is a menu of Edit ABC and Change key`() {
+        var edits = 0
+        var keys = 0
+        var taps = 0
+        setContent(tapEdit = TapEdit.NONE, canChangeKey = true, onEdit = { edits++ }, onEditTaps = { taps++ }, onChangeKey = { keys++ })
+        compose.onNodeWithTag("edit").performClick()
+        compose.onNodeWithTag("editTaps").assertDoesNotExist()
+        compose.onNodeWithTag("editAbc").assertIsDisplayed()
+        compose.onNodeWithTag("changeKey").assertIsDisplayed()
+        compose.onNodeWithTag("changeKey").performClick()
+        assertEquals(1, keys)
+        assertEquals(0, edits)
+        assertEquals(0, taps)
     }
 }

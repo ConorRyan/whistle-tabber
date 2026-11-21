@@ -280,9 +280,16 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     belongs to its `TuneRenderer`, the key-change preview to its
     `KeyChangePreview` (preview state and the copy's title). The tune's own
     whistle (`%whistle_tab_key`, else its key's suggestion) is the
-    *written-for* whistle; `TabSettings.whistle` is *my* whistle. The
+    *written-for* whistle; `TabSettings.whistle` is *my* whistle. The header's
+    "On X whistle" dropdown can stand a *whistle override* in for it
+    (`showOn`, in memory only, never saved, cleared by picking Settings' own):
+    renderer and playback then act as if `TabSettings.whistle` held it, while
+    the staff never moves. `TuneUiState.shownWhistle` is the override if set,
+    else Settings' own; only a whistle that differs from Settings is an
+    override. The
     ViewModel feeds `show(abc, midiTranspose, fingerings)` on every change
-    and lets the renderer dedupe. Key change: `KeyChangePreview.start` →
+    and lets the renderer dedupe. Key change starts from the Edit menu
+    ("Change key…"); then `KeyChangePreview.start` →
     preview render → save as a copy (default) or replace. The page fills
     the screen and scrolls as a whole: the header (title, chips, preview
     bar; on a short screen, `TuneLayout.isShort`, the app bar too) floats

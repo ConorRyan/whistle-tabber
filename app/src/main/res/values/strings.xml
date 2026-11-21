@@ -107,7 +107,11 @@
     <string name="written_for_help">The whistle this tune\'s fingerings are written for. It is saved in the tune\'s ABC, in the same form as Eskin\'s ABC Tools.</string>
     <string name="written_for_auto">From the key (%1$s)</string>
     <string name="written_for_chip">For %1$s whistle</string>
+    <string name="tune_written_for_chip">Written for %1$s</string>
+    <string name="tune_on_whistle_chip">On %1$s whistle</string>
+    <string name="whistle_settings_mark">%1$s (Settings)</string>
     <string name="key_change_help">Rewrites the notes, accidentals, chords and K: line. You can preview the result before saving.</string>
+    <string name="action_change_key_menu">Change key…</string>
     <string name="preview_in">Preview in %1$s</string>
     <string name="save_copy">Save as copy</string>
     <string name="replace">Replace</string>
