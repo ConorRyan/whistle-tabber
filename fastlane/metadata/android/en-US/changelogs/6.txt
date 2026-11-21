@@ -1,0 +1,7 @@
+Share tunes: the tune screen and the library's selection bar send one
+.abc file to any app, and a shared file imports as the tunes it holds.
+The tune screen's header has an "On X whistle" drop-down: pick any
+whistle to see the tune as if you played it — diagrams and sound —
+without touching Settings; the chip turns brass, and the choice is
+never saved. The key is now only shown; "Change key…" has moved into
+the Edit menu, with the same preview before saving.

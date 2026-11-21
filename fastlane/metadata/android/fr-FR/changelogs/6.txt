@@ -1,0 +1,7 @@
+Partager les airs : l'écran d'air et la barre de sélection envoient un
+fichier .abc à n'importe quelle appli, qui importe comme ses airs.
+L'en-tête de l'écran d'air a un menu « Sur whistle en X » : choisissez
+un whistle pour voir l'air comme si vous y jouiez, doigtés et son,
+sans toucher aux réglages ; la pastille passe au laiton et ce choix
+n'est pas enregistré. La tonalité est seulement affichée ; « Changer
+de tonalité… » est dans le menu d'édition, avec le même aperçu.
