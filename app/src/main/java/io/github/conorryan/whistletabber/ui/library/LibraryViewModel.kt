@@ -4,12 +4,15 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.conorryan.whistletabber.data.tunes.AbcFiles
+import io.github.conorryan.whistletabber.data.tunes.ExportNames
 import io.github.conorryan.whistletabber.data.tunes.ImportResult
 import io.github.conorryan.whistletabber.data.tunes.IncomingTunes
 import io.github.conorryan.whistletabber.data.tunes.RecentlyDeleted
+import io.github.conorryan.whistletabber.data.tunes.SharedFiles
 import io.github.conorryan.whistletabber.data.tunes.Tune
 import io.github.conorryan.whistletabber.data.tunes.TuneImporter
 import io.github.conorryan.whistletabber.data.tunes.TuneRepository
+import java.time.LocalDate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
@@ -54,12 +57,15 @@ sealed interface LibraryMessage {
     data class Imported(val result: ImportResult) : LibraryMessage
     data class Exported(val count: Int) : LibraryMessage
     data object ExportFailed : LibraryMessage
+    /** Open the share sheet for [uri]: [count] tunes, [title] when there is one. */
+    data class Share(val uri: Uri, val title: String?, val count: Int) : LibraryMessage
+    data object ShareFailed : LibraryMessage
     data class Deleted(val tunes: List<Tune>) : LibraryMessage
 }
 
 /**
- * The tune list with search and filters, selection for deleting or exporting
- * several tunes at once, the starter-set offer, and import and export of whole files.
+ * The tune list with search and filters, selection for deleting, exporting or
+ * sharing several tunes at once, the starter-set offer, and import and export of whole files.
  * It also reports imports shared from other apps ([IncomingTunes]).
  * Imports and deletes run in [appScope] so leaving the screen doesn't cancel
  * them half way.
@@ -72,6 +78,7 @@ class LibraryViewModel(
     private val recentlyDeleted: RecentlyDeleted,
     private val incomingTunes: IncomingTunes,
     private val appScope: CoroutineScope,
+    private val shared: SharedFiles,
 ) : ViewModel() {
 
     private val filters = MutableStateFlow(LibraryFilters())
@@ -167,6 +174,9 @@ class LibraryViewModel(
         }
     }
 
+    /** The suggested file name for the selected tunes, as export and share both use it. */
+    fun selectionFileName(today: LocalDate = LocalDate.now()): String = ExportNames.of(selectedTitles(), today)
+
     /** Writes the selected tunes to [uri] as one file and ends the selection. */
     fun exportSelected(uri: Uri) {
         val ids = state.value.selected
@@ -180,6 +190,26 @@ class LibraryViewModel(
             _messages.send(message)
         }
     }
+
+    /**
+     * Writes the selected tunes as one `.abc` file to share, ends the selection
+     * and asks the screen to open the share sheet ([LibraryMessage.Share]).
+     */
+    fun shareSelected(today: LocalDate = LocalDate.now()) {
+        val ids = state.value.selected
+        if (ids.isEmpty()) return
+        val titles = selectedTitles()
+        clearSelection()
+        appScope.launch {
+            val message = runCatching {
+                val uri = shared.write(ExportNames.of(titles, today), repository.export(ids))
+                LibraryMessage.Share(uri, titles.singleOrNull(), ids.size)
+            }.getOrElse { LibraryMessage.ShareFailed }
+            _messages.send(message)
+        }
+    }
+
+    private fun selectedTitles(): List<String> = state.value.let { s -> s.tunes.filter { it.id in s.selected }.map { it.title } }
 
     /** Puts back tunes deleted here or on the tune screen. */
     fun undoDelete(tunes: List<Tune>) {

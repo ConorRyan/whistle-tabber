@@ -84,7 +84,7 @@ fun AppNavHost(graph: AppGraph) {
             val vm: LibraryViewModel = viewModel(
                 factory = viewModelFactory {
                     initializer {
-                        LibraryViewModel(graph.tuneRepository, graph.tuneImporter, graph.abcFiles, graph.recentlyDeleted, graph.incomingTunes, graph.appScope)
+                        LibraryViewModel(graph.tuneRepository, graph.tuneImporter, graph.abcFiles, graph.recentlyDeleted, graph.incomingTunes, graph.appScope, graph.sharedFiles)
                     }
                 },
             )
@@ -104,7 +104,7 @@ fun AppNavHost(graph: AppGraph) {
             val vm: TuneViewModel = viewModel(
                 factory = viewModelFactory {
                     initializer {
-                        TuneViewModel(id, graph.tuneRepository, graph.tabSettingsEditor, graph.abcFiles, graph.recentlyDeleted)
+                        TuneViewModel(id, graph.tuneRepository, graph.tabSettingsEditor, graph.abcFiles, graph.recentlyDeleted, graph.sharedFiles)
                     }
                 },
             )

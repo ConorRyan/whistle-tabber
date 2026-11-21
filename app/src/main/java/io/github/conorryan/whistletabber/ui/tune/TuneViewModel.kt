@@ -4,7 +4,9 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.conorryan.whistletabber.data.tunes.AbcFiles
+import io.github.conorryan.whistletabber.data.tunes.ExportNames
 import io.github.conorryan.whistletabber.data.tunes.RecentlyDeleted
+import io.github.conorryan.whistletabber.data.tunes.SharedFiles
 import io.github.conorryan.whistletabber.data.tunes.Tune
 import io.github.conorryan.whistletabber.data.tunes.TuneRepository
 import io.github.conorryan.whistletabber.music.TabSettings
@@ -62,6 +64,9 @@ sealed interface TuneEffect {
     data object Close : TuneEffect
     data object Exported : TuneEffect
     data object ExportFailed : TuneEffect
+    /** Open the share sheet for [uri], the tune titled [title]. */
+    data class Share(val uri: Uri, val title: String) : TuneEffect
+    data object ShareFailed : TuneEffect
 }
 
 /**
@@ -77,6 +82,7 @@ class TuneViewModel(
     val settingsEditor: TabSettingsEditor,
     private val files: AbcFiles,
     private val recentlyDeleted: RecentlyDeleted,
+    private val shared: SharedFiles,
 ) : ViewModel() {
 
     private val renderer = TuneRenderer(viewModelScope)
@@ -169,6 +175,18 @@ class TuneViewModel(
                 files.write(uri, repository.export(id) ?: error("Tune $id is gone"))
             }.isSuccess
             _effects.send(if (ok) TuneEffect.Exported else TuneEffect.ExportFailed)
+        }
+    }
+
+    /** Writes the stored tune (not a key-change preview) as a file to share. */
+    fun share() {
+        viewModelScope.launch {
+            val effect = runCatching {
+                val tune = repository.get(id) ?: error("Tune $id is gone")
+                val text = repository.export(id) ?: error("Tune $id is gone")
+                TuneEffect.Share(shared.write(ExportNames.tune(tune.title), text), tune.title)
+            }.getOrElse { TuneEffect.ShareFailed }
+            _effects.send(effect)
         }
     }
 }

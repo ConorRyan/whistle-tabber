@@ -61,6 +61,12 @@
         <item quantity="other">%d tunes exported</item>
     </plurals>
     <string name="export_failed">Export failed</string>
+    <string name="share_failed">Couldn\'t share</string>
+    <!-- Email subject when sharing several tunes in one file. -->
+    <plurals name="share_subject">
+        <item quantity="one">%d tune</item>
+        <item quantity="other">%d tunes</item>
+    </plurals>
     <string name="deleted">“%1$s” deleted</string>
     <plurals name="deleted_many">
         <item quantity="one">%d tune deleted</item>
@@ -72,6 +78,7 @@
     </plurals>
     <string name="select_all">Select all</string>
     <string name="action_export_selected">Export selected</string>
+    <string name="action_share_selected">Share selected</string>
     <string name="clear_selection">Cancel selection</string>
 
     <!-- Find tunes -->
@@ -91,6 +98,7 @@
     <!-- Tune -->
     <string name="action_edit">Edit</string>
     <string name="action_export_tune">Export tune</string>
+    <string name="action_share_tune">Share tune</string>
     <string name="action_change_key">Change key</string>
     <string name="action_delete">Delete</string>
     <string name="tune_missing">This tune no longer exists.</string>

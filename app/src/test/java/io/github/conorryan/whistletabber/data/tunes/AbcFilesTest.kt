@@ -103,5 +103,9 @@ class AbcFilesTest {
         assertEquals("AC DC.abc", ExportNames.tune("AC/DC"))
         assertEquals("tune.abc", ExportNames.tune(" ?? "))
         assertEquals(84, ExportNames.tune("x".repeat(200)).length)
+        val day = LocalDate.of(2026, 11, 21)
+        assertEquals("Out on the Ocean.abc", ExportNames.of(listOf("Out on the Ocean"), day))
+        assertEquals("whistle-tabber-2026-11-21.abc", ExportNames.of(listOf("A", "B"), day))
+        assertEquals("whistle-tabber-2026-11-21.abc", ExportNames.of(emptyList(), day))
     }
 }

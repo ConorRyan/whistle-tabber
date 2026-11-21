@@ -41,6 +41,7 @@ import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
@@ -102,6 +103,7 @@ import io.github.conorryan.whistletabber.data.tunes.ImportResult
 import io.github.conorryan.whistletabber.data.tunes.PastedTunes
 import io.github.conorryan.whistletabber.data.tunes.Tune
 import io.github.conorryan.whistletabber.ui.components.PillChip
+import io.github.conorryan.whistletabber.ui.openShareSheet
 import io.github.conorryan.whistletabber.ui.components.whistleLabel
 import io.github.conorryan.whistletabber.ui.theme.LocalWhistleColors
 import io.github.conorryan.whistletabber.ui.theme.SectionLabel
@@ -151,6 +153,11 @@ fun LibraryScreen(
                 is LibraryMessage.Imported -> snackbar.showSnackbar(importSummary(res, message.result))
                 is LibraryMessage.Exported -> snackbar.showSnackbar(res.getQuantityString(R.plurals.exported, message.count, message.count))
                 LibraryMessage.ExportFailed -> snackbar.showSnackbar(res.getString(R.string.export_failed))
+                is LibraryMessage.Share -> context.openShareSheet(
+                    message.uri,
+                    message.title ?: res.getQuantityString(R.plurals.share_subject, message.count, message.count),
+                )
+                LibraryMessage.ShareFailed -> snackbar.showSnackbar(res.getString(R.string.share_failed))
                 is LibraryMessage.Deleted -> {
                     val tunes = message.tunes
                     val result = snackbar.showSnackbar(
@@ -177,10 +184,8 @@ fun LibraryScreen(
         onSelectAll = vm::selectAll,
         onClearSelection = vm::clearSelection,
         onDeleteSelected = vm::deleteSelected,
-        onExportSelected = {
-            val single = state.tunes.filter { it.id in state.selected }.singleOrNull()
-            exportSelectedLauncher.launch(single?.let { ExportNames.tune(it.title) } ?: ExportNames.library(LocalDate.now()))
-        },
+        onExportSelected = { exportSelectedLauncher.launch(vm.selectionFileName()) },
+        onShareSelected = { vm.shareSelected() },
         onOpenTune = onOpenTune,
         onNewTune = onNewTune,
         onSettings = onSettings,
@@ -210,6 +215,7 @@ fun LibraryContent(
     onClearSelection: () -> Unit = {},
     onDeleteSelected: () -> Unit = {},
     onExportSelected: () -> Unit = {},
+    onShareSelected: () -> Unit = {},
     onOpenTune: (Long) -> Unit = {},
     onNewTune: () -> Unit = {},
     onSettings: () -> Unit = {},
@@ -227,7 +233,7 @@ fun LibraryContent(
     Scaffold(
         topBar = {
             if (state.selecting) {
-                SelectionBar(state.selected.size, onClearSelection, onSelectAll, onExportSelected, onDeleteSelected)
+                SelectionBar(state.selected.size, onClearSelection, onSelectAll, onExportSelected, onShareSelected, onDeleteSelected)
             } else Row(
                 Modifier.fillMaxWidth().statusBarsPadding().padding(start = 20.dp, end = 8.dp, top = 16.dp, bottom = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -424,10 +430,17 @@ private fun Filters(
     }
 }
 
-/** The top bar while tunes are selected: cancel, how many, select all, delete. */
+/** The top bar while tunes are selected: cancel, how many, select all, export, share, delete. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SelectionBar(count: Int, onClear: () -> Unit, onSelectAll: () -> Unit, onExport: () -> Unit, onDelete: () -> Unit) {
+private fun SelectionBar(
+    count: Int,
+    onClear: () -> Unit,
+    onSelectAll: () -> Unit,
+    onExport: () -> Unit,
+    onShare: () -> Unit,
+    onDelete: () -> Unit,
+) {
     TopAppBar(
         title = { Text(pluralStringResource(R.plurals.selected_count, count, count), Modifier.testTag("selectedCount")) },
         navigationIcon = {
@@ -441,6 +454,9 @@ private fun SelectionBar(count: Int, onClear: () -> Unit, onSelectAll: () -> Uni
             }
             IconButton(onClick = onExport, modifier = Modifier.testTag("exportSelected")) {
                 Icon(Icons.Filled.FileUpload, contentDescription = stringResource(R.string.action_export_selected))
+            }
+            IconButton(onClick = onShare, modifier = Modifier.testTag("shareSelected")) {
+                Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.action_share_selected))
             }
             IconButton(onClick = onDelete, modifier = Modifier.testTag("deleteSelected")) {
                 Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.action_delete))

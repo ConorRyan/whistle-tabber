@@ -53,4 +53,8 @@ object ExportNames {
         val safe = title.replace(UNSAFE, " ").replace(Regex("""\s+"""), " ").trim().trimEnd('.').take(80).trim()
         return (safe.ifEmpty { "tune" }) + ".abc"
     }
+
+    /** Tunes with [titles]: one is named after its title, several (or none) by [date]. */
+    fun of(titles: List<String>, date: LocalDate): String =
+        titles.singleOrNull()?.let(::tune) ?: library(date)
 }

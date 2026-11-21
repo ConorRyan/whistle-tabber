@@ -221,6 +221,7 @@ class LibraryContentTest {
         var selectedAll = false
         var deleted = false
         var exported = false
+        var shared = false
         var cleared = false
         compose.setContent {
             WhistleTabberTheme {
@@ -231,6 +232,7 @@ class LibraryContentTest {
                     onSelectAll = { selectedAll = true },
                     onDeleteSelected = { deleted = true },
                     onExportSelected = { exported = true },
+                    onShareSelected = { shared = true },
                     onClearSelection = { cleared = true },
                 )
             }
@@ -251,6 +253,8 @@ class LibraryContentTest {
         assertTrue(selectedAll)
         compose.onNodeWithTag("exportSelected").performClick()
         assertTrue(exported)
+        compose.onNodeWithTag("shareSelected").performClick()
+        assertTrue(shared)
         compose.onNodeWithTag("deleteSelected").performClick()
         assertTrue(deleted)
         compose.onNodeWithTag("clearSelection").performClick()

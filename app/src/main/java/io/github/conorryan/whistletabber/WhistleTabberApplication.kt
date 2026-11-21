@@ -7,6 +7,7 @@ import io.github.conorryan.whistletabber.data.tunes.AbcFiles
 import io.github.conorryan.whistletabber.data.tunes.AppDatabase
 import io.github.conorryan.whistletabber.data.tunes.IncomingTunes
 import io.github.conorryan.whistletabber.data.tunes.RecentlyDeleted
+import io.github.conorryan.whistletabber.data.tunes.SharedFiles
 import io.github.conorryan.whistletabber.data.tunes.TuneImporter
 import io.github.conorryan.whistletabber.data.tunes.TuneRepository
 import io.github.conorryan.whistletabber.scan.TabImageLoader
@@ -22,6 +23,8 @@ class AppGraph(
     loadStarterSet: () -> String,
     val abcFiles: AbcFiles,
     val tabImageLoader: TabImageLoader,
+    /** The file the share sheet sends. */
+    val sharedFiles: SharedFiles,
 ) {
     val tuneRepository = TuneRepository(db)
     val tuneImporter = TuneImporter(tuneRepository, abcFiles, loadStarterSet)
@@ -45,6 +48,7 @@ class AppGraph(
             loadStarterSet = { TuneImporter.readStarterSet(context) },
             abcFiles = AbcFiles(context.contentResolver),
             tabImageLoader = TabImageLoader(context.contentResolver),
+            sharedFiles = SharedFiles(context),
         )
     }
 }

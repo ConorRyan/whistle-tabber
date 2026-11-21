@@ -228,6 +228,14 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
   `delete(id)`) removes the rows in one transaction and puts them on `offer`
   as one batch (one batch at a time, newest wins); `undo`/`dismiss` answer
   it, and the restore runs on `appScope`.
+  `SharedFiles` is the outgoing side: Share writes the same text an export
+  writes (`TuneRepository.export`, one book with `X:` renumbered) as one
+  `.abc` file in `cache/shared/` (each share clears the last), served by
+  the manifest's `FileProvider` (`${applicationId}.files`,
+  `res/xml/shared_files.xml`), and `chooser` sends it as `text/plain` with
+  a read grant, leaving our own "Share" target out. `ExportNames.of` names
+  it (the title for one tune, the dated library name for several), as it
+  names exports.
 - `assets/web/`
   - `whistle-core.js`: pure helpers, node-testable. `extractNotes` lists the
     first voice's written notes with MIDI pitch from abcjs's own audio
@@ -263,7 +271,9 @@ WebView origin https://appassets.androidplatform.net (WebViewAssetLoader):
     Multi-select: a long press
     starts selecting (`LibraryUiState.selected`, only tunes the filters
     show), the top bar offers select all, export (`exportSelected`, one file of the
-    selected tunes) and delete. Deletes from here
+    selected tunes), share (`shareSelected`: the same one file to the system
+    share sheet, through `LibraryMessage.Share` and `ui/ShareSheet.kt`) and
+    delete. Deletes from here
     (`deleteSelected`) or the tune screen arrive as `RecentlyDeleted.offer`;
     the snackbar answers with `undo` or `dismiss`.
   - `tune/TuneViewModel`: the tune and its settings; the render cycle

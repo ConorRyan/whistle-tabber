@@ -9,8 +9,10 @@ import io.github.conorryan.whistletabber.data.tunes.AbcFiles
 import io.github.conorryan.whistletabber.data.tunes.AppDatabase
 import io.github.conorryan.whistletabber.data.tunes.IncomingTunes
 import io.github.conorryan.whistletabber.data.tunes.RecentlyDeleted
+import io.github.conorryan.whistletabber.data.tunes.SharedFiles
 import io.github.conorryan.whistletabber.data.tunes.TuneImporter
 import io.github.conorryan.whistletabber.data.tunes.TuneRepository
+import io.github.conorryan.whistletabber.data.tunes.clearFileProviderCache
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -27,6 +29,7 @@ class TestGraph(dir: File) {
         PreferenceDataStoreFactory.create(produceFile = { File(dir, "tab.preferences_pb") }),
     )
     val files = AbcFiles(context.contentResolver)
+    val sharedFiles = SharedFiles(context).also { clearFileProviderCache() }
     /** Stands in for the app scope; cancelled by [close]. */
     val appScope = CoroutineScope(SupervisorJob())
     val recentlyDeleted = RecentlyDeleted(repository, appScope)

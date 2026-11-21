@@ -6,6 +6,7 @@ import io.github.conorryan.whistletabber.data.tunes.ImportResult
 import io.github.conorryan.whistletabber.data.tunes.SharedTunes
 import io.github.conorryan.whistletabber.ui.TestGraph
 import java.io.File
+import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -53,7 +54,7 @@ class LibraryViewModelTest {
     }
 
     private fun TestScope.vm() = LibraryViewModel(
-        graph.repository, graph.importer, graph.files, graph.recentlyDeleted, graph.incomingTunes, backgroundScope,
+        graph.repository, graph.importer, graph.files, graph.recentlyDeleted, graph.incomingTunes, backgroundScope, graph.sharedFiles,
     )
 
     private fun tune(title: String, rhythm: String = "reel") = "X:1\nT:$title\nR:$rhythm\nK:D\nDEF|\n"
@@ -180,6 +181,54 @@ class LibraryViewModelTest {
         assertEquals(listOf("X:1", "X:2"), lines.filter { it.startsWith("X:") })
         assertEquals(listOf("T:A", "T:B"), lines.filter { it.startsWith("T:") })
         assertFalse(vm.state.first { it.selected.isEmpty() }.selecting)
+    }
+
+    @Test
+    fun `sharing the selection writes one file the import reads back, and ends the selection`() = runTest {
+        save(tune("A"), tune("B"), tune("Left out"))
+        val vm = vm()
+        val ids = vm.state.first { it.tunes.size == 3 }.tunes.associate { it.title to it.id }
+        vm.toggleSelected(ids.getValue("A"))
+        vm.toggleSelected(ids.getValue("B"))
+        vm.state.first { it.selected.size == 2 }
+        assertEquals("whistle-tabber-2026-11-21.abc", vm.selectionFileName(LocalDate.of(2026, 11, 21)))
+        lateinit var share: LibraryMessage.Share
+        vm.messages.test {
+            vm.shareSelected(LocalDate.of(2026, 11, 21))
+            share = awaitItem() as LibraryMessage.Share
+        }
+        assertNull(share.title)
+        assertEquals(2, share.count)
+        assertEquals("whistle-tabber-2026-11-21.abc", share.uri.lastPathSegment)
+        assertFalse(vm.state.first { it.selected.isEmpty() }.selecting)
+
+        // What the other phone gets: one file, read by the same import as "Open with".
+        val text = graph.files.read(share.uri)
+        assertEquals(listOf("T:A", "T:B"), text.lines().filter { it.startsWith("T:") })
+        val other = TestGraph(tmp.newFolder())
+        try {
+            assertEquals(ImportResult(added = 2, skipped = 0, errors = emptyList()), other.importer.importFiles(listOf(share.uri)))
+            assertEquals(setOf("A", "B"), other.repository.tunes.first().map { it.title }.toSet())
+        } finally {
+            other.close()
+        }
+    }
+
+    @Test
+    fun `sharing one selected tune names the file and subject after it`() = runTest {
+        save(tune("Out on the Ocean"), tune("Other"))
+        val vm = vm()
+        val id = vm.state.first { it.tunes.size == 2 }.tunes.first { it.title == "Out on the Ocean" }.id
+        vm.toggleSelected(id)
+        vm.state.first { it.selected.size == 1 }
+        assertEquals("Out on the Ocean.abc", vm.selectionFileName())
+        vm.messages.test {
+            vm.shareSelected()
+            val share = awaitItem() as LibraryMessage.Share
+            assertEquals("Out on the Ocean", share.title)
+            assertEquals(1, share.count)
+            assertEquals("Out on the Ocean.abc", share.uri.lastPathSegment)
+        }
     }
 
     @Test

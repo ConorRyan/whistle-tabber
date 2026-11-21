@@ -67,6 +67,12 @@
         <item quantity="many">%d airs exportés</item>
     </plurals>
     <string name="export_failed">L\'export a échoué</string>
+    <string name="share_failed">Le partage a échoué</string>
+    <plurals name="share_subject">
+        <item quantity="one">%d air</item>
+        <item quantity="other">%d airs</item>
+        <item quantity="many">%d airs</item>
+    </plurals>
     <string name="deleted">«\u00A0%1$s\u00A0» supprimé</string>
     <plurals name="deleted_many">
         <item quantity="one">%d air supprimé</item>
@@ -80,6 +86,7 @@
     </plurals>
     <string name="select_all">Tout sélectionner</string>
     <string name="action_export_selected">Exporter la sélection</string>
+    <string name="action_share_selected">Partager la sélection</string>
     <string name="clear_selection">Annuler la sélection</string>
 
     <!-- Find tunes -->
@@ -99,6 +106,7 @@
     <!-- Tune -->
     <string name="action_edit">Modifier</string>
     <string name="action_export_tune">Exporter l\'air</string>
+    <string name="action_share_tune">Partager l\'air</string>
     <string name="action_change_key">Changer de tonalité</string>
     <string name="action_delete">Supprimer</string>
     <string name="tune_missing">Cet air n\'existe plus.</string>

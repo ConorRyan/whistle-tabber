@@ -49,6 +49,7 @@ import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.outlined.Delete
@@ -102,6 +103,7 @@ import io.github.conorryan.whistletabber.render.TuneRenderer
 import io.github.conorryan.whistletabber.ui.components.HeaderChip
 import io.github.conorryan.whistletabber.ui.components.ScreenTitle
 import io.github.conorryan.whistletabber.ui.components.whistleLabel
+import io.github.conorryan.whistletabber.ui.openShareSheet
 import io.github.conorryan.whistletabber.ui.theme.LocalWhistleColors
 import io.github.conorryan.whistletabber.web.TuneWebController
 import io.github.conorryan.whistletabber.web.TuneWebViewHost
@@ -152,6 +154,8 @@ fun TuneScreen(
                 TuneEffect.Close -> onBack()
                 TuneEffect.Exported -> snackbar.showSnackbar(context.getString(R.string.tune_exported))
                 TuneEffect.ExportFailed -> snackbar.showSnackbar(context.getString(R.string.export_failed))
+                is TuneEffect.Share -> context.openShareSheet(effect.uri, effect.title)
+                TuneEffect.ShareFailed -> snackbar.showSnackbar(context.getString(R.string.share_failed))
             }
         }
     }
@@ -179,6 +183,9 @@ fun TuneScreen(
                     }
                     IconButton(onClick = { exportLauncher.launch(ExportNames.tune(tune.title)) }, modifier = Modifier.testTag("export")) {
                         Icon(Icons.Filled.FileUpload, contentDescription = stringResource(R.string.action_export_tune))
+                    }
+                    IconButton(onClick = vm::share, modifier = Modifier.testTag("share")) {
+                        Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.action_share_tune))
                     }
                     // No confirmation: the library's snackbar offers undo.
                     IconButton(onClick = vm::delete, modifier = Modifier.testTag("delete")) {

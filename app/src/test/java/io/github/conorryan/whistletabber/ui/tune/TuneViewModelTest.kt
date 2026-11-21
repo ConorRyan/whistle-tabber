@@ -72,7 +72,7 @@ class TuneViewModelTest {
     /** A ViewModel with a fake page bound, as the screen would bind the WebView. */
     private fun bound(id: Long, editor: TabSettingsEditor): Pair<TuneViewModel, FakeTunePage> {
         val page = FakeTunePage()
-        return TuneViewModel(id, graph.repository, editor, graph.files, graph.recentlyDeleted)
+        return TuneViewModel(id, graph.repository, editor, graph.files, graph.recentlyDeleted, graph.sharedFiles)
             .also { it.bindPage(page) } to page
     }
 
@@ -236,6 +236,28 @@ class TuneViewModelTest {
             expectNoEvents()
         }
         assertNull(vm.state.value.preview)
+    }
+
+    @Test
+    fun `share writes the stored tune as a file named after it`() = runTest {
+        val id = saved()
+        val (vm, _) = bound(id, editor(backgroundScope))
+        vm.effects.test {
+            vm.share()
+            val share = awaitItem() as TuneEffect.Share
+            assertEquals("Test Tune", share.title)
+            assertEquals("Test Tune.abc", share.uri.lastPathSegment)
+            assertEquals(abc, graph.files.read(share.uri))
+        }
+    }
+
+    @Test
+    fun `sharing a tune that is gone fails`() = runTest {
+        val (vm, _) = bound(999, editor(backgroundScope))
+        vm.effects.test {
+            vm.share()
+            assertEquals(TuneEffect.ShareFailed, awaitItem())
+        }
     }
 
     @Test
